@@ -33,9 +33,14 @@ type Service struct {
 // Register registers the C1 Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := &Server{}
-	sb.RegisterE2Server(r, server)
+	sb.RegisterE2InterfaceServiceServer(r, server)
 }
 
 // Server implements the E2 gRPC service for administrative facilities.
 type Server struct {
+}
+
+// Send blah blah. WIP!
+func (s Server) Send(sb.E2InterfaceService_SendServer) error {
+	panic("implement me")
 }
