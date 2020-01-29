@@ -15,9 +15,7 @@
 package e2
 
 import (
-	"github.com/onosproject/onos-ran/api/sb"
 	"github.com/onosproject/onos-ran/pkg/service"
-	"google.golang.org/grpc"
 )
 
 // NewService returns a new device Service
@@ -30,6 +28,8 @@ type Service struct {
 	service.Service
 }
 
+/*
+FIXME: remove this since we are swapping this to the client instead
 // Register registers the C1 Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
 	server := &Server{}
@@ -44,3 +44,4 @@ type Server struct {
 func (s Server) Send(sb.E2InterfaceService_SendServer) error {
 	panic("implement me")
 }
+*/

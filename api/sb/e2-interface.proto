@@ -18,10 +18,35 @@ syntax = "proto3";
 package interface.e2;
 
 service E2InterfaceService {
-    rpc Send (stream E2Message) returns (stream ServiceResult) {}
+    // SendTelemetry is used by the controller to start receiving a stream of telemetry messages from RAN environment.
+    rpc SendTelemetry (TelemetryRequest) returns (stream TelemetryMessage) {}
+
+    // SendControl is used by the controller to setup a bi-directional stream of control update messages
+    // from RAN environment to which it can respond asynchronously.
+    rpc SendControl (stream ControlResponse) returns (stream ControlUpdate) {}
 
     // Can be extended if necessary
 }
+
+// TelemetryRequest is a specification on how telemetry data messages should be sent; possibly empty.
+message TelemetryRequest {
+}
+
+// TelemetryMessage carries sensory data about the RAN environment.
+message TelemetryMessage {
+    // one of the telemetry messages sent from base station components to the controller
+}
+
+// ControlUpdate carries a class of asynchronous control messages initiated by the RAN environment.
+message ControlUpdate {
+    // one of the control update messages sent from base station components to the controller
+}
+
+// ControlResponse contains asynchronous responses to control updates, e.g. admission response.
+message ControlResponse {
+    // one of the control update messages sent from the controller back to the base station components
+}
+
 
 // Definition of all message types in E2 interface
 enum E2MessageType {
