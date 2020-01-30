@@ -21,9 +21,62 @@ syntax = "proto3";
 package interface.c1;
 
 service C1InterfaceService {
-    rpc GetRNIB (C1RequestMessage) returns (stream C1ResponseMessage) {}
-    rpc PostRNIB (C1RequestMessage) returns (stream C1ResponseMessage) {}
+    // ListStations returns a stream of base station records.
+    rpc ListStations(StationListRequest) returns (stream StationInfo);
+
+    // ListUEs returns a stream of UE records.
+    rpc ListUEs(UEListRequest) returns (stream UEInfo);
+
+    // ListStationLinks returns a stream of links between neighboring base stations.
+    rpc ListStationLinks(StationLinkListRequest) returns (stream StationLinkInfo);
+
+    // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
+    rpc ListUELinks(UELinkListRequest) returns (stream UELinkInfo);
+
+    // TriggerHandOver returns a hand-over response indicating success or failure.
+    rpc TriggerHandOver(HandOverRequest) returns (HandOverResponse);
+
+    // SetRadioPower returns a response indicating success or failure.
+    rpc SetRadioPower(RadioPowerRequest) returns (RadioPowerResponse);
 }
+
+message StationListRequest {
+}
+
+message StationInfo {
+}
+
+message UEListRequest {
+}
+
+message UEInfo {
+}
+
+message StationLinkListRequest {
+}
+
+message StationLinkInfo {
+}
+
+message UELinkListRequest {
+}
+
+message UELinkInfo {
+}
+
+message HandOverRequest {
+}
+
+message HandOverResponse {
+}
+
+message RadioPowerRequest {
+}
+
+message RadioPowerResponse {
+}
+
+// Original structure below ------------
 
 enum C1MessageType {
     C1_MESSAGE_UNKNOWN = 0;

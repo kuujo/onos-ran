@@ -1,4 +1,4 @@
-cmd/onos-topo/onos-ran
+build/_output/onos-ran
 vendor
 **/_output
 *.DS_Store

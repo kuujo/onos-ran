@@ -15,7 +15,6 @@
 package c1
 
 import (
-	"github.com/onosproject/onos-ran/api/nb"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
 )
@@ -32,20 +31,10 @@ type Service struct {
 
 // Register registers the C1 Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	server := &Server{}
-	nb.RegisterC1InterfaceServiceServer(r, server)
+	//server := &Server{}
+	//nb.RegisterC1InterfaceServiceServer(r, server)
 }
 
 // Server implements the C1 gRPC service for administrative facilities.
 type Server struct {
-}
-
-// GetRNIB blah blah. WIP!
-func (s Server) GetRNIB(*nb.C1RequestMessage, nb.C1InterfaceService_GetRNIBServer) error {
-	panic("implement me")
-}
-
-// PostRNIB blah blah. WIP!
-func (s Server) PostRNIB(*nb.C1RequestMessage, nb.C1InterfaceService_PostRNIBServer) error {
-	panic("implement me")
 }

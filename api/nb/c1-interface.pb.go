@@ -137,6 +137,438 @@ func (C1XICICPA) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_49d6c0a03a213d51, []int{2}
 }
 
+type StationListRequest struct {
+}
+
+func (m *StationListRequest) Reset()         { *m = StationListRequest{} }
+func (m *StationListRequest) String() string { return proto.CompactTextString(m) }
+func (*StationListRequest) ProtoMessage()    {}
+func (*StationListRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{0}
+}
+func (m *StationListRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StationListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StationListRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StationListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StationListRequest.Merge(m, src)
+}
+func (m *StationListRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *StationListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_StationListRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StationListRequest proto.InternalMessageInfo
+
+type StationInfo struct {
+}
+
+func (m *StationInfo) Reset()         { *m = StationInfo{} }
+func (m *StationInfo) String() string { return proto.CompactTextString(m) }
+func (*StationInfo) ProtoMessage()    {}
+func (*StationInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{1}
+}
+func (m *StationInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StationInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StationInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StationInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StationInfo.Merge(m, src)
+}
+func (m *StationInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *StationInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_StationInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StationInfo proto.InternalMessageInfo
+
+type UEListRequest struct {
+}
+
+func (m *UEListRequest) Reset()         { *m = UEListRequest{} }
+func (m *UEListRequest) String() string { return proto.CompactTextString(m) }
+func (*UEListRequest) ProtoMessage()    {}
+func (*UEListRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{2}
+}
+func (m *UEListRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UEListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UEListRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UEListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UEListRequest.Merge(m, src)
+}
+func (m *UEListRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *UEListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UEListRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UEListRequest proto.InternalMessageInfo
+
+type UEInfo struct {
+}
+
+func (m *UEInfo) Reset()         { *m = UEInfo{} }
+func (m *UEInfo) String() string { return proto.CompactTextString(m) }
+func (*UEInfo) ProtoMessage()    {}
+func (*UEInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{3}
+}
+func (m *UEInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UEInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UEInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UEInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UEInfo.Merge(m, src)
+}
+func (m *UEInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *UEInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_UEInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UEInfo proto.InternalMessageInfo
+
+type StationLinkListRequest struct {
+}
+
+func (m *StationLinkListRequest) Reset()         { *m = StationLinkListRequest{} }
+func (m *StationLinkListRequest) String() string { return proto.CompactTextString(m) }
+func (*StationLinkListRequest) ProtoMessage()    {}
+func (*StationLinkListRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{4}
+}
+func (m *StationLinkListRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StationLinkListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StationLinkListRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StationLinkListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StationLinkListRequest.Merge(m, src)
+}
+func (m *StationLinkListRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *StationLinkListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_StationLinkListRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StationLinkListRequest proto.InternalMessageInfo
+
+type StationLinkInfo struct {
+}
+
+func (m *StationLinkInfo) Reset()         { *m = StationLinkInfo{} }
+func (m *StationLinkInfo) String() string { return proto.CompactTextString(m) }
+func (*StationLinkInfo) ProtoMessage()    {}
+func (*StationLinkInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{5}
+}
+func (m *StationLinkInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StationLinkInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StationLinkInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StationLinkInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StationLinkInfo.Merge(m, src)
+}
+func (m *StationLinkInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *StationLinkInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_StationLinkInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StationLinkInfo proto.InternalMessageInfo
+
+type UELinkListRequest struct {
+}
+
+func (m *UELinkListRequest) Reset()         { *m = UELinkListRequest{} }
+func (m *UELinkListRequest) String() string { return proto.CompactTextString(m) }
+func (*UELinkListRequest) ProtoMessage()    {}
+func (*UELinkListRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{6}
+}
+func (m *UELinkListRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UELinkListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UELinkListRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UELinkListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UELinkListRequest.Merge(m, src)
+}
+func (m *UELinkListRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *UELinkListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UELinkListRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UELinkListRequest proto.InternalMessageInfo
+
+type UELinkInfo struct {
+}
+
+func (m *UELinkInfo) Reset()         { *m = UELinkInfo{} }
+func (m *UELinkInfo) String() string { return proto.CompactTextString(m) }
+func (*UELinkInfo) ProtoMessage()    {}
+func (*UELinkInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{7}
+}
+func (m *UELinkInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UELinkInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UELinkInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UELinkInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UELinkInfo.Merge(m, src)
+}
+func (m *UELinkInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *UELinkInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_UELinkInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UELinkInfo proto.InternalMessageInfo
+
+type HandOverRequest struct {
+}
+
+func (m *HandOverRequest) Reset()         { *m = HandOverRequest{} }
+func (m *HandOverRequest) String() string { return proto.CompactTextString(m) }
+func (*HandOverRequest) ProtoMessage()    {}
+func (*HandOverRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{8}
+}
+func (m *HandOverRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HandOverRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HandOverRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *HandOverRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HandOverRequest.Merge(m, src)
+}
+func (m *HandOverRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *HandOverRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_HandOverRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HandOverRequest proto.InternalMessageInfo
+
+type HandOverResponse struct {
+}
+
+func (m *HandOverResponse) Reset()         { *m = HandOverResponse{} }
+func (m *HandOverResponse) String() string { return proto.CompactTextString(m) }
+func (*HandOverResponse) ProtoMessage()    {}
+func (*HandOverResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{9}
+}
+func (m *HandOverResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HandOverResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HandOverResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *HandOverResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HandOverResponse.Merge(m, src)
+}
+func (m *HandOverResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *HandOverResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_HandOverResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HandOverResponse proto.InternalMessageInfo
+
+type RadioPowerRequest struct {
+}
+
+func (m *RadioPowerRequest) Reset()         { *m = RadioPowerRequest{} }
+func (m *RadioPowerRequest) String() string { return proto.CompactTextString(m) }
+func (*RadioPowerRequest) ProtoMessage()    {}
+func (*RadioPowerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{10}
+}
+func (m *RadioPowerRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RadioPowerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RadioPowerRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RadioPowerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RadioPowerRequest.Merge(m, src)
+}
+func (m *RadioPowerRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RadioPowerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RadioPowerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RadioPowerRequest proto.InternalMessageInfo
+
+type RadioPowerResponse struct {
+}
+
+func (m *RadioPowerResponse) Reset()         { *m = RadioPowerResponse{} }
+func (m *RadioPowerResponse) String() string { return proto.CompactTextString(m) }
+func (*RadioPowerResponse) ProtoMessage()    {}
+func (*RadioPowerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{11}
+}
+func (m *RadioPowerResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RadioPowerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RadioPowerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RadioPowerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RadioPowerResponse.Merge(m, src)
+}
+func (m *RadioPowerResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RadioPowerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RadioPowerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RadioPowerResponse proto.InternalMessageInfo
+
 type C1RequestMessage struct {
 	Header  *C1RequestMessageHeader  `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Payload *C1RequestMessagePayload `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
@@ -146,7 +578,7 @@ func (m *C1RequestMessage) Reset()         { *m = C1RequestMessage{} }
 func (m *C1RequestMessage) String() string { return proto.CompactTextString(m) }
 func (*C1RequestMessage) ProtoMessage()    {}
 func (*C1RequestMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{0}
+	return fileDescriptor_49d6c0a03a213d51, []int{12}
 }
 func (m *C1RequestMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -198,7 +630,7 @@ func (m *C1ResponseMessage) Reset()         { *m = C1ResponseMessage{} }
 func (m *C1ResponseMessage) String() string { return proto.CompactTextString(m) }
 func (*C1ResponseMessage) ProtoMessage()    {}
 func (*C1ResponseMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{1}
+	return fileDescriptor_49d6c0a03a213d51, []int{13}
 }
 func (m *C1ResponseMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -249,7 +681,7 @@ func (m *C1RequestMessageHeader) Reset()         { *m = C1RequestMessageHeader{}
 func (m *C1RequestMessageHeader) String() string { return proto.CompactTextString(m) }
 func (*C1RequestMessageHeader) ProtoMessage()    {}
 func (*C1RequestMessageHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{2}
+	return fileDescriptor_49d6c0a03a213d51, []int{14}
 }
 func (m *C1RequestMessageHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -297,7 +729,7 @@ func (m *C1RequestMessagePayload) Reset()         { *m = C1RequestMessagePayload
 func (m *C1RequestMessagePayload) String() string { return proto.CompactTextString(m) }
 func (*C1RequestMessagePayload) ProtoMessage()    {}
 func (*C1RequestMessagePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{3}
+	return fileDescriptor_49d6c0a03a213d51, []int{15}
 }
 func (m *C1RequestMessagePayload) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -470,7 +902,7 @@ func (m *C1ResponseMessageHeader) Reset()         { *m = C1ResponseMessageHeader
 func (m *C1ResponseMessageHeader) String() string { return proto.CompactTextString(m) }
 func (*C1ResponseMessageHeader) ProtoMessage()    {}
 func (*C1ResponseMessageHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{4}
+	return fileDescriptor_49d6c0a03a213d51, []int{16}
 }
 func (m *C1ResponseMessageHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -519,7 +951,7 @@ func (m *C1ResponseMessagePayload) Reset()         { *m = C1ResponseMessagePaylo
 func (m *C1ResponseMessagePayload) String() string { return proto.CompactTextString(m) }
 func (*C1ResponseMessagePayload) ProtoMessage()    {}
 func (*C1ResponseMessagePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{5}
+	return fileDescriptor_49d6c0a03a213d51, []int{17}
 }
 func (m *C1ResponseMessagePayload) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -723,7 +1155,7 @@ func (m *C1RNIBCells) Reset()         { *m = C1RNIBCells{} }
 func (m *C1RNIBCells) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBCells) ProtoMessage()    {}
 func (*C1RNIBCells) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{6}
+	return fileDescriptor_49d6c0a03a213d51, []int{18}
 }
 func (m *C1RNIBCells) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -767,7 +1199,7 @@ func (m *C1RNIBUEs) Reset()         { *m = C1RNIBUEs{} }
 func (m *C1RNIBUEs) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBUEs) ProtoMessage()    {}
 func (*C1RNIBUEs) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{7}
+	return fileDescriptor_49d6c0a03a213d51, []int{19}
 }
 func (m *C1RNIBUEs) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -811,7 +1243,7 @@ func (m *C1RNIBLinks) Reset()         { *m = C1RNIBLinks{} }
 func (m *C1RNIBLinks) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBLinks) ProtoMessage()    {}
 func (*C1RNIBLinks) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{8}
+	return fileDescriptor_49d6c0a03a213d51, []int{20}
 }
 func (m *C1RNIBLinks) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -856,7 +1288,7 @@ func (m *C1ECGI) Reset()         { *m = C1ECGI{} }
 func (m *C1ECGI) String() string { return proto.CompactTextString(m) }
 func (*C1ECGI) ProtoMessage()    {}
 func (*C1ECGI) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{9}
+	return fileDescriptor_49d6c0a03a213d51, []int{21}
 }
 func (m *C1ECGI) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -908,7 +1340,7 @@ func (m *C1CandScell) Reset()         { *m = C1CandScell{} }
 func (m *C1CandScell) String() string { return proto.CompactTextString(m) }
 func (*C1CandScell) ProtoMessage()    {}
 func (*C1CandScell) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{10}
+	return fileDescriptor_49d6c0a03a213d51, []int{22}
 }
 func (m *C1CandScell) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -964,7 +1396,7 @@ func (m *C1RNIBCell) Reset()         { *m = C1RNIBCell{} }
 func (m *C1RNIBCell) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBCell) ProtoMessage()    {}
 func (*C1RNIBCell) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{11}
+	return fileDescriptor_49d6c0a03a213d51, []int{23}
 }
 func (m *C1RNIBCell) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1035,7 +1467,7 @@ func (m *C1CellConfigAttribute) Reset()         { *m = C1CellConfigAttribute{} }
 func (m *C1CellConfigAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1CellConfigAttribute) ProtoMessage()    {}
 func (*C1CellConfigAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{12}
+	return fileDescriptor_49d6c0a03a213d51, []int{24}
 }
 func (m *C1CellConfigAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1171,7 +1603,7 @@ func (m *C1PciArfcn) Reset()         { *m = C1PciArfcn{} }
 func (m *C1PciArfcn) String() string { return proto.CompactTextString(m) }
 func (*C1PciArfcn) ProtoMessage()    {}
 func (*C1PciArfcn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{13}
+	return fileDescriptor_49d6c0a03a213d51, []int{25}
 }
 func (m *C1PciArfcn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1232,7 +1664,7 @@ func (m *C1RRMConfigAttribute) Reset()         { *m = C1RRMConfigAttribute{} }
 func (m *C1RRMConfigAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1RRMConfigAttribute) ProtoMessage()    {}
 func (*C1RRMConfigAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{14}
+	return fileDescriptor_49d6c0a03a213d51, []int{26}
 }
 func (m *C1RRMConfigAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1344,7 +1776,7 @@ func (m *C1RNIBUE) Reset()         { *m = C1RNIBUE{} }
 func (m *C1RNIBUE) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBUE) ProtoMessage()    {}
 func (*C1RNIBUE) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{15}
+	return fileDescriptor_49d6c0a03a213d51, []int{27}
 }
 func (m *C1RNIBUE) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1417,7 +1849,7 @@ func (m *C1RNIBLinkID) Reset()         { *m = C1RNIBLinkID{} }
 func (m *C1RNIBLinkID) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBLinkID) ProtoMessage()    {}
 func (*C1RNIBLinkID) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{16}
+	return fileDescriptor_49d6c0a03a213d51, []int{28}
 }
 func (m *C1RNIBLinkID) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1473,7 +1905,7 @@ func (m *C1RadioRepPerServCellAttribute) Reset()         { *m = C1RadioRepPerSer
 func (m *C1RadioRepPerServCellAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1RadioRepPerServCellAttribute) ProtoMessage()    {}
 func (*C1RadioRepPerServCellAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{17}
+	return fileDescriptor_49d6c0a03a213d51, []int{29}
 }
 func (m *C1RadioRepPerServCellAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1545,7 +1977,7 @@ func (m *C1RadioMeasReportPerUeAttribute) Reset()         { *m = C1RadioMeasRepo
 func (m *C1RadioMeasReportPerUeAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1RadioMeasReportPerUeAttribute) ProtoMessage()    {}
 func (*C1RadioMeasReportPerUeAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{18}
+	return fileDescriptor_49d6c0a03a213d51, []int{30}
 }
 func (m *C1RadioMeasReportPerUeAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1591,7 +2023,7 @@ func (m *C1RNIBLink) Reset()         { *m = C1RNIBLink{} }
 func (m *C1RNIBLink) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBLink) ProtoMessage()    {}
 func (*C1RNIBLink) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{19}
+	return fileDescriptor_49d6c0a03a213d51, []int{31}
 }
 func (m *C1RNIBLink) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1645,7 +2077,7 @@ func (m *C1HandoverRequest) Reset()         { *m = C1HandoverRequest{} }
 func (m *C1HandoverRequest) String() string { return proto.CompactTextString(m) }
 func (*C1HandoverRequest) ProtoMessage()    {}
 func (*C1HandoverRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{20}
+	return fileDescriptor_49d6c0a03a213d51, []int{32}
 }
 func (m *C1HandoverRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1704,7 +2136,7 @@ func (m *C1RRMConfiguration) Reset()         { *m = C1RRMConfiguration{} }
 func (m *C1RRMConfiguration) String() string { return proto.CompactTextString(m) }
 func (*C1RRMConfiguration) ProtoMessage()    {}
 func (*C1RRMConfiguration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{21}
+	return fileDescriptor_49d6c0a03a213d51, []int{33}
 }
 func (m *C1RRMConfiguration) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1744,6 +2176,18 @@ func init() {
 	proto.RegisterEnum("interface.c1.C1MessageType", C1MessageType_name, C1MessageType_value)
 	proto.RegisterEnum("interface.c1.C1RNIBType", C1RNIBType_name, C1RNIBType_value)
 	proto.RegisterEnum("interface.c1.C1XICICPA", C1XICICPA_name, C1XICICPA_value)
+	proto.RegisterType((*StationListRequest)(nil), "interface.c1.StationListRequest")
+	proto.RegisterType((*StationInfo)(nil), "interface.c1.StationInfo")
+	proto.RegisterType((*UEListRequest)(nil), "interface.c1.UEListRequest")
+	proto.RegisterType((*UEInfo)(nil), "interface.c1.UEInfo")
+	proto.RegisterType((*StationLinkListRequest)(nil), "interface.c1.StationLinkListRequest")
+	proto.RegisterType((*StationLinkInfo)(nil), "interface.c1.StationLinkInfo")
+	proto.RegisterType((*UELinkListRequest)(nil), "interface.c1.UELinkListRequest")
+	proto.RegisterType((*UELinkInfo)(nil), "interface.c1.UELinkInfo")
+	proto.RegisterType((*HandOverRequest)(nil), "interface.c1.HandOverRequest")
+	proto.RegisterType((*HandOverResponse)(nil), "interface.c1.HandOverResponse")
+	proto.RegisterType((*RadioPowerRequest)(nil), "interface.c1.RadioPowerRequest")
+	proto.RegisterType((*RadioPowerResponse)(nil), "interface.c1.RadioPowerResponse")
 	proto.RegisterType((*C1RequestMessage)(nil), "interface.c1.C1RequestMessage")
 	proto.RegisterType((*C1ResponseMessage)(nil), "interface.c1.C1ResponseMessage")
 	proto.RegisterType((*C1RequestMessageHeader)(nil), "interface.c1.C1RequestMessageHeader")
@@ -1771,101 +2215,113 @@ func init() {
 func init() { proto.RegisterFile("api/nb/c1-interface.proto", fileDescriptor_49d6c0a03a213d51) }
 
 var fileDescriptor_49d6c0a03a213d51 = []byte{
-	// 1503 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x58, 0x4f, 0x6f, 0xdb, 0x46,
-	0x16, 0x17, 0x25, 0xeb, 0xdf, 0xb3, 0xe3, 0xd0, 0x13, 0xc7, 0x61, 0xbc, 0x81, 0x62, 0x70, 0xb3,
-	0xbb, 0x81, 0x91, 0xd8, 0x96, 0x9d, 0x4d, 0x90, 0xcd, 0x06, 0xbb, 0x92, 0xac, 0x58, 0x6a, 0x2c,
-	0x59, 0xa1, 0xc4, 0x36, 0x87, 0xa2, 0x02, 0x45, 0x8e, 0x6d, 0x22, 0x14, 0xc5, 0x0c, 0xa9, 0x20,
-	0x39, 0xf6, 0x1b, 0xb4, 0x40, 0x2f, 0x05, 0x7a, 0x6b, 0x3f, 0x41, 0x81, 0x7e, 0x87, 0x1c, 0x73,
-	0x6c, 0x6e, 0x45, 0xf2, 0x19, 0x7a, 0x2c, 0x50, 0xcc, 0x70, 0x28, 0x52, 0x14, 0x65, 0xd7, 0x45,
-	0x6f, 0x9a, 0xf7, 0x7e, 0xbf, 0x37, 0xbf, 0xf7, 0xde, 0xfc, 0xa3, 0xe0, 0xba, 0xe6, 0x98, 0xdb,
-	0xf6, 0x60, 0x5b, 0x2f, 0xdf, 0x35, 0x6d, 0x0f, 0x93, 0x63, 0x4d, 0xc7, 0x5b, 0x0e, 0x19, 0x79,
-	0x23, 0xb4, 0x14, 0x1a, 0xf4, 0xb2, 0xfc, 0xb5, 0x00, 0x62, 0xad, 0xac, 0xe0, 0x97, 0x63, 0xec,
-	0x7a, 0x2d, 0xec, 0xba, 0xda, 0x09, 0x46, 0xff, 0x85, 0xdc, 0x29, 0xd6, 0x0c, 0x4c, 0x24, 0x61,
-	0x43, 0xb8, 0xbd, 0xb8, 0x7b, 0x6b, 0x2b, 0xca, 0xd9, 0x8a, 0xe3, 0x1b, 0x0c, 0xab, 0x70, 0x0e,
-	0xfa, 0x1f, 0xe4, 0x1d, 0xed, 0x8d, 0x35, 0xd2, 0x0c, 0x29, 0xcd, 0xe8, 0xff, 0x38, 0x9b, 0xde,
-	0xf1, 0xc1, 0x4a, 0xc0, 0x92, 0xbf, 0x11, 0x60, 0x85, 0x82, 0x5c, 0x67, 0x64, 0xbb, 0x38, 0x10,
-	0xf5, 0x38, 0x26, 0x2a, 0x21, 0xea, 0x14, 0x21, 0xa6, 0xea, 0xff, 0x71, 0x55, 0xff, 0x3c, 0x87,
-	0x3f, 0x23, 0xab, 0x09, 0x6b, 0xc9, 0x99, 0xa3, 0x6d, 0x58, 0xf0, 0xde, 0x38, 0x98, 0x09, 0x5b,
-	0xde, 0xfd, 0x5b, 0x3c, 0x30, 0x07, 0xf7, 0xde, 0x38, 0x58, 0x61, 0x40, 0xf9, 0xdb, 0x34, 0x5c,
-	0x9b, 0x53, 0x06, 0xd4, 0x80, 0x15, 0xe2, 0x3b, 0xb0, 0xa1, 0xb4, 0x9b, 0xd5, 0x5e, 0x18, 0x59,
-	0x9a, 0x91, 0xcc, 0xfd, 0x8d, 0x94, 0x32, 0x4b, 0x42, 0x4f, 0xe1, 0xf2, 0xa9, 0x66, 0x1b, 0xa3,
-	0x57, 0x98, 0xf0, 0xa9, 0x78, 0xea, 0x37, 0xe3, 0x71, 0x1a, 0xd3, 0xb0, 0x46, 0x4a, 0x89, 0x33,
-	0xd1, 0xe7, 0x70, 0x8d, 0x90, 0x61, 0x6d, 0x64, 0x1f, 0x9b, 0x27, 0x63, 0xa2, 0x79, 0xe6, 0xc8,
-	0x0e, 0x82, 0x66, 0x58, 0xd0, 0x8d, 0x19, 0x71, 0x4a, 0x6b, 0x0a, 0xde, 0x48, 0x29, 0xf3, 0x42,
-	0x54, 0x8b, 0x90, 0xe7, 0xfa, 0xe5, 0x4f, 0xfc, 0xd2, 0x24, 0xf4, 0xf2, 0xe2, 0x75, 0xfe, 0x55,
-	0x00, 0x69, 0x5e, 0x63, 0xd1, 0x2d, 0x58, 0x22, 0xdc, 0x53, 0x1b, 0x19, 0x7e, 0xd4, 0x62, 0x23,
-	0xa5, 0x4c, 0x59, 0xd1, 0x43, 0x28, 0x92, 0x76, 0xb3, 0x5a, 0xc3, 0x96, 0xe5, 0xf2, 0xf2, 0x5d,
-	0x4f, 0x6a, 0x03, 0x03, 0x34, 0x52, 0x4a, 0x88, 0x46, 0x7b, 0x90, 0xa7, 0x03, 0xb5, 0xee, 0xf2,
-	0x12, 0x5d, 0x4b, 0x22, 0xaa, 0x75, 0x4a, 0x0b, 0x90, 0xc1, 0x7c, 0x87, 0xa6, 0xfd, 0xc2, 0x95,
-	0x16, 0xe6, 0xcf, 0xc7, 0x00, 0xc1, 0x7c, 0x6c, 0x50, 0x2d, 0x40, 0x8e, 0x60, 0x77, 0x6c, 0x79,
-	0x72, 0x1d, 0x16, 0x23, 0xaa, 0xd0, 0xfd, 0x68, 0x0e, 0xc2, 0x46, 0xe6, 0xf6, 0x62, 0xf2, 0x52,
-	0xa2, 0x80, 0x48, 0x02, 0xf2, 0x63, 0x28, 0x4e, 0x34, 0xa2, 0x9d, 0x30, 0x1b, 0x3f, 0xc4, 0x5a,
-	0x72, 0x36, 0x93, 0x54, 0x42, 0x15, 0x4c, 0x5e, 0xa0, 0xc2, 0xcf, 0xec, 0x0c, 0x15, 0x14, 0x10,
-	0x49, 0x4b, 0xbe, 0x07, 0xb9, 0x5a, 0xb9, 0x5e, 0x3b, 0x68, 0xa2, 0x35, 0xc8, 0x39, 0xd6, 0xd0,
-	0x6e, 0x1a, 0x7e, 0xaf, 0x14, 0x3e, 0x42, 0x08, 0x16, 0xb0, 0x6e, 0xfa, 0x1b, 0xbb, 0xa8, 0xb0,
-	0xdf, 0xf2, 0x23, 0x3a, 0x79, 0x4d, 0xb3, 0x8d, 0xae, 0x8e, 0x2d, 0x0b, 0x89, 0x90, 0x71, 0x74,
-	0x93, 0xf3, 0xe8, 0x4f, 0xb4, 0x0e, 0x05, 0xac, 0x91, 0x63, 0xdd, 0xde, 0xb7, 0x38, 0x71, 0x32,
-	0x96, 0xdf, 0x0b, 0x00, 0x61, 0x49, 0xd0, 0x6d, 0x1a, 0xff, 0xc4, 0xe4, 0x07, 0xcf, 0x6a, 0x5c,
-	0x34, 0xd5, 0xa6, 0x30, 0x04, 0x7a, 0x06, 0x2b, 0x74, 0xba, 0xa9, 0x35, 0xce, 0x57, 0xcd, 0xdf,
-	0xe3, 0xb4, 0xda, 0x04, 0x58, 0xf1, 0x3c, 0x62, 0x0e, 0xc6, 0x1e, 0x56, 0x66, 0xd9, 0xa8, 0x0d,
-	0x62, 0x7c, 0xd7, 0xf0, 0xe5, 0x24, 0xcf, 0xdd, 0x71, 0x61, 0xc0, 0x19, 0xae, 0xfc, 0x6e, 0x01,
-	0xae, 0x26, 0x4e, 0x7e, 0x81, 0x34, 0x79, 0x35, 0xd3, 0x61, 0x35, 0x1f, 0x02, 0xe8, 0x41, 0xb1,
-	0xe9, 0x72, 0xcf, 0x24, 0xad, 0xdb, 0x49, 0x3b, 0x94, 0x08, 0x78, 0xaa, 0x11, 0x0b, 0xd3, 0x8d,
-	0x08, 0x7d, 0xaa, 0x25, 0x65, 0xa3, 0x3e, 0xd5, 0x42, 0x1b, 0xb0, 0x48, 0x06, 0x6e, 0x07, 0x93,
-	0x9e, 0x67, 0xee, 0x5b, 0x52, 0x8e, 0xb9, 0xa3, 0xa6, 0x29, 0x84, 0x6a, 0x49, 0xf9, 0x18, 0x42,
-	0xb5, 0x90, 0x0c, 0x4b, 0xf6, 0x78, 0xd8, 0x7b, 0x5d, 0xb1, 0x3d, 0x6c, 0xdb, 0x9a, 0x54, 0x60,
-	0x90, 0x29, 0x1b, 0x2a, 0x01, 0x18, 0x63, 0xc7, 0xc2, 0xaf, 0x5b, 0xf4, 0x94, 0x28, 0x32, 0x44,
-	0xc4, 0x82, 0xb6, 0x00, 0x0d, 0xb5, 0xd7, 0xed, 0x31, 0xad, 0xb3, 0x8d, 0x75, 0x0f, 0x1b, 0x2a,
-	0x76, 0x25, 0x60, 0xb8, 0x04, 0x0f, 0xba, 0x0f, 0x6b, 0x31, 0x6b, 0x15, 0x6b, 0x04, 0x13, 0x57,
-	0x5a, 0x64, 0x9c, 0x39, 0xde, 0x90, 0xa7, 0x62, 0xb7, 0xab, 0x9f, 0x62, 0x63, 0x92, 0xfa, 0x52,
-	0x94, 0x17, 0xf7, 0xce, 0xe3, 0xa9, 0x96, 0x74, 0x69, 0x3e, 0x4f, 0xa5, 0xab, 0xfe, 0xb2, 0x61,
-	0x1d, 0xfb, 0xc6, 0xba, 0xad, 0x0d, 0x2c, 0x2c, 0x2d, 0x33, 0x42, 0xdc, 0x2c, 0xff, 0x87, 0xee,
-	0x96, 0x8e, 0x6e, 0x56, 0x68, 0x67, 0x2e, 0xb8, 0xd5, 0x7e, 0x4b, 0xc3, 0x6a, 0xd2, 0xca, 0x45,
-	0xab, 0x90, 0xd5, 0x89, 0xed, 0x99, 0xec, 0xa8, 0x28, 0x2a, 0xfe, 0x00, 0xdd, 0x83, 0x82, 0xc3,
-	0x27, 0xe2, 0xfb, 0x6a, 0xe6, 0x0c, 0x09, 0x84, 0x28, 0x13, 0x24, 0xfa, 0x17, 0xa4, 0x1d, 0x8d,
-	0xad, 0xca, 0xe5, 0xd9, 0x43, 0xf8, 0x79, 0xb3, 0xd6, 0xac, 0x75, 0x2a, 0x4a, 0xda, 0x61, 0xbd,
-	0x76, 0x3d, 0x8d, 0x78, 0x1d, 0x32, 0x60, 0xab, 0x91, 0xce, 0x1c, 0xb1, 0xb0, 0x4c, 0x6c, 0xc3,
-	0xf7, 0x66, 0x99, 0x77, 0x32, 0x46, 0x77, 0x60, 0xc5, 0x1d, 0x0f, 0x9e, 0x10, 0x6d, 0x88, 0xab,
-	0xa6, 0x37, 0xd4, 0xdc, 0x17, 0x6c, 0x55, 0x52, 0xd0, 0xac, 0x03, 0xdd, 0x80, 0xa2, 0xb3, 0xa3,
-	0xe2, 0xce, 0xd8, 0xd5, 0x4f, 0xa5, 0x3c, 0x43, 0x85, 0x86, 0xa8, 0x0e, 0xd5, 0x92, 0x0a, 0xd3,
-	0x3a, 0xd4, 0x88, 0x0e, 0xd5, 0x92, 0x8a, 0x51, 0x1d, 0x6a, 0x92, 0x0e, 0xd5, 0x92, 0x20, 0x51,
-	0x87, 0x6a, 0xc9, 0x3f, 0x08, 0x50, 0x08, 0x8e, 0x6e, 0x7a, 0x90, 0x9a, 0x43, 0x37, 0xe8, 0x1d,
-	0xfb, 0x1d, 0xf6, 0xc1, 0xef, 0x1c, 0xef, 0xc3, 0x26, 0x64, 0x5d, 0x7a, 0x86, 0xf0, 0xa3, 0x28,
-	0xf9, 0xb0, 0xf0, 0x21, 0x74, 0x1b, 0x0e, 0x87, 0x58, 0xc5, 0xdd, 0xb2, 0xe6, 0x34, 0x0d, 0xbe,
-	0xc7, 0xa3, 0x26, 0x8a, 0xc0, 0xf6, 0x60, 0x82, 0xf0, 0x77, 0x7a, 0xd4, 0x24, 0x1f, 0xc2, 0x52,
-	0x78, 0x3b, 0x34, 0xf7, 0x2f, 0x70, 0x56, 0x05, 0x39, 0xa5, 0xc3, 0x9c, 0xe4, 0xb7, 0x02, 0x94,
-	0x6a, 0x65, 0x45, 0x33, 0xcc, 0x91, 0x82, 0x9d, 0x0e, 0x26, 0x5d, 0x4c, 0x5e, 0x51, 0xad, 0x7f,
-	0xe6, 0x30, 0x94, 0x20, 0xaf, 0xbf, 0x34, 0x1b, 0x26, 0x7b, 0x5e, 0xd1, 0x2a, 0x07, 0x43, 0x7a,
-	0x5f, 0x11, 0xdf, 0x91, 0x61, 0x0e, 0x3e, 0x42, 0xb7, 0xe0, 0x92, 0x43, 0xdb, 0xdc, 0x35, 0x6d,
-	0xc2, 0xdc, 0xfe, 0x42, 0x9b, 0x36, 0xfa, 0x28, 0x3d, 0x82, 0xca, 0x06, 0xa8, 0x88, 0x51, 0xfe,
-	0x52, 0x80, 0x9b, 0x3c, 0x95, 0x16, 0xd6, 0x5c, 0x05, 0x3b, 0x23, 0xe2, 0x75, 0x30, 0x51, 0x71,
-	0x98, 0xcb, 0x17, 0x70, 0x85, 0xcc, 0xe6, 0xca, 0xef, 0xe0, 0x3b, 0x33, 0xb7, 0xc8, 0x19, 0x65,
-	0x51, 0x92, 0x02, 0xc9, 0xdf, 0x4f, 0xae, 0x4b, 0xda, 0x1d, 0xb4, 0x0b, 0x39, 0x8b, 0x76, 0xc9,
-	0xe0, 0xc5, 0x5b, 0x9f, 0x77, 0xcb, 0x37, 0xf7, 0x15, 0x8e, 0x44, 0x1a, 0xac, 0x92, 0x84, 0x1c,
-	0xf8, 0x1e, 0xbf, 0x9b, 0xa8, 0x71, 0x5e, 0xbe, 0x4a, 0x62, 0x28, 0xf9, 0x47, 0xf6, 0x59, 0x11,
-	0x7b, 0xea, 0xa2, 0x6d, 0xc8, 0x5a, 0xfc, 0x45, 0x72, 0xf6, 0x5b, 0x4b, 0xf1, 0x71, 0xe8, 0xdf,
-	0x50, 0x70, 0x89, 0xfe, 0xc7, 0xde, 0x83, 0xca, 0x04, 0x4a, 0x69, 0x86, 0xeb, 0xd5, 0xf8, 0xf5,
-	0x78, 0x1e, 0x2d, 0x80, 0xca, 0xcf, 0x00, 0xcd, 0xbe, 0xa4, 0xd1, 0x23, 0x58, 0xf4, 0x34, 0x72,
-	0x82, 0xbd, 0xe0, 0x49, 0x77, 0x4e, 0xbc, 0x28, 0x7a, 0xf3, 0x3b, 0x01, 0x2e, 0x4d, 0x3d, 0x96,
-	0xd1, 0x1a, 0x9d, 0xa4, 0xdf, 0xaa, 0x77, 0xbb, 0x95, 0x83, 0x7a, 0x5f, 0x6d, 0x3f, 0x6d, 0x1f,
-	0x7d, 0xd6, 0x16, 0x53, 0x68, 0x95, 0x7e, 0x1b, 0xf6, 0x0f, 0xea, 0xbd, 0x3e, 0x0b, 0x55, 0x3f,
-	0x3c, 0xec, 0x8a, 0x02, 0x42, 0xb0, 0x1c, 0xb1, 0xaa, 0xf5, 0xae, 0x98, 0x8e, 0x21, 0x0f, 0x9b,
-	0xed, 0xa7, 0x5d, 0x31, 0x83, 0xae, 0xd2, 0x82, 0xf7, 0x3b, 0x47, 0xdd, 0x5e, 0xbf, 0x51, 0x69,
-	0xef, 0x1f, 0x7d, 0x5a, 0x57, 0xba, 0xe2, 0x02, 0xba, 0x41, 0x1f, 0xe5, 0xbe, 0x59, 0x69, 0xb5,
-	0x6a, 0x47, 0xed, 0x27, 0xcd, 0x03, 0x55, 0xa9, 0xf4, 0x9a, 0x47, 0x6d, 0x31, 0xbb, 0xa9, 0x06,
-	0x6b, 0x89, 0x49, 0xbb, 0x02, 0x97, 0x6b, 0x65, 0x16, 0x34, 0xa2, 0x4b, 0xa4, 0x87, 0x81, 0x6f,
-	0xa4, 0xa2, 0x44, 0x01, 0x2d, 0x53, 0x12, 0x87, 0xd5, 0xc5, 0x74, 0x14, 0x41, 0xc5, 0x88, 0x99,
-	0xcd, 0xf7, 0x02, 0x7d, 0xcc, 0xf2, 0xb3, 0x1e, 0x5d, 0xa7, 0x6f, 0xa0, 0x3e, 0x1b, 0xf5, 0x3b,
-	0x95, 0xfe, 0x7e, 0xb5, 0xdf, 0x6a, 0xb6, 0xd5, 0xee, 0x7d, 0x31, 0x85, 0x4a, 0xb0, 0x9e, 0xe0,
-	0x7a, 0x7e, 0x6f, 0xff, 0xa8, 0xf7, 0xe0, 0x81, 0x28, 0xcc, 0xa3, 0xee, 0x89, 0xe9, 0x39, 0xd4,
-	0x6e, 0xd9, 0xa7, 0x66, 0x78, 0x95, 0xa2, 0xfe, 0x1d, 0x71, 0x21, 0xc1, 0x5a, 0x16, 0xb3, 0x09,
-	0xd6, 0x5d, 0x31, 0x97, 0x60, 0xdd, 0x13, 0xf3, 0xbb, 0x3f, 0x09, 0xb4, 0x81, 0xcd, 0xa0, 0xfb,
-	0x74, 0x5f, 0x9a, 0x3a, 0x46, 0x6d, 0xc8, 0x1f, 0x60, 0x8f, 0x16, 0x01, 0x95, 0xce, 0xfe, 0x04,
-	0x5f, 0xbf, 0x79, 0xce, 0xc7, 0xb0, 0x9c, 0xda, 0x11, 0xd0, 0x11, 0x14, 0x3a, 0x23, 0xf7, 0xaf,
-	0x0b, 0x58, 0x95, 0xde, 0x7e, 0x28, 0x09, 0xef, 0x3e, 0x94, 0x84, 0x5f, 0x3e, 0x94, 0x84, 0xaf,
-	0x3e, 0x96, 0x52, 0xef, 0x3e, 0x96, 0x52, 0x3f, 0x7f, 0x2c, 0xa5, 0x06, 0x39, 0xf6, 0x5f, 0xc5,
-	0xde, 0xef, 0x01, 0x00, 0x00, 0xff, 0xff, 0x93, 0x0c, 0x4e, 0x48, 0xc8, 0x10, 0x00, 0x00,
+	// 1681 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0xdd, 0x92, 0xdb, 0x48,
+	0x15, 0xb6, 0xec, 0x19, 0xff, 0x1c, 0xcf, 0x8f, 0xa6, 0xe3, 0x9d, 0x28, 0x66, 0x71, 0xa6, 0x44,
+	0x80, 0x54, 0x6a, 0x37, 0x89, 0x27, 0x21, 0x5b, 0xcb, 0xb2, 0x80, 0xed, 0xf1, 0xc6, 0xda, 0x8c,
+	0x3d, 0x5e, 0xc9, 0x82, 0xa5, 0x8a, 0xc2, 0x25, 0x4b, 0x3d, 0x13, 0xd5, 0xca, 0xb2, 0xb6, 0x25,
+	0x2f, 0xc9, 0x25, 0x6f, 0x00, 0x55, 0xdc, 0x50, 0xc5, 0x1d, 0x3c, 0x01, 0x4f, 0xb1, 0x97, 0xb9,
+	0x24, 0x77, 0x54, 0xf2, 0x02, 0xdc, 0x70, 0x49, 0x15, 0xd5, 0xad, 0x96, 0xf5, 0x63, 0x29, 0x21,
+	0x7b, 0xa7, 0x3e, 0xe7, 0x3b, 0xa7, 0xbf, 0xf3, 0xd3, 0xad, 0xee, 0x86, 0x1b, 0x86, 0x67, 0xdf,
+	0x73, 0x17, 0xf7, 0xcc, 0xee, 0x87, 0xb6, 0x1b, 0x60, 0x72, 0x69, 0x98, 0xf8, 0xae, 0x47, 0x56,
+	0xc1, 0x0a, 0xed, 0xc5, 0x02, 0xb3, 0x2b, 0xb7, 0x00, 0x69, 0x81, 0x11, 0xd8, 0x2b, 0xf7, 0xdc,
+	0xf6, 0x03, 0x15, 0x7f, 0xbd, 0xc6, 0x7e, 0x20, 0xef, 0x43, 0x93, 0x4b, 0x15, 0xf7, 0x72, 0x25,
+	0x1f, 0xc2, 0xbe, 0x3e, 0x4c, 0xea, 0xeb, 0x50, 0xd5, 0x87, 0x4c, 0x25, 0xc1, 0xf1, 0xc6, 0xde,
+	0xfd, 0x2a, 0x89, 0x39, 0x82, 0xc3, 0x84, 0x86, 0x81, 0xaf, 0xc1, 0x11, 0xf5, 0x93, 0xc6, 0xed,
+	0x01, 0x84, 0x42, 0x06, 0x39, 0x82, 0xc3, 0x91, 0xe1, 0x5a, 0x17, 0xdf, 0x60, 0x12, 0x01, 0x10,
+	0x88, 0xb1, 0xc8, 0xf7, 0x56, 0xae, 0x8f, 0xa9, 0x27, 0xd5, 0xb0, 0xec, 0xd5, 0x74, 0xf5, 0xfb,
+	0x18, 0xd8, 0x02, 0x94, 0x14, 0x72, 0xe8, 0x9f, 0x04, 0x10, 0x07, 0x5d, 0x8e, 0x19, 0x63, 0xdf,
+	0x37, 0xae, 0x30, 0xfa, 0x19, 0x54, 0x9f, 0x62, 0xc3, 0xc2, 0x44, 0x12, 0x4e, 0x84, 0xdb, 0xcd,
+	0xd3, 0x5b, 0x77, 0x93, 0x59, 0xb9, 0x9b, 0xc5, 0x8f, 0x18, 0x56, 0xe5, 0x36, 0xe8, 0x17, 0x50,
+	0xf3, 0x8c, 0xe7, 0xce, 0xca, 0xb0, 0xa4, 0x32, 0x33, 0xff, 0xe1, 0x9b, 0xcd, 0xa7, 0x21, 0x58,
+	0x8d, 0xac, 0xe4, 0x3f, 0x0b, 0x70, 0x44, 0x41, 0x21, 0xc5, 0x88, 0xd4, 0xa7, 0x19, 0x52, 0x39,
+	0x5e, 0x53, 0x06, 0x19, 0x56, 0xbf, 0xcc, 0xb2, 0xfa, 0xd1, 0x5b, 0xec, 0xb7, 0x68, 0x29, 0x70,
+	0x9c, 0x1f, 0x39, 0xba, 0x07, 0x3b, 0xc1, 0x73, 0x0f, 0x33, 0x62, 0x07, 0xa7, 0xdf, 0xcb, 0x3a,
+	0xe6, 0xe0, 0xd9, 0x73, 0x0f, 0xab, 0x0c, 0x28, 0xff, 0xa5, 0x0c, 0xd7, 0x0b, 0xd2, 0x80, 0x46,
+	0x70, 0x44, 0x42, 0x05, 0xb6, 0xd4, 0x89, 0xd2, 0x9f, 0xc5, 0x9e, 0xa5, 0x2d, 0xca, 0x5c, 0x3f,
+	0x2a, 0xa9, 0xdb, 0x46, 0xe8, 0x09, 0x1c, 0x3e, 0x35, 0x5c, 0x6b, 0x15, 0x77, 0x0b, 0x0f, 0xfd,
+	0x66, 0xd6, 0xcf, 0x28, 0x0d, 0x1b, 0x95, 0xd4, 0xac, 0x25, 0xfa, 0x2d, 0x5c, 0x27, 0x64, 0x39,
+	0x58, 0xb9, 0x97, 0xf6, 0xd5, 0x9a, 0xb0, 0xce, 0x8d, 0x9c, 0x56, 0x98, 0xd3, 0x93, 0x2d, 0x72,
+	0xea, 0x38, 0x05, 0x1f, 0x95, 0xd4, 0x22, 0x17, 0xfd, 0x06, 0xd4, 0x38, 0x7f, 0xf9, 0xf3, 0x30,
+	0x35, 0x39, 0xb5, 0x7c, 0xf7, 0x3c, 0xff, 0x47, 0x00, 0xa9, 0xa8, 0xb0, 0xe8, 0x16, 0xec, 0x11,
+	0xae, 0x19, 0xac, 0xac, 0xd0, 0x6b, 0x63, 0x54, 0x52, 0x53, 0x52, 0xf4, 0x31, 0x34, 0xc8, 0x44,
+	0xe9, 0x0f, 0xb0, 0xe3, 0xf8, 0x3c, 0x7d, 0x37, 0xf2, 0xca, 0xc0, 0x00, 0xa3, 0x92, 0x1a, 0xa3,
+	0xd1, 0x03, 0xa8, 0xd1, 0x81, 0x3e, 0xf4, 0x79, 0x8a, 0xae, 0xe7, 0x19, 0xea, 0x43, 0x6a, 0x16,
+	0x21, 0xa3, 0xf9, 0xe8, 0x92, 0xf7, 0xa5, 0x9d, 0xe2, 0xf9, 0x18, 0x20, 0x9a, 0x8f, 0x0d, 0xfa,
+	0x75, 0xa8, 0x12, 0xec, 0xaf, 0x9d, 0x40, 0x1e, 0x42, 0x33, 0xc1, 0x0a, 0x3d, 0x4a, 0xc6, 0x20,
+	0x9c, 0x54, 0x6e, 0x37, 0xf3, 0x5b, 0x89, 0x02, 0x12, 0x01, 0xc8, 0x9f, 0x42, 0x63, 0xc3, 0x11,
+	0xdd, 0x8f, 0xa3, 0x09, 0x5d, 0x1c, 0xe7, 0x47, 0xb3, 0x09, 0x25, 0x66, 0xc1, 0xe8, 0x45, 0x2c,
+	0xc2, 0xc8, 0xde, 0xc0, 0x82, 0x02, 0x12, 0x61, 0xc9, 0x0f, 0xa1, 0x3a, 0xe8, 0x0e, 0x07, 0x8f,
+	0x15, 0x74, 0x0c, 0x55, 0xcf, 0x59, 0xba, 0x8a, 0x15, 0xd6, 0x4a, 0xe5, 0x23, 0x84, 0x60, 0x07,
+	0x9b, 0x76, 0xb8, 0xb0, 0x1b, 0x2a, 0xfb, 0x96, 0x3f, 0xa1, 0x93, 0x0f, 0x0c, 0xd7, 0xd2, 0x4c,
+	0xec, 0x38, 0x48, 0x84, 0x8a, 0x67, 0xda, 0xdc, 0x8e, 0x7e, 0xa2, 0x36, 0xd4, 0xb1, 0x41, 0x2e,
+	0x4d, 0xf7, 0xcc, 0xe1, 0x86, 0x9b, 0xb1, 0xfc, 0x52, 0x00, 0x88, 0x53, 0x82, 0x6e, 0x53, 0xff,
+	0x57, 0x36, 0xdf, 0x78, 0x5a, 0x59, 0xd2, 0x94, 0x9b, 0xca, 0x10, 0xe8, 0x0b, 0x38, 0xa2, 0xd3,
+	0xa5, 0x7a, 0x9c, 0x77, 0xcd, 0x0f, 0xb2, 0x66, 0x83, 0x0d, 0xb0, 0x17, 0x04, 0xc4, 0x5e, 0xac,
+	0x03, 0xac, 0x6e, 0x5b, 0xa3, 0x09, 0x88, 0xd9, 0x55, 0xc3, 0xdb, 0x49, 0x2e, 0x5c, 0x71, 0xb1,
+	0xc3, 0x2d, 0x5b, 0xf9, 0xc5, 0x0e, 0xbc, 0x97, 0x3b, 0xf9, 0x3b, 0x84, 0xc9, 0xb3, 0x59, 0x8e,
+	0xb3, 0xf9, 0x31, 0x80, 0x19, 0x25, 0x9b, 0xb6, 0x7b, 0x25, 0xaf, 0x6f, 0x37, 0xe5, 0x50, 0x13,
+	0xe0, 0x54, 0x21, 0x76, 0xd2, 0x85, 0x88, 0x75, 0xba, 0x23, 0xed, 0x26, 0x75, 0xba, 0x83, 0x4e,
+	0xa0, 0x49, 0x16, 0xfe, 0x14, 0x93, 0x59, 0x60, 0x9f, 0x39, 0x52, 0x95, 0xa9, 0x93, 0xa2, 0x14,
+	0x42, 0x77, 0xa4, 0x5a, 0x06, 0xa1, 0x3b, 0x48, 0x86, 0x3d, 0x77, 0xbd, 0x9c, 0x3d, 0xeb, 0xb9,
+	0x01, 0x76, 0x5d, 0x43, 0xaa, 0x33, 0x48, 0x4a, 0x86, 0x3a, 0x00, 0xd6, 0xda, 0x73, 0xf0, 0xb3,
+	0x31, 0xdd, 0x25, 0x1a, 0x0c, 0x91, 0x90, 0xa0, 0xbb, 0x80, 0x96, 0xc6, 0xb3, 0xc9, 0x9a, 0xe6,
+	0xd9, 0xc5, 0x66, 0x80, 0x2d, 0x1d, 0xfb, 0x12, 0x30, 0x5c, 0x8e, 0x06, 0x3d, 0x82, 0xe3, 0x8c,
+	0xb4, 0x8f, 0x0d, 0x82, 0x89, 0x2f, 0x35, 0x99, 0x4d, 0x81, 0x36, 0xb6, 0xd3, 0xb1, 0xaf, 0x99,
+	0x4f, 0xb1, 0xb5, 0x09, 0x7d, 0x2f, 0x69, 0x97, 0xd5, 0x16, 0xd9, 0xe9, 0x8e, 0xb4, 0x5f, 0x6c,
+	0xa7, 0xd3, 0xae, 0x3f, 0xb4, 0x9c, 0xcb, 0x50, 0x38, 0x74, 0x8d, 0x85, 0x83, 0xa5, 0x03, 0x66,
+	0x90, 0x15, 0xcb, 0x3f, 0xa5, 0xab, 0x65, 0x6a, 0xda, 0x3d, 0x5a, 0x99, 0x77, 0x5c, 0x6a, 0xff,
+	0x2d, 0x43, 0x2b, 0xaf, 0x73, 0x51, 0x0b, 0x76, 0x4d, 0xe2, 0x06, 0x36, 0xdb, 0x2a, 0x1a, 0x6a,
+	0x38, 0x40, 0x0f, 0xa1, 0xee, 0xf1, 0x89, 0xf8, 0xba, 0xda, 0xda, 0x43, 0x22, 0x22, 0xea, 0x06,
+	0x89, 0x7e, 0x0c, 0x65, 0xcf, 0x60, 0x5d, 0x79, 0xb0, 0xbd, 0x09, 0x7f, 0xa9, 0x0c, 0x94, 0xc1,
+	0xb4, 0xa7, 0x96, 0x3d, 0x56, 0x6b, 0x3f, 0x30, 0x48, 0x30, 0x25, 0x0b, 0xd6, 0x8d, 0x74, 0xe6,
+	0x84, 0x84, 0x45, 0xe2, 0x5a, 0xa1, 0x76, 0x97, 0x69, 0x37, 0x63, 0xf4, 0x01, 0x1c, 0xf9, 0xeb,
+	0xc5, 0x67, 0xc4, 0x58, 0xe2, 0xbe, 0x1d, 0x2c, 0x0d, 0xff, 0x2b, 0xd6, 0x95, 0x14, 0xb4, 0xad,
+	0x40, 0xef, 0x43, 0xc3, 0xbb, 0xaf, 0xe3, 0xe9, 0xda, 0x37, 0x9f, 0x4a, 0x35, 0x86, 0x8a, 0x05,
+	0x49, 0x1e, 0xba, 0x23, 0xd5, 0xd3, 0x3c, 0xf4, 0x04, 0x0f, 0xdd, 0x91, 0x1a, 0x49, 0x1e, 0x7a,
+	0x1e, 0x0f, 0xdd, 0x91, 0x20, 0x97, 0x87, 0xee, 0xc8, 0x7f, 0x17, 0xa0, 0x1e, 0x6d, 0xdd, 0x74,
+	0x23, 0xb5, 0x97, 0x7e, 0x54, 0x3b, 0xf6, 0x1d, 0xd7, 0x21, 0xac, 0x1c, 0xaf, 0xc3, 0x1d, 0xd8,
+	0xf5, 0xe9, 0x1e, 0xc2, 0xb7, 0xa2, 0xfc, 0xcd, 0x22, 0x84, 0xd0, 0x65, 0xb8, 0x5c, 0x62, 0x1d,
+	0x6b, 0x5d, 0xc3, 0x53, 0x2c, 0xbe, 0xc6, 0x93, 0x22, 0x8a, 0xc0, 0xee, 0x62, 0x83, 0x08, 0x57,
+	0x7a, 0x52, 0x24, 0x9f, 0xc3, 0x5e, 0xfc, 0x77, 0x50, 0xce, 0xde, 0x61, 0xaf, 0x8a, 0x62, 0x2a,
+	0xc7, 0x31, 0xc9, 0xdf, 0x0a, 0xd0, 0x19, 0x74, 0xd9, 0x71, 0x58, 0xc5, 0xde, 0x14, 0x13, 0x0d,
+	0x93, 0x6f, 0x28, 0xd7, 0xef, 0xb2, 0x19, 0x4a, 0x50, 0x33, 0xbf, 0xb6, 0x47, 0x36, 0x3b, 0x5e,
+	0xd1, 0x2c, 0x47, 0x43, 0xfa, 0xbf, 0x22, 0xa1, 0xa2, 0xc2, 0x14, 0x7c, 0x84, 0x6e, 0xc1, 0xbe,
+	0x47, 0xcb, 0xac, 0xd9, 0x2e, 0x61, 0xea, 0xb0, 0xd1, 0xd2, 0xc2, 0x10, 0x65, 0x26, 0x50, 0xbb,
+	0x11, 0x2a, 0x21, 0x94, 0xff, 0x20, 0xc0, 0x4d, 0x1e, 0xca, 0x18, 0x1b, 0xbe, 0x8a, 0xbd, 0x15,
+	0x09, 0xa6, 0x98, 0xe8, 0x38, 0x8e, 0xe5, 0x77, 0x70, 0x8d, 0x6c, 0xc7, 0xca, 0xff, 0xc1, 0x1f,
+	0x6c, 0xfd, 0x45, 0xde, 0x90, 0x16, 0x35, 0xcf, 0x91, 0xfc, 0xb7, 0xcd, 0xef, 0x92, 0x56, 0x07,
+	0x9d, 0x42, 0xd5, 0xa1, 0x55, 0xb2, 0x78, 0xf2, 0xda, 0x45, 0x7f, 0x79, 0xe5, 0x4c, 0xe5, 0x48,
+	0x64, 0x40, 0x8b, 0xe4, 0xc4, 0xc0, 0xd7, 0xf8, 0x87, 0xb9, 0x1c, 0x8b, 0xe2, 0x55, 0x73, 0x5d,
+	0xc9, 0xff, 0x60, 0xd7, 0x8a, 0xcc, 0x51, 0x17, 0xdd, 0x83, 0x5d, 0x87, 0x9f, 0x48, 0xde, 0x7c,
+	0xd6, 0x52, 0x43, 0x1c, 0xfa, 0x09, 0xd4, 0x7d, 0x62, 0xfe, 0x7f, 0xe7, 0x41, 0x75, 0x03, 0xa5,
+	0x66, 0x96, 0x1f, 0x0c, 0xf8, 0xef, 0xf1, 0x6d, 0x66, 0x11, 0x54, 0xfe, 0x02, 0xd0, 0xf6, 0x49,
+	0x1a, 0x7d, 0x02, 0xcd, 0xc0, 0x20, 0x57, 0x38, 0x88, 0x8e, 0x74, 0x6f, 0xf1, 0x97, 0x44, 0xdf,
+	0xf9, 0xab, 0x00, 0xfb, 0xa9, 0xc3, 0x32, 0x3a, 0xa6, 0x93, 0xcc, 0xc7, 0x43, 0x4d, 0xeb, 0x3d,
+	0x1e, 0xce, 0xf5, 0xc9, 0x93, 0xc9, 0xc5, 0xaf, 0x27, 0x62, 0x09, 0xb5, 0xe8, 0xdd, 0x70, 0xfe,
+	0x78, 0x38, 0x9b, 0x33, 0x57, 0xc3, 0xf3, 0x73, 0x4d, 0x14, 0x10, 0x82, 0x83, 0x84, 0x54, 0x1f,
+	0x6a, 0x62, 0x39, 0x83, 0x3c, 0x57, 0x26, 0x4f, 0x34, 0xb1, 0x82, 0xde, 0xa3, 0x09, 0x9f, 0x4f,
+	0x2f, 0xb4, 0xd9, 0x7c, 0xd4, 0x9b, 0x9c, 0x5d, 0xfc, 0x6a, 0xa8, 0x6a, 0xe2, 0x0e, 0x7a, 0x9f,
+	0x1e, 0xca, 0x43, 0xb1, 0x3a, 0x1e, 0x0f, 0x2e, 0x26, 0x9f, 0x29, 0x8f, 0x75, 0xb5, 0x37, 0x53,
+	0x2e, 0x26, 0xe2, 0xee, 0x1d, 0x3d, 0xea, 0x25, 0x46, 0xed, 0x1a, 0x1c, 0x0e, 0xba, 0xcc, 0x69,
+	0x82, 0x97, 0x48, 0x37, 0x83, 0x50, 0x48, 0x49, 0x89, 0x02, 0x3a, 0xa0, 0x46, 0x1c, 0x36, 0x14,
+	0xcb, 0x49, 0x04, 0x25, 0x23, 0x56, 0xee, 0xbc, 0x14, 0xe8, 0x61, 0x96, 0xef, 0xf5, 0xe8, 0x06,
+	0x3d, 0x03, 0xcd, 0xd9, 0x68, 0x3e, 0xed, 0xcd, 0xcf, 0xfa, 0xf3, 0xb1, 0x32, 0xd1, 0xb5, 0x47,
+	0x62, 0x09, 0x75, 0xa0, 0x9d, 0xa3, 0xfa, 0xf2, 0xe1, 0xd9, 0xc5, 0xec, 0xa3, 0x8f, 0x44, 0xa1,
+	0xc8, 0xf4, 0x81, 0x58, 0x2e, 0x30, 0xd5, 0xba, 0xa1, 0x69, 0x85, 0x67, 0x29, 0xa9, 0xbf, 0x2f,
+	0xee, 0xe4, 0x48, 0xbb, 0xe2, 0x6e, 0x8e, 0xf4, 0x54, 0xac, 0xe6, 0x48, 0x1f, 0x88, 0xb5, 0xd3,
+	0x7f, 0x57, 0x68, 0x01, 0x95, 0xa8, 0xfa, 0x74, 0x5d, 0xda, 0x26, 0x46, 0x63, 0xd8, 0x3b, 0xb7,
+	0xfd, 0x80, 0xbf, 0x33, 0xf8, 0x28, 0x73, 0x43, 0xdb, 0x7e, 0xd9, 0x68, 0xdf, 0xc8, 0x45, 0x28,
+	0xee, 0xe5, 0xea, 0xbe, 0x80, 0x7e, 0x0e, 0x35, 0x8a, 0xa5, 0x77, 0x81, 0xcc, 0xd5, 0x2b, 0xf5,
+	0xfc, 0xd1, 0x6e, 0x65, 0x95, 0xdc, 0xfe, 0x37, 0x20, 0x26, 0xe8, 0x84, 0x77, 0x82, 0x5b, 0x05,
+	0x94, 0x52, 0x8f, 0x20, 0xed, 0xef, 0x17, 0xa2, 0xb8, 0xeb, 0xcf, 0xa1, 0x19, 0x52, 0x0b, 0xbd,
+	0xde, 0xdc, 0xa6, 0x97, 0x76, 0x28, 0xe5, 0x01, 0xb8, 0xaf, 0x29, 0x1c, 0xce, 0x88, 0x7d, 0x75,
+	0x85, 0x49, 0xf4, 0xae, 0x82, 0x32, 0xf3, 0x67, 0x9e, 0x60, 0xda, 0x9d, 0x22, 0x75, 0x78, 0x8d,
+	0x44, 0x2a, 0xec, 0x6b, 0x38, 0x88, 0x1f, 0x5f, 0xb2, 0xfc, 0xb6, 0xde, 0x6a, 0xda, 0x27, 0xc5,
+	0x80, 0xd0, 0x67, 0x5f, 0xfa, 0xf6, 0x55, 0x47, 0x78, 0xf1, 0xaa, 0x23, 0xfc, 0xeb, 0x55, 0x47,
+	0xf8, 0xe3, 0xeb, 0x4e, 0xe9, 0xc5, 0xeb, 0x4e, 0xe9, 0x9f, 0xaf, 0x3b, 0xa5, 0x45, 0x95, 0x3d,
+	0x64, 0x3d, 0xf8, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x6e, 0x6d, 0x35, 0x8d, 0xe5, 0x12, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1880,8 +2336,18 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type C1InterfaceServiceClient interface {
-	GetRNIB(ctx context.Context, in *C1RequestMessage, opts ...grpc.CallOption) (C1InterfaceService_GetRNIBClient, error)
-	PostRNIB(ctx context.Context, in *C1RequestMessage, opts ...grpc.CallOption) (C1InterfaceService_PostRNIBClient, error)
+	// ListStations returns a stream of base station records.
+	ListStations(ctx context.Context, in *StationListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListStationsClient, error)
+	// ListUEs returns a stream of UE records.
+	ListUEs(ctx context.Context, in *UEListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListUEsClient, error)
+	// ListStationLinks returns a stream of links between neighboring base stations.
+	ListStationLinks(ctx context.Context, in *StationLinkListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListStationLinksClient, error)
+	// ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
+	ListUELinks(ctx context.Context, in *UELinkListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListUELinksClient, error)
+	// TriggerHandOver returns a hand-over response indicating success or failure.
+	TriggerHandOver(ctx context.Context, in *HandOverRequest, opts ...grpc.CallOption) (*HandOverResponse, error)
+	// SetRadioPower returns a response indicating success or failure.
+	SetRadioPower(ctx context.Context, in *RadioPowerRequest, opts ...grpc.CallOption) (*RadioPowerResponse, error)
 }
 
 type c1InterfaceServiceClient struct {
@@ -1892,12 +2358,12 @@ func NewC1InterfaceServiceClient(cc *grpc.ClientConn) C1InterfaceServiceClient {
 	return &c1InterfaceServiceClient{cc}
 }
 
-func (c *c1InterfaceServiceClient) GetRNIB(ctx context.Context, in *C1RequestMessage, opts ...grpc.CallOption) (C1InterfaceService_GetRNIBClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_C1InterfaceService_serviceDesc.Streams[0], "/interface.c1.C1InterfaceService/GetRNIB", opts...)
+func (c *c1InterfaceServiceClient) ListStations(ctx context.Context, in *StationListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListStationsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_C1InterfaceService_serviceDesc.Streams[0], "/interface.c1.C1InterfaceService/ListStations", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &c1InterfaceServiceGetRNIBClient{stream}
+	x := &c1InterfaceServiceListStationsClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -1907,29 +2373,29 @@ func (c *c1InterfaceServiceClient) GetRNIB(ctx context.Context, in *C1RequestMes
 	return x, nil
 }
 
-type C1InterfaceService_GetRNIBClient interface {
-	Recv() (*C1ResponseMessage, error)
+type C1InterfaceService_ListStationsClient interface {
+	Recv() (*StationInfo, error)
 	grpc.ClientStream
 }
 
-type c1InterfaceServiceGetRNIBClient struct {
+type c1InterfaceServiceListStationsClient struct {
 	grpc.ClientStream
 }
 
-func (x *c1InterfaceServiceGetRNIBClient) Recv() (*C1ResponseMessage, error) {
-	m := new(C1ResponseMessage)
+func (x *c1InterfaceServiceListStationsClient) Recv() (*StationInfo, error) {
+	m := new(StationInfo)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *c1InterfaceServiceClient) PostRNIB(ctx context.Context, in *C1RequestMessage, opts ...grpc.CallOption) (C1InterfaceService_PostRNIBClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_C1InterfaceService_serviceDesc.Streams[1], "/interface.c1.C1InterfaceService/PostRNIB", opts...)
+func (c *c1InterfaceServiceClient) ListUEs(ctx context.Context, in *UEListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListUEsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_C1InterfaceService_serviceDesc.Streams[1], "/interface.c1.C1InterfaceService/ListUEs", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &c1InterfaceServicePostRNIBClient{stream}
+	x := &c1InterfaceServiceListUEsClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -1939,103 +2405,580 @@ func (c *c1InterfaceServiceClient) PostRNIB(ctx context.Context, in *C1RequestMe
 	return x, nil
 }
 
-type C1InterfaceService_PostRNIBClient interface {
-	Recv() (*C1ResponseMessage, error)
+type C1InterfaceService_ListUEsClient interface {
+	Recv() (*UEInfo, error)
 	grpc.ClientStream
 }
 
-type c1InterfaceServicePostRNIBClient struct {
+type c1InterfaceServiceListUEsClient struct {
 	grpc.ClientStream
 }
 
-func (x *c1InterfaceServicePostRNIBClient) Recv() (*C1ResponseMessage, error) {
-	m := new(C1ResponseMessage)
+func (x *c1InterfaceServiceListUEsClient) Recv() (*UEInfo, error) {
+	m := new(UEInfo)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *c1InterfaceServiceClient) ListStationLinks(ctx context.Context, in *StationLinkListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListStationLinksClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_C1InterfaceService_serviceDesc.Streams[2], "/interface.c1.C1InterfaceService/ListStationLinks", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &c1InterfaceServiceListStationLinksClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type C1InterfaceService_ListStationLinksClient interface {
+	Recv() (*StationLinkInfo, error)
+	grpc.ClientStream
+}
+
+type c1InterfaceServiceListStationLinksClient struct {
+	grpc.ClientStream
+}
+
+func (x *c1InterfaceServiceListStationLinksClient) Recv() (*StationLinkInfo, error) {
+	m := new(StationLinkInfo)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *c1InterfaceServiceClient) ListUELinks(ctx context.Context, in *UELinkListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListUELinksClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_C1InterfaceService_serviceDesc.Streams[3], "/interface.c1.C1InterfaceService/ListUELinks", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &c1InterfaceServiceListUELinksClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type C1InterfaceService_ListUELinksClient interface {
+	Recv() (*UELinkInfo, error)
+	grpc.ClientStream
+}
+
+type c1InterfaceServiceListUELinksClient struct {
+	grpc.ClientStream
+}
+
+func (x *c1InterfaceServiceListUELinksClient) Recv() (*UELinkInfo, error) {
+	m := new(UELinkInfo)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *c1InterfaceServiceClient) TriggerHandOver(ctx context.Context, in *HandOverRequest, opts ...grpc.CallOption) (*HandOverResponse, error) {
+	out := new(HandOverResponse)
+	err := c.cc.Invoke(ctx, "/interface.c1.C1InterfaceService/TriggerHandOver", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *c1InterfaceServiceClient) SetRadioPower(ctx context.Context, in *RadioPowerRequest, opts ...grpc.CallOption) (*RadioPowerResponse, error) {
+	out := new(RadioPowerResponse)
+	err := c.cc.Invoke(ctx, "/interface.c1.C1InterfaceService/SetRadioPower", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // C1InterfaceServiceServer is the server API for C1InterfaceService service.
 type C1InterfaceServiceServer interface {
-	GetRNIB(*C1RequestMessage, C1InterfaceService_GetRNIBServer) error
-	PostRNIB(*C1RequestMessage, C1InterfaceService_PostRNIBServer) error
+	// ListStations returns a stream of base station records.
+	ListStations(*StationListRequest, C1InterfaceService_ListStationsServer) error
+	// ListUEs returns a stream of UE records.
+	ListUEs(*UEListRequest, C1InterfaceService_ListUEsServer) error
+	// ListStationLinks returns a stream of links between neighboring base stations.
+	ListStationLinks(*StationLinkListRequest, C1InterfaceService_ListStationLinksServer) error
+	// ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
+	ListUELinks(*UELinkListRequest, C1InterfaceService_ListUELinksServer) error
+	// TriggerHandOver returns a hand-over response indicating success or failure.
+	TriggerHandOver(context.Context, *HandOverRequest) (*HandOverResponse, error)
+	// SetRadioPower returns a response indicating success or failure.
+	SetRadioPower(context.Context, *RadioPowerRequest) (*RadioPowerResponse, error)
 }
 
 // UnimplementedC1InterfaceServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedC1InterfaceServiceServer struct {
 }
 
-func (*UnimplementedC1InterfaceServiceServer) GetRNIB(req *C1RequestMessage, srv C1InterfaceService_GetRNIBServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetRNIB not implemented")
+func (*UnimplementedC1InterfaceServiceServer) ListStations(req *StationListRequest, srv C1InterfaceService_ListStationsServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListStations not implemented")
 }
-func (*UnimplementedC1InterfaceServiceServer) PostRNIB(req *C1RequestMessage, srv C1InterfaceService_PostRNIBServer) error {
-	return status.Errorf(codes.Unimplemented, "method PostRNIB not implemented")
+func (*UnimplementedC1InterfaceServiceServer) ListUEs(req *UEListRequest, srv C1InterfaceService_ListUEsServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListUEs not implemented")
+}
+func (*UnimplementedC1InterfaceServiceServer) ListStationLinks(req *StationLinkListRequest, srv C1InterfaceService_ListStationLinksServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListStationLinks not implemented")
+}
+func (*UnimplementedC1InterfaceServiceServer) ListUELinks(req *UELinkListRequest, srv C1InterfaceService_ListUELinksServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListUELinks not implemented")
+}
+func (*UnimplementedC1InterfaceServiceServer) TriggerHandOver(ctx context.Context, req *HandOverRequest) (*HandOverResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerHandOver not implemented")
+}
+func (*UnimplementedC1InterfaceServiceServer) SetRadioPower(ctx context.Context, req *RadioPowerRequest) (*RadioPowerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetRadioPower not implemented")
 }
 
 func RegisterC1InterfaceServiceServer(s *grpc.Server, srv C1InterfaceServiceServer) {
 	s.RegisterService(&_C1InterfaceService_serviceDesc, srv)
 }
 
-func _C1InterfaceService_GetRNIB_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(C1RequestMessage)
+func _C1InterfaceService_ListStations_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StationListRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(C1InterfaceServiceServer).GetRNIB(m, &c1InterfaceServiceGetRNIBServer{stream})
+	return srv.(C1InterfaceServiceServer).ListStations(m, &c1InterfaceServiceListStationsServer{stream})
 }
 
-type C1InterfaceService_GetRNIBServer interface {
-	Send(*C1ResponseMessage) error
+type C1InterfaceService_ListStationsServer interface {
+	Send(*StationInfo) error
 	grpc.ServerStream
 }
 
-type c1InterfaceServiceGetRNIBServer struct {
+type c1InterfaceServiceListStationsServer struct {
 	grpc.ServerStream
 }
 
-func (x *c1InterfaceServiceGetRNIBServer) Send(m *C1ResponseMessage) error {
+func (x *c1InterfaceServiceListStationsServer) Send(m *StationInfo) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _C1InterfaceService_PostRNIB_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(C1RequestMessage)
+func _C1InterfaceService_ListUEs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(UEListRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(C1InterfaceServiceServer).PostRNIB(m, &c1InterfaceServicePostRNIBServer{stream})
+	return srv.(C1InterfaceServiceServer).ListUEs(m, &c1InterfaceServiceListUEsServer{stream})
 }
 
-type C1InterfaceService_PostRNIBServer interface {
-	Send(*C1ResponseMessage) error
+type C1InterfaceService_ListUEsServer interface {
+	Send(*UEInfo) error
 	grpc.ServerStream
 }
 
-type c1InterfaceServicePostRNIBServer struct {
+type c1InterfaceServiceListUEsServer struct {
 	grpc.ServerStream
 }
 
-func (x *c1InterfaceServicePostRNIBServer) Send(m *C1ResponseMessage) error {
+func (x *c1InterfaceServiceListUEsServer) Send(m *UEInfo) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func _C1InterfaceService_ListStationLinks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StationLinkListRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(C1InterfaceServiceServer).ListStationLinks(m, &c1InterfaceServiceListStationLinksServer{stream})
+}
+
+type C1InterfaceService_ListStationLinksServer interface {
+	Send(*StationLinkInfo) error
+	grpc.ServerStream
+}
+
+type c1InterfaceServiceListStationLinksServer struct {
+	grpc.ServerStream
+}
+
+func (x *c1InterfaceServiceListStationLinksServer) Send(m *StationLinkInfo) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _C1InterfaceService_ListUELinks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(UELinkListRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(C1InterfaceServiceServer).ListUELinks(m, &c1InterfaceServiceListUELinksServer{stream})
+}
+
+type C1InterfaceService_ListUELinksServer interface {
+	Send(*UELinkInfo) error
+	grpc.ServerStream
+}
+
+type c1InterfaceServiceListUELinksServer struct {
+	grpc.ServerStream
+}
+
+func (x *c1InterfaceServiceListUELinksServer) Send(m *UELinkInfo) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _C1InterfaceService_TriggerHandOver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HandOverRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(C1InterfaceServiceServer).TriggerHandOver(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interface.c1.C1InterfaceService/TriggerHandOver",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(C1InterfaceServiceServer).TriggerHandOver(ctx, req.(*HandOverRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _C1InterfaceService_SetRadioPower_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RadioPowerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(C1InterfaceServiceServer).SetRadioPower(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interface.c1.C1InterfaceService/SetRadioPower",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(C1InterfaceServiceServer).SetRadioPower(ctx, req.(*RadioPowerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _C1InterfaceService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "interface.c1.C1InterfaceService",
 	HandlerType: (*C1InterfaceServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "TriggerHandOver",
+			Handler:    _C1InterfaceService_TriggerHandOver_Handler,
+		},
+		{
+			MethodName: "SetRadioPower",
+			Handler:    _C1InterfaceService_SetRadioPower_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "GetRNIB",
-			Handler:       _C1InterfaceService_GetRNIB_Handler,
+			StreamName:    "ListStations",
+			Handler:       _C1InterfaceService_ListStations_Handler,
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "PostRNIB",
-			Handler:       _C1InterfaceService_PostRNIB_Handler,
+			StreamName:    "ListUEs",
+			Handler:       _C1InterfaceService_ListUEs_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ListStationLinks",
+			Handler:       _C1InterfaceService_ListStationLinks_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "ListUELinks",
+			Handler:       _C1InterfaceService_ListUELinks_Handler,
 			ServerStreams: true,
 		},
 	},
 	Metadata: "api/nb/c1-interface.proto",
+}
+
+func (m *StationListRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StationListRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StationListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *StationInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StationInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StationInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *UEListRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UEListRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UEListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *UEInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UEInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UEInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *StationLinkListRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StationLinkListRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StationLinkListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *StationLinkInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StationLinkInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StationLinkInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *UELinkListRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UELinkListRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UELinkListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *UELinkInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UELinkInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UELinkInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *HandOverRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HandOverRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HandOverRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *HandOverResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HandOverResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HandOverResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *RadioPowerRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RadioPowerRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RadioPowerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *RadioPowerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RadioPowerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RadioPowerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
 }
 
 func (m *C1RequestMessage) Marshal() (dAtA []byte, err error) {
@@ -3280,6 +4223,114 @@ func encodeVarintC1Interface(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *StationListRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *StationInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *UEListRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *UEInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *StationLinkListRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *StationLinkInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *UELinkListRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *UELinkInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *HandOverRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *HandOverResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *RadioPowerRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *RadioPowerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
 func (m *C1RequestMessage) Size() (n int) {
 	if m == nil {
 		return 0
@@ -3847,6 +4898,642 @@ func sovC1Interface(x uint64) (n int) {
 }
 func sozC1Interface(x uint64) (n int) {
 	return sovC1Interface(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *StationListRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StationListRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StationListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StationInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StationInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StationInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UEListRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UEListRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UEListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UEInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UEInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UEInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StationLinkListRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StationLinkListRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StationLinkListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StationLinkInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StationLinkInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StationLinkInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UELinkListRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UELinkListRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UELinkListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UELinkInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UELinkInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UELinkInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HandOverRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HandOverRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HandOverRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HandOverResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HandOverResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HandOverResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RadioPowerRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RadioPowerRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RadioPowerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RadioPowerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RadioPowerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RadioPowerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *C1RequestMessage) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
