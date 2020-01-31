@@ -15,6 +15,8 @@
 package c1
 
 import (
+	"context"
+	"github.com/onosproject/onos-ran/api/nb"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
 )
@@ -31,10 +33,40 @@ type Service struct {
 
 // Register registers the C1 Service with the gRPC server.
 func (s Service) Register(r *grpc.Server) {
-	//server := &Server{}
-	//nb.RegisterC1InterfaceServiceServer(r, server)
+	server := &Server{}
+	nb.RegisterC1InterfaceServiceServer(r, server)
 }
 
 // Server implements the C1 gRPC service for administrative facilities.
 type Server struct {
+}
+
+// ListStations returns a stream of base station records.
+func (s Server) ListStations(*nb.StationListRequest, nb.C1InterfaceService_ListStationsServer) error {
+	panic("implement me")
+}
+
+// ListUEs returns a stream of UE records.
+func (s Server) ListUEs(*nb.UEListRequest, nb.C1InterfaceService_ListUEsServer) error {
+	panic("implement me")
+}
+
+// ListStationLinks returns a stream of links between neighboring base stations.
+func (s Server) ListStationLinks(*nb.StationLinkListRequest, nb.C1InterfaceService_ListStationLinksServer) error {
+	panic("implement me")
+}
+
+// ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
+func (s Server) ListUELinks(*nb.UELinkListRequest, nb.C1InterfaceService_ListUELinksServer) error {
+	panic("implement me")
+}
+
+// TriggerHandOver returns a hand-over response indicating success or failure.
+func (s Server) TriggerHandOver(context.Context, *nb.HandOverRequest) (*nb.HandOverResponse, error) {
+	panic("implement me")
+}
+
+// SetRadioPower returns a response indicating success or failure.
+func (s Server) SetRadioPower(context.Context, *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
+	panic("implement me")
 }
