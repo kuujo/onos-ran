@@ -34,46 +34,117 @@ service C1InterfaceService {
     rpc ListUELinks(UELinkListRequest) returns (stream UELinkInfo);
 
     // TriggerHandOver returns a hand-over response indicating success or failure.
+    // HO app will ask to handover to multiple UEs
     rpc TriggerHandOver(HandOverRequest) returns (HandOverResponse);
 
     // SetRadioPower returns a response indicating success or failure.
+    // MLB app will ask to change transmission power to multiple stations
     rpc SetRadioPower(RadioPowerRequest) returns (RadioPowerResponse);
 }
 
+// station's unique ID
+message ECGI {
+    string plmnid = 1; // one of ECGI value
+    string ecid = 2; // one of ECGI value
+}
+
+// Enumberated Power offset - It is defined in E2 interface
+enum StationPowerOffset {
+    PA_DB_MINUS6 = 0; // TX power of the station - 6 dB
+    PA_DB_MINUX4DOT77 = 1; // TX power of the station - 4.77 dB
+    PA_DB_MINUS3 = 2; // TX power of the station - 3 dB
+    PA_DB_MINUS1DOT77 = 3; // TX power of the station - 1.77 dB
+    PA_DB_0 = 4; // TX power of the station - 0 dB
+    PA_DB_1 = 5; // TX power of the station + 1 dB
+    PA_DB_2 = 6; // TX power of the station + 2 dB
+    PA_DB_3 = 7; // TX power of the station + 3 dB
+}
+
+// if ecgi is empty, stream all stations' information
 message StationListRequest {
+    ECGI ecgi = 1;
 }
 
 message StationInfo {
+    // station's unique ID
+    ECGI ecgi = 1;
+     // station's maximum number of connected UEs - used for MLB
+    string maxNumConnectedUes = 3;
 }
 
+// if crnti and ecgi are empty, stream all UEs' information
 message UEListRequest {
+    // UE's local ID in serving station
+    string crnti = 1;
+    // UE's serving station ID
+    ECGI ecgi = 2;
 }
 
 message UEInfo {
+    // UE's local ID in serving station
+    string crnti = 1;
+    // serving station's ID
+    ECGI ecgi = 2;
+    // UE's unique ID
+    string imsi = 3;
 }
 
+// if ECGI is empty, stream all station links' information
 message StationLinkListRequest {
+    // target station ID
+    ECGI ecgi = 1;
 }
 
 message StationLinkInfo {
+    // target station ID
+    ECGI ecgi = 1;
+    // list of neighbor stations' ID
+    repeated ECGI neighborECGI = 2;
 }
 
+// if crnti and ecgi are empty, stream all UE links' information
 message UELinkListRequest {
+    // UE's local ID in serving station
+    string crnti = 1;
+    // UE's serving station ID
+    ECGI ecgi = 2;
 }
 
 message UELinkInfo {
+    // UE's local ID in serving station
+    string crnti = 1;
+    // UE's serving station ID
+    ECGI ecgi = 2;
+    // CQI history
+    // CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
+    // An UE reports CQI to an eNB at very short interval (few ms); the eNB will collect the CQI history for each UE.
+    // The minimum period of measurement messages in E2 interface is 10 ms and HO app will request link information more intermittently.
+    // Thus, each link (UE-serving eNB) should have multiple CQI values as a CQI history.
+    repeated string cqiHist = 3;
 }
 
 message HandOverRequest {
+    // UE's local ID in serving station
+    string crnti = 1;
+    // UE's source station ID - serving station
+    ECGI srcStation = 2;
+    // UE's destination station ID for handover - one of neighbor stations
+    ECGI dstStation = 3;
 }
 
 message HandOverResponse {
+    bool success = 1; // empty - no response will be okay
 }
 
 message RadioPowerRequest {
+    // target station's ID
+    string ecgi = 1;
+    // target station's power offset to adjust transmission power
+    StationPowerOffset offset = 2;
 }
 
 message RadioPowerResponse {
+    bool success = 1; // empty - no response will be okay
 }
 
 // Original structure below ------------
@@ -199,16 +270,17 @@ enum C1XICICPA {
 
 // This attributed defined all elements as a list (repeated), but this list only has a single element for MWC demo -> will be extended
 message C1RRMConfigAttribute {
-    repeated string crnti = 1; // going to be FFFF or null, which means all crnti
-    C1PciArfcn pciArfcn = 2;
-    repeated C1XICICPA pa = 3;
-    repeated string startPrbDl = 4;
-    repeated string endPrbDl = 5;
-    repeated string subFrameBitmaskDl = 6;
-    repeated string p0UePusch = 7;
-    repeated string startPrbUl = 8;
-    repeated string endPrbUl = 9;
-    repeated string subFrameBitmaskUl = 10;
+    C1ECGI ecgi = 1;
+    repeated string crnti = 2; // going to be FFFF or null, which means all crnti
+    C1PciArfcn pciArfcn = 3;
+    repeated C1XICICPA pa = 4;
+    repeated string startPrbDl = 5;
+    repeated string endPrbDl = 6;
+    repeated string subFrameBitmaskDl = 7;
+    repeated string p0UePusch = 8;
+    repeated string startPrbUl = 9;
+    repeated string endPrbUl = 10;
+    repeated string subFrameBitmaskUl = 11;
 }
 
 message C1RNIBUE {
