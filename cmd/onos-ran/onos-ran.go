@@ -42,6 +42,7 @@ func main() {
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
+	simulator := flag.String("simulator", "", "address:port of the RAN simulator")
 
 	//lines 93-109 are implemented according to
 	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
@@ -71,6 +72,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to load onos-ran ", err)
 	} else {
+		mgr.SB.Simulator = simulator
 		mgr.Run()
 		err = startServer(*caPath, *keyPath, *certPath)
 		if err != nil {
@@ -83,7 +85,6 @@ func main() {
 func startServer(caPath string, keyPath string, certPath string) error {
 	s := service.NewServer(service.NewServerConfig(caPath, keyPath, certPath))
 	s.AddService(c1.Service{})
-	//s.AddService(e2.Service{})
 
 	deviceService, err := device.NewService()
 	if err != nil {

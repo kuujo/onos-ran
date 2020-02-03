@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package store
 
 import (
-	"fmt"
-	"google.golang.org/grpc"
+	log "k8s.io/klog"
 )
 
-// Connect establishes a client-side connection to the gRPC end-point.
-func Connect(address string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(address, opts...)
-	if err != nil {
-		fmt.Println("Can't connect", err)
-		return nil, err
-	}
-	return conn, nil
+// Store is responsible for tracking the RAN data.
+type Store struct {
+}
+
+// NewStore creates a new RAN store controller.
+func NewStore() (*Store, error) {
+	log.Info("Creating Store")
+	return &Store{}, nil
 }
