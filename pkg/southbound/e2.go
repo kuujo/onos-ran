@@ -16,7 +16,6 @@ package southbound
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -104,6 +103,7 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	log.Info("Disconnected from simulator")
 }
 
+/*
 func (m *Sessions) handleTelemetry(errors chan error) {
 	stream, err := m.client.SendTelemetry(context.Background(), &sb.TelemetryRequest{})
 	if err != nil {
@@ -127,6 +127,7 @@ func (m *Sessions) handleTelemetry(errors chan error) {
 	<-waitc
 	errors <- io.EOF
 }
+*/
 
 func (m *Sessions) handleControl(errors chan error) {
 
@@ -178,10 +179,12 @@ func (m *Sessions) handleControl(errors chan error) {
 	errors <- io.EOF
 }
 
+/*
 func (m *Sessions) processTelemetry(msg *sb.TelemetryMessage) {
 	// TODO: process the telemetry message
 	fmt.Println(msg)
 }
+*/
 
 func (m *Sessions) processControlUpdate(msg *sb.ControlUpdate) {
 	switch x := msg.S.(type) {
