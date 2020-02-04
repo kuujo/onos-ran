@@ -17,12 +17,13 @@ package southbound
 import (
 	"context"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/onosproject/onos-ran/api/sb"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
-	"io"
 	log "k8s.io/klog"
-	"time"
 )
 
 // Sessions is responsible for managing connections to and interactions with the RAN southbound.
@@ -60,7 +61,7 @@ func (m *Sessions) manageConnections() {
 			grpc.WithBlock(),
 		}
 
-		log.Info("Connecting to simulator...")
+		log.Infof("Connecting to simulator...%s", *m.Simulator)
 		connection, err := service.Connect(*m.Simulator, opts...)
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
@@ -74,7 +75,7 @@ func (m *Sessions) manageConnections() {
 func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	// Offer the telemetry and control surfaces to the E2 devices
 	m.client = sb.NewInterfaceServiceClient(connection)
-	if m.client != nil {
+	if m.client == nil {
 		return
 	}
 
@@ -86,7 +87,7 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	m.updates = make(chan sb.ControlUpdate)
 	m.responses = make(chan sb.ControlResponse)
 
-	go m.handleTelemetry(errors)
+	//go m.handleTelemetry(errors)
 	go m.handleControl(errors)
 
 	// Wait for the first error on the coordination channel.
@@ -128,6 +129,16 @@ func (m *Sessions) handleTelemetry(errors chan error) {
 }
 
 func (m *Sessions) handleControl(errors chan error) {
+
+	cellConfigRequest := &sb.ControlResponse{
+		MessageType: sb.MessageType_CELL_CONFIG_REQUEST,
+		S: &sb.ControlResponse_CellConfigRequest{
+			CellConfigRequest: &sb.CellConfigRequest{
+				Ecgi: &sb.ECGI{PlmnId: "test", Ecid: "test"},
+			},
+		},
+	}
+
 	stream, err := m.client.SendControl(context.Background())
 	if err != nil {
 		errors <- err
@@ -142,11 +153,14 @@ func (m *Sessions) handleControl(errors chan error) {
 				close(waitc)
 				return
 			}
+			log.Infof("Got messageType %d", update.MessageType)
 			m.processControlUpdate(update)
-			t := update.MessageType
-			fmt.Println(t)
 		}
 	}()
+
+	if err := stream.Send(cellConfigRequest); err != nil {
+		log.Fatalf("Failed to send a note: %v", err)
+	}
 
 	go func() {
 		for {
@@ -170,6 +184,10 @@ func (m *Sessions) processTelemetry(msg *sb.TelemetryMessage) {
 }
 
 func (m *Sessions) processControlUpdate(msg *sb.ControlUpdate) {
-	// TODO: process the update message and issue control response as appropriate
-	fmt.Println(msg)
+	switch x := msg.S.(type) {
+	case *sb.ControlUpdate_CellConfigReport:
+		log.Infof("PlmnID %s, EcID %s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
+	default:
+		log.Fatalf("ControlReport has unexpected type %T", x)
+	}
 }
