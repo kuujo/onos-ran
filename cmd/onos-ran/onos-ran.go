@@ -33,7 +33,6 @@ import (
 	"github.com/onosproject/onos-ran/pkg/manager"
 	"github.com/onosproject/onos-ran/pkg/northbound/c1"
 	"github.com/onosproject/onos-ran/pkg/service"
-	"github.com/onosproject/onos-topo/pkg/northbound/device"
 	log "k8s.io/klog"
 )
 
@@ -85,12 +84,6 @@ func main() {
 func startServer(caPath string, keyPath string, certPath string) error {
 	s := service.NewServer(service.NewServerConfig(caPath, keyPath, certPath))
 	s.AddService(c1.Service{})
-
-	deviceService, err := device.NewService()
-	if err != nil {
-		return err
-	}
-	s.AddService(deviceService)
 
 	return s.Serve(func(started string) {
 		log.Info("Started NBI on ", started)

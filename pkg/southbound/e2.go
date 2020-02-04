@@ -36,7 +36,7 @@ type Sessions struct {
 
 // NewSessions creates a new southbound sessions controller.
 func NewSessions() (*Sessions, error) {
-	log.Info("Creating DeviceManager")
+	log.Info("Creating Sessions")
 	return &Sessions{}, nil
 }
 
@@ -57,24 +57,28 @@ func (m *Sessions) manageConnections() {
 		// Attempt to create connection to the simulator
 		opts := []grpc.DialOption{
 			grpc.WithInsecure(),
+			grpc.WithBlock(),
 		}
 
+		log.Info("Connecting to simulator...")
 		connection, err := service.Connect(*m.Simulator, opts...)
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.
 			m.manageConnection(connection)
-		} else {
-			// delay a bit if we failed to establish the connection
-			time.Sleep(5 * time.Second)
 		}
+		time.Sleep(5 * time.Second)
 	}
 }
 
 func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	// Offer the telemetry and control surfaces to the E2 devices
 	m.client = sb.NewInterfaceServiceClient(connection)
+	if m.client != nil {
+		return
+	}
 
+	log.Info("Connected to simulator")
 	// Setup coordination channel
 	errors := make(chan error)
 
@@ -96,6 +100,7 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	close(m.updates)
 
 	close(errors)
+	log.Info("Disconnected from simulator")
 }
 
 func (m *Sessions) handleTelemetry(errors chan error) {
