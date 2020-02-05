@@ -24,9 +24,6 @@ service C1InterfaceService {
     // ListStations returns a stream of base station records.
     rpc ListStations(StationListRequest) returns (stream StationInfo);
 
-    // ListUEs returns a stream of UE records.
-    rpc ListUEs(UEListRequest) returns (stream UEInfo);
-
     // ListStationLinks returns a stream of links between neighboring base stations.
     rpc ListStationLinks(StationLinkListRequest) returns (stream StationLinkInfo);
 
@@ -72,23 +69,6 @@ message StationInfo {
     string maxNumConnectedUes = 3;
 }
 
-// if crnti and ecgi are empty, stream all UEs' information
-message UEListRequest {
-    // UE's local ID in serving station
-    string crnti = 1;
-    // UE's serving station ID
-    ECGI ecgi = 2;
-}
-
-message UEInfo {
-    // UE's local ID in serving station
-    string crnti = 1;
-    // serving station's ID
-    ECGI ecgi = 2;
-    // UE's unique ID
-    string imsi = 3;
-}
-
 // if ECGI is empty, stream all station links' information
 message StationLinkListRequest {
     // target station ID
@@ -110,17 +90,24 @@ message UELinkListRequest {
     ECGI ecgi = 2;
 }
 
+// It shows the link quality between the UE -- having crnti (1) and serviced by the station having ecgi (2) -- and the station -- having targetECGI (3).
+// Target station can be not only UE's serving station but also the station's neighbor stations.
 message UELinkInfo {
+    // Both crnti and ecgi are used as a key in our store.
     // UE's local ID in serving station
     string crnti = 1;
     // UE's serving station ID
     ECGI ecgi = 2;
+    
+    // Target stations's ID
+    // This target station can be either the serving station or the serving station's neighbor stations.
+    ECGI targetEcgi = 3;
     // CQI history
     // CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
     // An UE reports CQI to an eNB at very short interval (few ms); the eNB will collect the CQI history for each UE.
     // The minimum period of measurement messages in E2 interface is 10 ms and HO app will request link information more intermittently.
     // Thus, each link (UE-serving eNB) should have multiple CQI values as a CQI history.
-    repeated string cqiHist = 3;
+    repeated string cqiHist = 4;
 }
 
 message HandOverRequest {
