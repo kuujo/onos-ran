@@ -6,12 +6,16 @@ require (
 	github.com/go-playground/overalls v0.0.0-20191218162659-7df9f728c018 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/mattn/goveralls v0.0.5 // indirect
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onosproject/onos-config v0.0.0-20200124182344-6c3f5eb1e6ed
 	github.com/onosproject/onos-topo v0.0.0-20200124005303-f1408bf8e513
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/viper v1.5.0
 	go.uber.org/multierr v1.4.0 // indirect
 	golang.org/x/net v0.0.0-20191112182307-2180aed22343 // indirect
 	golang.org/x/sys v0.0.0-20191113165036-4c7a9d0fe056 // indirect
 	google.golang.org/grpc v1.26.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gotest.tools v2.2.0+incompatible
 	k8s.io/klog v1.0.0
 )
