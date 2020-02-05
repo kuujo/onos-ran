@@ -10,10 +10,12 @@ ONOS_BUILD_VERSION := stable
 build: # @HELP build the Go binaries and run all validations (default)
 build:
 	CGO_ENABLED=1 go build -o build/_output/onos-ran ./cmd/onos-ran
+	CGO_ENABLED=1 go build -o build/_output/apps/onos-ran-ho ./cmd/apps/onos-ran-ho
 
 build-debug: # @HELP build the Go binaries and run all validations (default)
 build-debug:
 	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-ran-debug ./cmd/onos-ran
+	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/apps/onos-ran-ho-debug ./cmd/apps/onos-ran-ho
 
 build-plugins: # @HELP build plugin binaries
 build-plugins: $(MODELPLUGINS)

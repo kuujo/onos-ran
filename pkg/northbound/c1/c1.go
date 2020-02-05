@@ -16,7 +16,12 @@ package c1
 
 import (
 	"context"
+
+	"github.com/onosproject/onos-ran/api/sb"
+
 	"github.com/onosproject/onos-ran/api/nb"
+
+	"github.com/onosproject/onos-ran/pkg/manager"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
 )
@@ -42,17 +47,36 @@ type Server struct {
 }
 
 // ListStations returns a stream of base station records.
-func (s Server) ListStations(*nb.StationListRequest, nb.C1InterfaceService_ListStationsServer) error {
-	panic("implement me")
+func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
+	if req.Ecgi.Plmnid == "" && req.Ecgi.Ecid == "" {
+		controlUpdates, err := manager.GetManager().GetControlUpdates()
+		if err != nil {
+			for _, update := range controlUpdates {
+				switch update.GetMessageType() {
+				case sb.MessageType_CELL_CONFIG_REPORT:
+					cellConfigReport := update.GetCellConfigReport()
+					var baseStationInfo nb.StationInfo
+					baseStationInfo.Ecgi.Ecid = cellConfigReport.GetEcgi().GetEcid()
+					baseStationInfo.Ecgi.Plmnid = cellConfigReport.GetEcgi().GetPlmnId()
+					baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
+					err = stream.Send(&baseStationInfo)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // ListUEs returns a stream of UE records.
-func (s Server) ListUEs(*nb.UEListRequest, nb.C1InterfaceService_ListUEsServer) error {
+func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_ListUEsServer) error {
 	panic("implement me")
 }
 
 // ListStationLinks returns a stream of links between neighboring base stations.
-func (s Server) ListStationLinks(*nb.StationLinkListRequest, nb.C1InterfaceService_ListStationLinksServer) error {
+func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
 	panic("implement me")
 }
 

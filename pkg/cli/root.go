@@ -12,18 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package cli
 
 import (
-	log "k8s.io/klog"
+	"github.com/spf13/cobra"
+	viperapi "github.com/spf13/viper"
 )
 
-// Store is responsible for tracking the RAN data.
-type Store struct {
+var viper = viperapi.New()
+
+// init initializes the command line
+func init() {
+	initConfig()
 }
 
-// NewStore creates a new RAN store controller.
-func NewStore() (*Store, error) {
-	log.Info("Creating Store")
-	return &Store{}, nil
+// Init is a hook called after cobra initialization
+func Init() {
+	// noop for now
+}
+
+// GetCommand returns the root command for the topo service
+func GetCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ran {get|watch} [args]",
+		Short: "ONOS Ran subsystem commands",
+	}
+
+	addConfigFlags(cmd)
+	cmd.AddCommand(getConfigCommand())
+	cmd.AddCommand(getGetCommand())
+	cmd.AddCommand(getWatchCommand())
+
+	return cmd
 }

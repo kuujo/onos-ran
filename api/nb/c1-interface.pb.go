@@ -24,7 +24,51 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+
+// Enumberated Power offset - It is defined in E2 interface
+type StationPowerOffset int32
+
+const (
+	StationPowerOffset_PA_DB_MINUS6      StationPowerOffset = 0
+	StationPowerOffset_PA_DB_MINUX4DOT77 StationPowerOffset = 1
+	StationPowerOffset_PA_DB_MINUS3      StationPowerOffset = 2
+	StationPowerOffset_PA_DB_MINUS1DOT77 StationPowerOffset = 3
+	StationPowerOffset_PA_DB_0           StationPowerOffset = 4
+	StationPowerOffset_PA_DB_1           StationPowerOffset = 5
+	StationPowerOffset_PA_DB_2           StationPowerOffset = 6
+	StationPowerOffset_PA_DB_3           StationPowerOffset = 7
+)
+
+var StationPowerOffset_name = map[int32]string{
+	0: "PA_DB_MINUS6",
+	1: "PA_DB_MINUX4DOT77",
+	2: "PA_DB_MINUS3",
+	3: "PA_DB_MINUS1DOT77",
+	4: "PA_DB_0",
+	5: "PA_DB_1",
+	6: "PA_DB_2",
+	7: "PA_DB_3",
+}
+
+var StationPowerOffset_value = map[string]int32{
+	"PA_DB_MINUS6":      0,
+	"PA_DB_MINUX4DOT77": 1,
+	"PA_DB_MINUS3":      2,
+	"PA_DB_MINUS1DOT77": 3,
+	"PA_DB_0":           4,
+	"PA_DB_1":           5,
+	"PA_DB_2":           6,
+	"PA_DB_3":           7,
+}
+
+func (x StationPowerOffset) String() string {
+	return proto.EnumName(StationPowerOffset_name, int32(x))
+}
+
+func (StationPowerOffset) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{0}
+}
 
 type C1MessageType int32
 
@@ -60,7 +104,7 @@ func (x C1MessageType) String() string {
 }
 
 func (C1MessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{0}
+	return fileDescriptor_49d6c0a03a213d51, []int{1}
 }
 
 type C1RNIBType int32
@@ -91,7 +135,7 @@ func (x C1RNIBType) String() string {
 }
 
 func (C1RNIBType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{1}
+	return fileDescriptor_49d6c0a03a213d51, []int{2}
 }
 
 type C1XICICPA int32
@@ -134,17 +178,72 @@ func (x C1XICICPA) String() string {
 }
 
 func (C1XICICPA) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{2}
+	return fileDescriptor_49d6c0a03a213d51, []int{3}
 }
 
+// station's unique ID
+type ECGI struct {
+	Plmnid string `protobuf:"bytes,1,opt,name=plmnid,proto3" json:"plmnid,omitempty"`
+	Ecid   string `protobuf:"bytes,2,opt,name=ecid,proto3" json:"ecid,omitempty"`
+}
+
+func (m *ECGI) Reset()         { *m = ECGI{} }
+func (m *ECGI) String() string { return proto.CompactTextString(m) }
+func (*ECGI) ProtoMessage()    {}
+func (*ECGI) Descriptor() ([]byte, []int) {
+	return fileDescriptor_49d6c0a03a213d51, []int{0}
+}
+func (m *ECGI) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ECGI) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ECGI.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ECGI) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ECGI.Merge(m, src)
+}
+func (m *ECGI) XXX_Size() int {
+	return m.Size()
+}
+func (m *ECGI) XXX_DiscardUnknown() {
+	xxx_messageInfo_ECGI.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ECGI proto.InternalMessageInfo
+
+func (m *ECGI) GetPlmnid() string {
+	if m != nil {
+		return m.Plmnid
+	}
+	return ""
+}
+
+func (m *ECGI) GetEcid() string {
+	if m != nil {
+		return m.Ecid
+	}
+	return ""
+}
+
+// if ecgi is empty, stream all stations' information
 type StationListRequest struct {
+	Ecgi *ECGI `protobuf:"bytes,1,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
 }
 
 func (m *StationListRequest) Reset()         { *m = StationListRequest{} }
 func (m *StationListRequest) String() string { return proto.CompactTextString(m) }
 func (*StationListRequest) ProtoMessage()    {}
 func (*StationListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{0}
+	return fileDescriptor_49d6c0a03a213d51, []int{1}
 }
 func (m *StationListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -173,14 +272,25 @@ func (m *StationListRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_StationListRequest proto.InternalMessageInfo
 
+func (m *StationListRequest) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
 type StationInfo struct {
+	// station's unique ID
+	Ecgi *ECGI `protobuf:"bytes,1,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
+	// station's maximum number of connected UEs - used for MLB
+	MaxNumConnectedUes string `protobuf:"bytes,3,opt,name=maxNumConnectedUes,proto3" json:"maxNumConnectedUes,omitempty"`
 }
 
 func (m *StationInfo) Reset()         { *m = StationInfo{} }
 func (m *StationInfo) String() string { return proto.CompactTextString(m) }
 func (*StationInfo) ProtoMessage()    {}
 func (*StationInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{1}
+	return fileDescriptor_49d6c0a03a213d51, []int{2}
 }
 func (m *StationInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -209,14 +319,33 @@ func (m *StationInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_StationInfo proto.InternalMessageInfo
 
+func (m *StationInfo) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
+func (m *StationInfo) GetMaxNumConnectedUes() string {
+	if m != nil {
+		return m.MaxNumConnectedUes
+	}
+	return ""
+}
+
+// if crnti and ecgi are empty, stream all UEs' information
 type UEListRequest struct {
+	// UE's local ID in serving station
+	Crnti string `protobuf:"bytes,1,opt,name=crnti,proto3" json:"crnti,omitempty"`
+	// UE's serving station ID
+	Ecgi *ECGI `protobuf:"bytes,2,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
 }
 
 func (m *UEListRequest) Reset()         { *m = UEListRequest{} }
 func (m *UEListRequest) String() string { return proto.CompactTextString(m) }
 func (*UEListRequest) ProtoMessage()    {}
 func (*UEListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{2}
+	return fileDescriptor_49d6c0a03a213d51, []int{3}
 }
 func (m *UEListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -245,14 +374,34 @@ func (m *UEListRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UEListRequest proto.InternalMessageInfo
 
+func (m *UEListRequest) GetCrnti() string {
+	if m != nil {
+		return m.Crnti
+	}
+	return ""
+}
+
+func (m *UEListRequest) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
 type UEInfo struct {
+	// UE's local ID in serving station
+	Crnti string `protobuf:"bytes,1,opt,name=crnti,proto3" json:"crnti,omitempty"`
+	// serving station's ID
+	Ecgi *ECGI `protobuf:"bytes,2,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
+	// UE's unique ID
+	Imsi string `protobuf:"bytes,3,opt,name=imsi,proto3" json:"imsi,omitempty"`
 }
 
 func (m *UEInfo) Reset()         { *m = UEInfo{} }
 func (m *UEInfo) String() string { return proto.CompactTextString(m) }
 func (*UEInfo) ProtoMessage()    {}
 func (*UEInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{3}
+	return fileDescriptor_49d6c0a03a213d51, []int{4}
 }
 func (m *UEInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -281,14 +430,38 @@ func (m *UEInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UEInfo proto.InternalMessageInfo
 
+func (m *UEInfo) GetCrnti() string {
+	if m != nil {
+		return m.Crnti
+	}
+	return ""
+}
+
+func (m *UEInfo) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
+func (m *UEInfo) GetImsi() string {
+	if m != nil {
+		return m.Imsi
+	}
+	return ""
+}
+
+// if ECGI is empty, stream all station links' information
 type StationLinkListRequest struct {
+	// target station ID
+	Ecgi *ECGI `protobuf:"bytes,1,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
 }
 
 func (m *StationLinkListRequest) Reset()         { *m = StationLinkListRequest{} }
 func (m *StationLinkListRequest) String() string { return proto.CompactTextString(m) }
 func (*StationLinkListRequest) ProtoMessage()    {}
 func (*StationLinkListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{4}
+	return fileDescriptor_49d6c0a03a213d51, []int{5}
 }
 func (m *StationLinkListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -317,14 +490,25 @@ func (m *StationLinkListRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_StationLinkListRequest proto.InternalMessageInfo
 
+func (m *StationLinkListRequest) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
 type StationLinkInfo struct {
+	// target station ID
+	Ecgi *ECGI `protobuf:"bytes,1,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
+	// list of neighbor stations' ID
+	NeighborECGI []*ECGI `protobuf:"bytes,2,rep,name=neighborECGI,proto3" json:"neighborECGI,omitempty"`
 }
 
 func (m *StationLinkInfo) Reset()         { *m = StationLinkInfo{} }
 func (m *StationLinkInfo) String() string { return proto.CompactTextString(m) }
 func (*StationLinkInfo) ProtoMessage()    {}
 func (*StationLinkInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{5}
+	return fileDescriptor_49d6c0a03a213d51, []int{6}
 }
 func (m *StationLinkInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -353,14 +537,33 @@ func (m *StationLinkInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_StationLinkInfo proto.InternalMessageInfo
 
+func (m *StationLinkInfo) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
+func (m *StationLinkInfo) GetNeighborECGI() []*ECGI {
+	if m != nil {
+		return m.NeighborECGI
+	}
+	return nil
+}
+
+// if crnti and ecgi are empty, stream all UE links' information
 type UELinkListRequest struct {
+	// UE's local ID in serving station
+	Crnti string `protobuf:"bytes,1,opt,name=crnti,proto3" json:"crnti,omitempty"`
+	// UE's serving station ID
+	Ecgi *ECGI `protobuf:"bytes,2,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
 }
 
 func (m *UELinkListRequest) Reset()         { *m = UELinkListRequest{} }
 func (m *UELinkListRequest) String() string { return proto.CompactTextString(m) }
 func (*UELinkListRequest) ProtoMessage()    {}
 func (*UELinkListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{6}
+	return fileDescriptor_49d6c0a03a213d51, []int{7}
 }
 func (m *UELinkListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -389,14 +592,38 @@ func (m *UELinkListRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UELinkListRequest proto.InternalMessageInfo
 
+func (m *UELinkListRequest) GetCrnti() string {
+	if m != nil {
+		return m.Crnti
+	}
+	return ""
+}
+
+func (m *UELinkListRequest) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
 type UELinkInfo struct {
+	// UE's local ID in serving station
+	Crnti string `protobuf:"bytes,1,opt,name=crnti,proto3" json:"crnti,omitempty"`
+	// UE's serving station ID
+	Ecgi *ECGI `protobuf:"bytes,2,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
+	// CQI history
+	// CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
+	// An UE reports CQI to an eNB at very short interval (few ms); the eNB will collect the CQI history for each UE.
+	// The minimum period of measurement messages in E2 interface is 10 ms and HO app will request link information more intermittently.
+	// Thus, each link (UE-serving eNB) should have multiple CQI values as a CQI history.
+	CqiHist []string `protobuf:"bytes,3,rep,name=cqiHist,proto3" json:"cqiHist,omitempty"`
 }
 
 func (m *UELinkInfo) Reset()         { *m = UELinkInfo{} }
 func (m *UELinkInfo) String() string { return proto.CompactTextString(m) }
 func (*UELinkInfo) ProtoMessage()    {}
 func (*UELinkInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{7}
+	return fileDescriptor_49d6c0a03a213d51, []int{8}
 }
 func (m *UELinkInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -425,14 +652,41 @@ func (m *UELinkInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UELinkInfo proto.InternalMessageInfo
 
+func (m *UELinkInfo) GetCrnti() string {
+	if m != nil {
+		return m.Crnti
+	}
+	return ""
+}
+
+func (m *UELinkInfo) GetEcgi() *ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
+
+func (m *UELinkInfo) GetCqiHist() []string {
+	if m != nil {
+		return m.CqiHist
+	}
+	return nil
+}
+
 type HandOverRequest struct {
+	// UE's local ID in serving station
+	Crnti string `protobuf:"bytes,1,opt,name=crnti,proto3" json:"crnti,omitempty"`
+	// UE's source station ID - serving station
+	SrcStation *ECGI `protobuf:"bytes,2,opt,name=srcStation,proto3" json:"srcStation,omitempty"`
+	// UE's destination station ID for handover - one of neighbor stations
+	DstStation *ECGI `protobuf:"bytes,3,opt,name=dstStation,proto3" json:"dstStation,omitempty"`
 }
 
 func (m *HandOverRequest) Reset()         { *m = HandOverRequest{} }
 func (m *HandOverRequest) String() string { return proto.CompactTextString(m) }
 func (*HandOverRequest) ProtoMessage()    {}
 func (*HandOverRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{8}
+	return fileDescriptor_49d6c0a03a213d51, []int{9}
 }
 func (m *HandOverRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -461,14 +715,36 @@ func (m *HandOverRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HandOverRequest proto.InternalMessageInfo
 
+func (m *HandOverRequest) GetCrnti() string {
+	if m != nil {
+		return m.Crnti
+	}
+	return ""
+}
+
+func (m *HandOverRequest) GetSrcStation() *ECGI {
+	if m != nil {
+		return m.SrcStation
+	}
+	return nil
+}
+
+func (m *HandOverRequest) GetDstStation() *ECGI {
+	if m != nil {
+		return m.DstStation
+	}
+	return nil
+}
+
 type HandOverResponse struct {
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
 
 func (m *HandOverResponse) Reset()         { *m = HandOverResponse{} }
 func (m *HandOverResponse) String() string { return proto.CompactTextString(m) }
 func (*HandOverResponse) ProtoMessage()    {}
 func (*HandOverResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{9}
+	return fileDescriptor_49d6c0a03a213d51, []int{10}
 }
 func (m *HandOverResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -497,14 +773,25 @@ func (m *HandOverResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HandOverResponse proto.InternalMessageInfo
 
+func (m *HandOverResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
 type RadioPowerRequest struct {
+	// target station's ID
+	Ecgi string `protobuf:"bytes,1,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
+	// target station's power offset to adjust transmission power
+	Offset StationPowerOffset `protobuf:"varint,2,opt,name=offset,proto3,enum=interface.c1.StationPowerOffset" json:"offset,omitempty"`
 }
 
 func (m *RadioPowerRequest) Reset()         { *m = RadioPowerRequest{} }
 func (m *RadioPowerRequest) String() string { return proto.CompactTextString(m) }
 func (*RadioPowerRequest) ProtoMessage()    {}
 func (*RadioPowerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{10}
+	return fileDescriptor_49d6c0a03a213d51, []int{11}
 }
 func (m *RadioPowerRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -533,14 +820,29 @@ func (m *RadioPowerRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RadioPowerRequest proto.InternalMessageInfo
 
+func (m *RadioPowerRequest) GetEcgi() string {
+	if m != nil {
+		return m.Ecgi
+	}
+	return ""
+}
+
+func (m *RadioPowerRequest) GetOffset() StationPowerOffset {
+	if m != nil {
+		return m.Offset
+	}
+	return StationPowerOffset_PA_DB_MINUS6
+}
+
 type RadioPowerResponse struct {
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
 
 func (m *RadioPowerResponse) Reset()         { *m = RadioPowerResponse{} }
 func (m *RadioPowerResponse) String() string { return proto.CompactTextString(m) }
 func (*RadioPowerResponse) ProtoMessage()    {}
 func (*RadioPowerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{11}
+	return fileDescriptor_49d6c0a03a213d51, []int{12}
 }
 func (m *RadioPowerResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -569,6 +871,13 @@ func (m *RadioPowerResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RadioPowerResponse proto.InternalMessageInfo
 
+func (m *RadioPowerResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
 type C1RequestMessage struct {
 	Header  *C1RequestMessageHeader  `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Payload *C1RequestMessagePayload `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
@@ -578,7 +887,7 @@ func (m *C1RequestMessage) Reset()         { *m = C1RequestMessage{} }
 func (m *C1RequestMessage) String() string { return proto.CompactTextString(m) }
 func (*C1RequestMessage) ProtoMessage()    {}
 func (*C1RequestMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{12}
+	return fileDescriptor_49d6c0a03a213d51, []int{13}
 }
 func (m *C1RequestMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -630,7 +939,7 @@ func (m *C1ResponseMessage) Reset()         { *m = C1ResponseMessage{} }
 func (m *C1ResponseMessage) String() string { return proto.CompactTextString(m) }
 func (*C1ResponseMessage) ProtoMessage()    {}
 func (*C1ResponseMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{13}
+	return fileDescriptor_49d6c0a03a213d51, []int{14}
 }
 func (m *C1ResponseMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -681,7 +990,7 @@ func (m *C1RequestMessageHeader) Reset()         { *m = C1RequestMessageHeader{}
 func (m *C1RequestMessageHeader) String() string { return proto.CompactTextString(m) }
 func (*C1RequestMessageHeader) ProtoMessage()    {}
 func (*C1RequestMessageHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{14}
+	return fileDescriptor_49d6c0a03a213d51, []int{15}
 }
 func (m *C1RequestMessageHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -729,7 +1038,7 @@ func (m *C1RequestMessagePayload) Reset()         { *m = C1RequestMessagePayload
 func (m *C1RequestMessagePayload) String() string { return proto.CompactTextString(m) }
 func (*C1RequestMessagePayload) ProtoMessage()    {}
 func (*C1RequestMessagePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{15}
+	return fileDescriptor_49d6c0a03a213d51, []int{16}
 }
 func (m *C1RequestMessagePayload) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -765,13 +1074,13 @@ type isC1RequestMessagePayload_Request interface {
 }
 
 type C1RequestMessagePayload_RequestedRNIBType struct {
-	RequestedRNIBType C1RNIBType `protobuf:"varint,1,opt,name=requestedRNIBType,proto3,enum=interface.c1.C1RNIBType,oneof"`
+	RequestedRNIBType C1RNIBType `protobuf:"varint,1,opt,name=requestedRNIBType,proto3,enum=interface.c1.C1RNIBType,oneof" json:"requestedRNIBType,omitempty"`
 }
 type C1RequestMessagePayload_HandoverRequest struct {
-	HandoverRequest *C1HandoverRequest `protobuf:"bytes,2,opt,name=handoverRequest,proto3,oneof"`
+	HandoverRequest *C1HandoverRequest `protobuf:"bytes,2,opt,name=handoverRequest,proto3,oneof" json:"handoverRequest,omitempty"`
 }
 type C1RequestMessagePayload_RrmConfigurationRequest struct {
-	RrmConfigurationRequest *C1RRMConfiguration `protobuf:"bytes,3,opt,name=rrmConfigurationRequest,proto3,oneof"`
+	RrmConfigurationRequest *C1RRMConfiguration `protobuf:"bytes,3,opt,name=rrmConfigurationRequest,proto3,oneof" json:"rrmConfigurationRequest,omitempty"`
 }
 
 func (*C1RequestMessagePayload_RequestedRNIBType) isC1RequestMessagePayload_Request()       {}
@@ -806,92 +1115,13 @@ func (m *C1RequestMessagePayload) GetRrmConfigurationRequest() *C1RRMConfigurati
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*C1RequestMessagePayload) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _C1RequestMessagePayload_OneofMarshaler, _C1RequestMessagePayload_OneofUnmarshaler, _C1RequestMessagePayload_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*C1RequestMessagePayload) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*C1RequestMessagePayload_RequestedRNIBType)(nil),
 		(*C1RequestMessagePayload_HandoverRequest)(nil),
 		(*C1RequestMessagePayload_RrmConfigurationRequest)(nil),
 	}
-}
-
-func _C1RequestMessagePayload_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*C1RequestMessagePayload)
-	// request
-	switch x := m.Request.(type) {
-	case *C1RequestMessagePayload_RequestedRNIBType:
-		_ = b.EncodeVarint(1<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(uint64(x.RequestedRNIBType))
-	case *C1RequestMessagePayload_HandoverRequest:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.HandoverRequest); err != nil {
-			return err
-		}
-	case *C1RequestMessagePayload_RrmConfigurationRequest:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RrmConfigurationRequest); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("C1RequestMessagePayload.Request has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _C1RequestMessagePayload_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*C1RequestMessagePayload)
-	switch tag {
-	case 1: // request.requestedRNIBType
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Request = &C1RequestMessagePayload_RequestedRNIBType{C1RNIBType(x)}
-		return true, err
-	case 2: // request.handoverRequest
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(C1HandoverRequest)
-		err := b.DecodeMessage(msg)
-		m.Request = &C1RequestMessagePayload_HandoverRequest{msg}
-		return true, err
-	case 3: // request.rrmConfigurationRequest
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(C1RRMConfiguration)
-		err := b.DecodeMessage(msg)
-		m.Request = &C1RequestMessagePayload_RrmConfigurationRequest{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _C1RequestMessagePayload_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*C1RequestMessagePayload)
-	// request
-	switch x := m.Request.(type) {
-	case *C1RequestMessagePayload_RequestedRNIBType:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(x.RequestedRNIBType))
-	case *C1RequestMessagePayload_HandoverRequest:
-		s := proto.Size(x.HandoverRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *C1RequestMessagePayload_RrmConfigurationRequest:
-		s := proto.Size(x.RrmConfigurationRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type C1ResponseMessageHeader struct {
@@ -902,7 +1132,7 @@ func (m *C1ResponseMessageHeader) Reset()         { *m = C1ResponseMessageHeader
 func (m *C1ResponseMessageHeader) String() string { return proto.CompactTextString(m) }
 func (*C1ResponseMessageHeader) ProtoMessage()    {}
 func (*C1ResponseMessageHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{16}
+	return fileDescriptor_49d6c0a03a213d51, []int{17}
 }
 func (m *C1ResponseMessageHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -951,7 +1181,7 @@ func (m *C1ResponseMessagePayload) Reset()         { *m = C1ResponseMessagePaylo
 func (m *C1ResponseMessagePayload) String() string { return proto.CompactTextString(m) }
 func (*C1ResponseMessagePayload) ProtoMessage()    {}
 func (*C1ResponseMessagePayload) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{17}
+	return fileDescriptor_49d6c0a03a213d51, []int{18}
 }
 func (m *C1ResponseMessagePayload) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -987,16 +1217,16 @@ type isC1ResponseMessagePayload_Result interface {
 }
 
 type C1ResponseMessagePayload_ResponseCode struct {
-	ResponseCode string `protobuf:"bytes,1,opt,name=responseCode,proto3,oneof"`
+	ResponseCode string `protobuf:"bytes,1,opt,name=responseCode,proto3,oneof" json:"responseCode,omitempty"`
 }
 type C1ResponseMessagePayload_RNIBCells struct {
-	RNIBCells *C1RNIBCells `protobuf:"bytes,2,opt,name=rNIBCells,proto3,oneof"`
+	RNIBCells *C1RNIBCells `protobuf:"bytes,2,opt,name=rNIBCells,proto3,oneof" json:"rNIBCells,omitempty"`
 }
 type C1ResponseMessagePayload_RNIBUEs struct {
-	RNIBUEs *C1RNIBUEs `protobuf:"bytes,3,opt,name=rNIBUEs,proto3,oneof"`
+	RNIBUEs *C1RNIBUEs `protobuf:"bytes,3,opt,name=rNIBUEs,proto3,oneof" json:"rNIBUEs,omitempty"`
 }
 type C1ResponseMessagePayload_RNIBLinks struct {
-	RNIBLinks *C1RNIBLinks `protobuf:"bytes,4,opt,name=rNIBLinks,proto3,oneof"`
+	RNIBLinks *C1RNIBLinks `protobuf:"bytes,4,opt,name=rNIBLinks,proto3,oneof" json:"rNIBLinks,omitempty"`
 }
 
 func (*C1ResponseMessagePayload_ResponseCode) isC1ResponseMessagePayload_Result() {}
@@ -1039,112 +1269,14 @@ func (m *C1ResponseMessagePayload) GetRNIBLinks() *C1RNIBLinks {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*C1ResponseMessagePayload) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _C1ResponseMessagePayload_OneofMarshaler, _C1ResponseMessagePayload_OneofUnmarshaler, _C1ResponseMessagePayload_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*C1ResponseMessagePayload) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*C1ResponseMessagePayload_ResponseCode)(nil),
 		(*C1ResponseMessagePayload_RNIBCells)(nil),
 		(*C1ResponseMessagePayload_RNIBUEs)(nil),
 		(*C1ResponseMessagePayload_RNIBLinks)(nil),
 	}
-}
-
-func _C1ResponseMessagePayload_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*C1ResponseMessagePayload)
-	// result
-	switch x := m.Result.(type) {
-	case *C1ResponseMessagePayload_ResponseCode:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		_ = b.EncodeStringBytes(x.ResponseCode)
-	case *C1ResponseMessagePayload_RNIBCells:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RNIBCells); err != nil {
-			return err
-		}
-	case *C1ResponseMessagePayload_RNIBUEs:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RNIBUEs); err != nil {
-			return err
-		}
-	case *C1ResponseMessagePayload_RNIBLinks:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RNIBLinks); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("C1ResponseMessagePayload.Result has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _C1ResponseMessagePayload_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*C1ResponseMessagePayload)
-	switch tag {
-	case 1: // result.responseCode
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Result = &C1ResponseMessagePayload_ResponseCode{x}
-		return true, err
-	case 2: // result.rNIBCells
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(C1RNIBCells)
-		err := b.DecodeMessage(msg)
-		m.Result = &C1ResponseMessagePayload_RNIBCells{msg}
-		return true, err
-	case 3: // result.rNIBUEs
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(C1RNIBUEs)
-		err := b.DecodeMessage(msg)
-		m.Result = &C1ResponseMessagePayload_RNIBUEs{msg}
-		return true, err
-	case 4: // result.rNIBLinks
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(C1RNIBLinks)
-		err := b.DecodeMessage(msg)
-		m.Result = &C1ResponseMessagePayload_RNIBLinks{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _C1ResponseMessagePayload_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*C1ResponseMessagePayload)
-	// result
-	switch x := m.Result.(type) {
-	case *C1ResponseMessagePayload_ResponseCode:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.ResponseCode)))
-		n += len(x.ResponseCode)
-	case *C1ResponseMessagePayload_RNIBCells:
-		s := proto.Size(x.RNIBCells)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *C1ResponseMessagePayload_RNIBUEs:
-		s := proto.Size(x.RNIBUEs)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *C1ResponseMessagePayload_RNIBLinks:
-		s := proto.Size(x.RNIBLinks)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type C1RNIBCells struct {
@@ -1155,7 +1287,7 @@ func (m *C1RNIBCells) Reset()         { *m = C1RNIBCells{} }
 func (m *C1RNIBCells) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBCells) ProtoMessage()    {}
 func (*C1RNIBCells) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{18}
+	return fileDescriptor_49d6c0a03a213d51, []int{19}
 }
 func (m *C1RNIBCells) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1199,7 +1331,7 @@ func (m *C1RNIBUEs) Reset()         { *m = C1RNIBUEs{} }
 func (m *C1RNIBUEs) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBUEs) ProtoMessage()    {}
 func (*C1RNIBUEs) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{19}
+	return fileDescriptor_49d6c0a03a213d51, []int{20}
 }
 func (m *C1RNIBUEs) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1243,7 +1375,7 @@ func (m *C1RNIBLinks) Reset()         { *m = C1RNIBLinks{} }
 func (m *C1RNIBLinks) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBLinks) ProtoMessage()    {}
 func (*C1RNIBLinks) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{20}
+	return fileDescriptor_49d6c0a03a213d51, []int{21}
 }
 func (m *C1RNIBLinks) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1288,7 +1420,7 @@ func (m *C1ECGI) Reset()         { *m = C1ECGI{} }
 func (m *C1ECGI) String() string { return proto.CompactTextString(m) }
 func (*C1ECGI) ProtoMessage()    {}
 func (*C1ECGI) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{21}
+	return fileDescriptor_49d6c0a03a213d51, []int{22}
 }
 func (m *C1ECGI) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1340,7 +1472,7 @@ func (m *C1CandScell) Reset()         { *m = C1CandScell{} }
 func (m *C1CandScell) String() string { return proto.CompactTextString(m) }
 func (*C1CandScell) ProtoMessage()    {}
 func (*C1CandScell) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{22}
+	return fileDescriptor_49d6c0a03a213d51, []int{23}
 }
 func (m *C1CandScell) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1396,7 +1528,7 @@ func (m *C1RNIBCell) Reset()         { *m = C1RNIBCell{} }
 func (m *C1RNIBCell) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBCell) ProtoMessage()    {}
 func (*C1RNIBCell) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{23}
+	return fileDescriptor_49d6c0a03a213d51, []int{24}
 }
 func (m *C1RNIBCell) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1467,7 +1599,7 @@ func (m *C1CellConfigAttribute) Reset()         { *m = C1CellConfigAttribute{} }
 func (m *C1CellConfigAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1CellConfigAttribute) ProtoMessage()    {}
 func (*C1CellConfigAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{24}
+	return fileDescriptor_49d6c0a03a213d51, []int{25}
 }
 func (m *C1CellConfigAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1603,7 +1735,7 @@ func (m *C1PciArfcn) Reset()         { *m = C1PciArfcn{} }
 func (m *C1PciArfcn) String() string { return proto.CompactTextString(m) }
 func (*C1PciArfcn) ProtoMessage()    {}
 func (*C1PciArfcn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{25}
+	return fileDescriptor_49d6c0a03a213d51, []int{26}
 }
 func (m *C1PciArfcn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1648,23 +1780,24 @@ func (m *C1PciArfcn) GetEarfcnDl() string {
 
 // This attributed defined all elements as a list (repeated), but this list only has a single element for MWC demo -> will be extended
 type C1RRMConfigAttribute struct {
-	Crnti             []string    `protobuf:"bytes,1,rep,name=crnti,proto3" json:"crnti,omitempty"`
-	PciArfcn          *C1PciArfcn `protobuf:"bytes,2,opt,name=pciArfcn,proto3" json:"pciArfcn,omitempty"`
-	Pa                []C1XICICPA `protobuf:"varint,3,rep,packed,name=pa,proto3,enum=interface.c1.C1XICICPA" json:"pa,omitempty"`
-	StartPrbDl        []string    `protobuf:"bytes,4,rep,name=startPrbDl,proto3" json:"startPrbDl,omitempty"`
-	EndPrbDl          []string    `protobuf:"bytes,5,rep,name=endPrbDl,proto3" json:"endPrbDl,omitempty"`
-	SubFrameBitmaskDl []string    `protobuf:"bytes,6,rep,name=subFrameBitmaskDl,proto3" json:"subFrameBitmaskDl,omitempty"`
-	P0UePusch         []string    `protobuf:"bytes,7,rep,name=p0UePusch,proto3" json:"p0UePusch,omitempty"`
-	StartPrbUl        []string    `protobuf:"bytes,8,rep,name=startPrbUl,proto3" json:"startPrbUl,omitempty"`
-	EndPrbUl          []string    `protobuf:"bytes,9,rep,name=endPrbUl,proto3" json:"endPrbUl,omitempty"`
-	SubFrameBitmaskUl []string    `protobuf:"bytes,10,rep,name=subFrameBitmaskUl,proto3" json:"subFrameBitmaskUl,omitempty"`
+	Ecgi              *C1ECGI     `protobuf:"bytes,1,opt,name=ecgi,proto3" json:"ecgi,omitempty"`
+	Crnti             []string    `protobuf:"bytes,2,rep,name=crnti,proto3" json:"crnti,omitempty"`
+	PciArfcn          *C1PciArfcn `protobuf:"bytes,3,opt,name=pciArfcn,proto3" json:"pciArfcn,omitempty"`
+	Pa                []C1XICICPA `protobuf:"varint,4,rep,packed,name=pa,proto3,enum=interface.c1.C1XICICPA" json:"pa,omitempty"`
+	StartPrbDl        []string    `protobuf:"bytes,5,rep,name=startPrbDl,proto3" json:"startPrbDl,omitempty"`
+	EndPrbDl          []string    `protobuf:"bytes,6,rep,name=endPrbDl,proto3" json:"endPrbDl,omitempty"`
+	SubFrameBitmaskDl []string    `protobuf:"bytes,7,rep,name=subFrameBitmaskDl,proto3" json:"subFrameBitmaskDl,omitempty"`
+	P0UePusch         []string    `protobuf:"bytes,8,rep,name=p0UePusch,proto3" json:"p0UePusch,omitempty"`
+	StartPrbUl        []string    `protobuf:"bytes,9,rep,name=startPrbUl,proto3" json:"startPrbUl,omitempty"`
+	EndPrbUl          []string    `protobuf:"bytes,10,rep,name=endPrbUl,proto3" json:"endPrbUl,omitempty"`
+	SubFrameBitmaskUl []string    `protobuf:"bytes,11,rep,name=subFrameBitmaskUl,proto3" json:"subFrameBitmaskUl,omitempty"`
 }
 
 func (m *C1RRMConfigAttribute) Reset()         { *m = C1RRMConfigAttribute{} }
 func (m *C1RRMConfigAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1RRMConfigAttribute) ProtoMessage()    {}
 func (*C1RRMConfigAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{26}
+	return fileDescriptor_49d6c0a03a213d51, []int{27}
 }
 func (m *C1RRMConfigAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1692,6 +1825,13 @@ func (m *C1RRMConfigAttribute) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_C1RRMConfigAttribute proto.InternalMessageInfo
+
+func (m *C1RRMConfigAttribute) GetEcgi() *C1ECGI {
+	if m != nil {
+		return m.Ecgi
+	}
+	return nil
+}
 
 func (m *C1RRMConfigAttribute) GetCrnti() []string {
 	if m != nil {
@@ -1776,7 +1916,7 @@ func (m *C1RNIBUE) Reset()         { *m = C1RNIBUE{} }
 func (m *C1RNIBUE) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBUE) ProtoMessage()    {}
 func (*C1RNIBUE) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{27}
+	return fileDescriptor_49d6c0a03a213d51, []int{28}
 }
 func (m *C1RNIBUE) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1849,7 +1989,7 @@ func (m *C1RNIBLinkID) Reset()         { *m = C1RNIBLinkID{} }
 func (m *C1RNIBLinkID) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBLinkID) ProtoMessage()    {}
 func (*C1RNIBLinkID) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{28}
+	return fileDescriptor_49d6c0a03a213d51, []int{29}
 }
 func (m *C1RNIBLinkID) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1905,7 +2045,7 @@ func (m *C1RadioRepPerServCellAttribute) Reset()         { *m = C1RadioRepPerSer
 func (m *C1RadioRepPerServCellAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1RadioRepPerServCellAttribute) ProtoMessage()    {}
 func (*C1RadioRepPerServCellAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{29}
+	return fileDescriptor_49d6c0a03a213d51, []int{30}
 }
 func (m *C1RadioRepPerServCellAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1977,7 +2117,7 @@ func (m *C1RadioMeasReportPerUeAttribute) Reset()         { *m = C1RadioMeasRepo
 func (m *C1RadioMeasReportPerUeAttribute) String() string { return proto.CompactTextString(m) }
 func (*C1RadioMeasReportPerUeAttribute) ProtoMessage()    {}
 func (*C1RadioMeasReportPerUeAttribute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{30}
+	return fileDescriptor_49d6c0a03a213d51, []int{31}
 }
 func (m *C1RadioMeasReportPerUeAttribute) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2023,7 +2163,7 @@ func (m *C1RNIBLink) Reset()         { *m = C1RNIBLink{} }
 func (m *C1RNIBLink) String() string { return proto.CompactTextString(m) }
 func (*C1RNIBLink) ProtoMessage()    {}
 func (*C1RNIBLink) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{31}
+	return fileDescriptor_49d6c0a03a213d51, []int{32}
 }
 func (m *C1RNIBLink) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2077,7 +2217,7 @@ func (m *C1HandoverRequest) Reset()         { *m = C1HandoverRequest{} }
 func (m *C1HandoverRequest) String() string { return proto.CompactTextString(m) }
 func (*C1HandoverRequest) ProtoMessage()    {}
 func (*C1HandoverRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{32}
+	return fileDescriptor_49d6c0a03a213d51, []int{33}
 }
 func (m *C1HandoverRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2136,7 +2276,7 @@ func (m *C1RRMConfiguration) Reset()         { *m = C1RRMConfiguration{} }
 func (m *C1RRMConfiguration) String() string { return proto.CompactTextString(m) }
 func (*C1RRMConfiguration) ProtoMessage()    {}
 func (*C1RRMConfiguration) Descriptor() ([]byte, []int) {
-	return fileDescriptor_49d6c0a03a213d51, []int{33}
+	return fileDescriptor_49d6c0a03a213d51, []int{34}
 }
 func (m *C1RRMConfiguration) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2173,9 +2313,11 @@ func (m *C1RRMConfiguration) GetTargetCells() *C1RNIBCells {
 }
 
 func init() {
+	proto.RegisterEnum("interface.c1.StationPowerOffset", StationPowerOffset_name, StationPowerOffset_value)
 	proto.RegisterEnum("interface.c1.C1MessageType", C1MessageType_name, C1MessageType_value)
 	proto.RegisterEnum("interface.c1.C1RNIBType", C1RNIBType_name, C1RNIBType_value)
 	proto.RegisterEnum("interface.c1.C1XICICPA", C1XICICPA_name, C1XICICPA_value)
+	proto.RegisterType((*ECGI)(nil), "interface.c1.ECGI")
 	proto.RegisterType((*StationListRequest)(nil), "interface.c1.StationListRequest")
 	proto.RegisterType((*StationInfo)(nil), "interface.c1.StationInfo")
 	proto.RegisterType((*UEListRequest)(nil), "interface.c1.UEListRequest")
@@ -2215,113 +2357,125 @@ func init() {
 func init() { proto.RegisterFile("api/nb/c1-interface.proto", fileDescriptor_49d6c0a03a213d51) }
 
 var fileDescriptor_49d6c0a03a213d51 = []byte{
-	// 1681 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0xdd, 0x92, 0xdb, 0x48,
-	0x15, 0xb6, 0xec, 0x19, 0xff, 0x1c, 0xcf, 0x8f, 0xa6, 0xe3, 0x9d, 0x28, 0x66, 0x71, 0xa6, 0x44,
-	0x80, 0x54, 0x6a, 0x37, 0x89, 0x27, 0x21, 0x5b, 0xcb, 0xb2, 0x80, 0xed, 0xf1, 0xc6, 0xda, 0x8c,
-	0x3d, 0x5e, 0xc9, 0x82, 0xa5, 0x8a, 0xc2, 0x25, 0x4b, 0x3d, 0x13, 0xd5, 0xca, 0xb2, 0xb6, 0x25,
-	0x2f, 0xc9, 0x25, 0x6f, 0x00, 0x55, 0xdc, 0x50, 0xc5, 0x1d, 0x3c, 0x01, 0x4f, 0xb1, 0x97, 0xb9,
-	0x24, 0x77, 0x54, 0xf2, 0x02, 0xdc, 0x70, 0x49, 0x15, 0xd5, 0xad, 0x96, 0xf5, 0x63, 0x29, 0x21,
-	0x7b, 0xa7, 0x3e, 0xe7, 0x3b, 0xa7, 0xbf, 0xf3, 0xd3, 0xad, 0xee, 0x86, 0x1b, 0x86, 0x67, 0xdf,
-	0x73, 0x17, 0xf7, 0xcc, 0xee, 0x87, 0xb6, 0x1b, 0x60, 0x72, 0x69, 0x98, 0xf8, 0xae, 0x47, 0x56,
-	0xc1, 0x0a, 0xed, 0xc5, 0x02, 0xb3, 0x2b, 0xb7, 0x00, 0x69, 0x81, 0x11, 0xd8, 0x2b, 0xf7, 0xdc,
-	0xf6, 0x03, 0x15, 0x7f, 0xbd, 0xc6, 0x7e, 0x20, 0xef, 0x43, 0x93, 0x4b, 0x15, 0xf7, 0x72, 0x25,
-	0x1f, 0xc2, 0xbe, 0x3e, 0x4c, 0xea, 0xeb, 0x50, 0xd5, 0x87, 0x4c, 0x25, 0xc1, 0xf1, 0xc6, 0xde,
-	0xfd, 0x2a, 0x89, 0x39, 0x82, 0xc3, 0x84, 0x86, 0x81, 0xaf, 0xc1, 0x11, 0xf5, 0x93, 0xc6, 0xed,
-	0x01, 0x84, 0x42, 0x06, 0x39, 0x82, 0xc3, 0x91, 0xe1, 0x5a, 0x17, 0xdf, 0x60, 0x12, 0x01, 0x10,
-	0x88, 0xb1, 0xc8, 0xf7, 0x56, 0xae, 0x8f, 0xa9, 0x27, 0xd5, 0xb0, 0xec, 0xd5, 0x74, 0xf5, 0xfb,
-	0x18, 0xd8, 0x02, 0x94, 0x14, 0x72, 0xe8, 0x9f, 0x04, 0x10, 0x07, 0x5d, 0x8e, 0x19, 0x63, 0xdf,
-	0x37, 0xae, 0x30, 0xfa, 0x19, 0x54, 0x9f, 0x62, 0xc3, 0xc2, 0x44, 0x12, 0x4e, 0x84, 0xdb, 0xcd,
-	0xd3, 0x5b, 0x77, 0x93, 0x59, 0xb9, 0x9b, 0xc5, 0x8f, 0x18, 0x56, 0xe5, 0x36, 0xe8, 0x17, 0x50,
-	0xf3, 0x8c, 0xe7, 0xce, 0xca, 0xb0, 0xa4, 0x32, 0x33, 0xff, 0xe1, 0x9b, 0xcd, 0xa7, 0x21, 0x58,
-	0x8d, 0xac, 0xe4, 0x3f, 0x0b, 0x70, 0x44, 0x41, 0x21, 0xc5, 0x88, 0xd4, 0xa7, 0x19, 0x52, 0x39,
-	0x5e, 0x53, 0x06, 0x19, 0x56, 0xbf, 0xcc, 0xb2, 0xfa, 0xd1, 0x5b, 0xec, 0xb7, 0x68, 0x29, 0x70,
-	0x9c, 0x1f, 0x39, 0xba, 0x07, 0x3b, 0xc1, 0x73, 0x0f, 0x33, 0x62, 0x07, 0xa7, 0xdf, 0xcb, 0x3a,
-	0xe6, 0xe0, 0xd9, 0x73, 0x0f, 0xab, 0x0c, 0x28, 0xff, 0xa5, 0x0c, 0xd7, 0x0b, 0xd2, 0x80, 0x46,
-	0x70, 0x44, 0x42, 0x05, 0xb6, 0xd4, 0x89, 0xd2, 0x9f, 0xc5, 0x9e, 0xa5, 0x2d, 0xca, 0x5c, 0x3f,
-	0x2a, 0xa9, 0xdb, 0x46, 0xe8, 0x09, 0x1c, 0x3e, 0x35, 0x5c, 0x6b, 0x15, 0x77, 0x0b, 0x0f, 0xfd,
-	0x66, 0xd6, 0xcf, 0x28, 0x0d, 0x1b, 0x95, 0xd4, 0xac, 0x25, 0xfa, 0x2d, 0x5c, 0x27, 0x64, 0x39,
-	0x58, 0xb9, 0x97, 0xf6, 0xd5, 0x9a, 0xb0, 0xce, 0x8d, 0x9c, 0x56, 0x98, 0xd3, 0x93, 0x2d, 0x72,
-	0xea, 0x38, 0x05, 0x1f, 0x95, 0xd4, 0x22, 0x17, 0xfd, 0x06, 0xd4, 0x38, 0x7f, 0xf9, 0xf3, 0x30,
-	0x35, 0x39, 0xb5, 0x7c, 0xf7, 0x3c, 0xff, 0x47, 0x00, 0xa9, 0xa8, 0xb0, 0xe8, 0x16, 0xec, 0x11,
-	0xae, 0x19, 0xac, 0xac, 0xd0, 0x6b, 0x63, 0x54, 0x52, 0x53, 0x52, 0xf4, 0x31, 0x34, 0xc8, 0x44,
-	0xe9, 0x0f, 0xb0, 0xe3, 0xf8, 0x3c, 0x7d, 0x37, 0xf2, 0xca, 0xc0, 0x00, 0xa3, 0x92, 0x1a, 0xa3,
-	0xd1, 0x03, 0xa8, 0xd1, 0x81, 0x3e, 0xf4, 0x79, 0x8a, 0xae, 0xe7, 0x19, 0xea, 0x43, 0x6a, 0x16,
-	0x21, 0xa3, 0xf9, 0xe8, 0x92, 0xf7, 0xa5, 0x9d, 0xe2, 0xf9, 0x18, 0x20, 0x9a, 0x8f, 0x0d, 0xfa,
-	0x75, 0xa8, 0x12, 0xec, 0xaf, 0x9d, 0x40, 0x1e, 0x42, 0x33, 0xc1, 0x0a, 0x3d, 0x4a, 0xc6, 0x20,
-	0x9c, 0x54, 0x6e, 0x37, 0xf3, 0x5b, 0x89, 0x02, 0x12, 0x01, 0xc8, 0x9f, 0x42, 0x63, 0xc3, 0x11,
-	0xdd, 0x8f, 0xa3, 0x09, 0x5d, 0x1c, 0xe7, 0x47, 0xb3, 0x09, 0x25, 0x66, 0xc1, 0xe8, 0x45, 0x2c,
-	0xc2, 0xc8, 0xde, 0xc0, 0x82, 0x02, 0x12, 0x61, 0xc9, 0x0f, 0xa1, 0x3a, 0xe8, 0x0e, 0x07, 0x8f,
-	0x15, 0x74, 0x0c, 0x55, 0xcf, 0x59, 0xba, 0x8a, 0x15, 0xd6, 0x4a, 0xe5, 0x23, 0x84, 0x60, 0x07,
-	0x9b, 0x76, 0xb8, 0xb0, 0x1b, 0x2a, 0xfb, 0x96, 0x3f, 0xa1, 0x93, 0x0f, 0x0c, 0xd7, 0xd2, 0x4c,
-	0xec, 0x38, 0x48, 0x84, 0x8a, 0x67, 0xda, 0xdc, 0x8e, 0x7e, 0xa2, 0x36, 0xd4, 0xb1, 0x41, 0x2e,
-	0x4d, 0xf7, 0xcc, 0xe1, 0x86, 0x9b, 0xb1, 0xfc, 0x52, 0x00, 0x88, 0x53, 0x82, 0x6e, 0x53, 0xff,
-	0x57, 0x36, 0xdf, 0x78, 0x5a, 0x59, 0xd2, 0x94, 0x9b, 0xca, 0x10, 0xe8, 0x0b, 0x38, 0xa2, 0xd3,
-	0xa5, 0x7a, 0x9c, 0x77, 0xcd, 0x0f, 0xb2, 0x66, 0x83, 0x0d, 0xb0, 0x17, 0x04, 0xc4, 0x5e, 0xac,
-	0x03, 0xac, 0x6e, 0x5b, 0xa3, 0x09, 0x88, 0xd9, 0x55, 0xc3, 0xdb, 0x49, 0x2e, 0x5c, 0x71, 0xb1,
-	0xc3, 0x2d, 0x5b, 0xf9, 0xc5, 0x0e, 0xbc, 0x97, 0x3b, 0xf9, 0x3b, 0x84, 0xc9, 0xb3, 0x59, 0x8e,
-	0xb3, 0xf9, 0x31, 0x80, 0x19, 0x25, 0x9b, 0xb6, 0x7b, 0x25, 0xaf, 0x6f, 0x37, 0xe5, 0x50, 0x13,
-	0xe0, 0x54, 0x21, 0x76, 0xd2, 0x85, 0x88, 0x75, 0xba, 0x23, 0xed, 0x26, 0x75, 0xba, 0x83, 0x4e,
-	0xa0, 0x49, 0x16, 0xfe, 0x14, 0x93, 0x59, 0x60, 0x9f, 0x39, 0x52, 0x95, 0xa9, 0x93, 0xa2, 0x14,
-	0x42, 0x77, 0xa4, 0x5a, 0x06, 0xa1, 0x3b, 0x48, 0x86, 0x3d, 0x77, 0xbd, 0x9c, 0x3d, 0xeb, 0xb9,
-	0x01, 0x76, 0x5d, 0x43, 0xaa, 0x33, 0x48, 0x4a, 0x86, 0x3a, 0x00, 0xd6, 0xda, 0x73, 0xf0, 0xb3,
-	0x31, 0xdd, 0x25, 0x1a, 0x0c, 0x91, 0x90, 0xa0, 0xbb, 0x80, 0x96, 0xc6, 0xb3, 0xc9, 0x9a, 0xe6,
-	0xd9, 0xc5, 0x66, 0x80, 0x2d, 0x1d, 0xfb, 0x12, 0x30, 0x5c, 0x8e, 0x06, 0x3d, 0x82, 0xe3, 0x8c,
-	0xb4, 0x8f, 0x0d, 0x82, 0x89, 0x2f, 0x35, 0x99, 0x4d, 0x81, 0x36, 0xb6, 0xd3, 0xb1, 0xaf, 0x99,
-	0x4f, 0xb1, 0xb5, 0x09, 0x7d, 0x2f, 0x69, 0x97, 0xd5, 0x16, 0xd9, 0xe9, 0x8e, 0xb4, 0x5f, 0x6c,
-	0xa7, 0xd3, 0xae, 0x3f, 0xb4, 0x9c, 0xcb, 0x50, 0x38, 0x74, 0x8d, 0x85, 0x83, 0xa5, 0x03, 0x66,
-	0x90, 0x15, 0xcb, 0x3f, 0xa5, 0xab, 0x65, 0x6a, 0xda, 0x3d, 0x5a, 0x99, 0x77, 0x5c, 0x6a, 0xff,
-	0x2d, 0x43, 0x2b, 0xaf, 0x73, 0x51, 0x0b, 0x76, 0x4d, 0xe2, 0x06, 0x36, 0xdb, 0x2a, 0x1a, 0x6a,
-	0x38, 0x40, 0x0f, 0xa1, 0xee, 0xf1, 0x89, 0xf8, 0xba, 0xda, 0xda, 0x43, 0x22, 0x22, 0xea, 0x06,
-	0x89, 0x7e, 0x0c, 0x65, 0xcf, 0x60, 0x5d, 0x79, 0xb0, 0xbd, 0x09, 0x7f, 0xa9, 0x0c, 0x94, 0xc1,
-	0xb4, 0xa7, 0x96, 0x3d, 0x56, 0x6b, 0x3f, 0x30, 0x48, 0x30, 0x25, 0x0b, 0xd6, 0x8d, 0x74, 0xe6,
-	0x84, 0x84, 0x45, 0xe2, 0x5a, 0xa1, 0x76, 0x97, 0x69, 0x37, 0x63, 0xf4, 0x01, 0x1c, 0xf9, 0xeb,
-	0xc5, 0x67, 0xc4, 0x58, 0xe2, 0xbe, 0x1d, 0x2c, 0x0d, 0xff, 0x2b, 0xd6, 0x95, 0x14, 0xb4, 0xad,
-	0x40, 0xef, 0x43, 0xc3, 0xbb, 0xaf, 0xe3, 0xe9, 0xda, 0x37, 0x9f, 0x4a, 0x35, 0x86, 0x8a, 0x05,
-	0x49, 0x1e, 0xba, 0x23, 0xd5, 0xd3, 0x3c, 0xf4, 0x04, 0x0f, 0xdd, 0x91, 0x1a, 0x49, 0x1e, 0x7a,
-	0x1e, 0x0f, 0xdd, 0x91, 0x20, 0x97, 0x87, 0xee, 0xc8, 0x7f, 0x17, 0xa0, 0x1e, 0x6d, 0xdd, 0x74,
-	0x23, 0xb5, 0x97, 0x7e, 0x54, 0x3b, 0xf6, 0x1d, 0xd7, 0x21, 0xac, 0x1c, 0xaf, 0xc3, 0x1d, 0xd8,
-	0xf5, 0xe9, 0x1e, 0xc2, 0xb7, 0xa2, 0xfc, 0xcd, 0x22, 0x84, 0xd0, 0x65, 0xb8, 0x5c, 0x62, 0x1d,
-	0x6b, 0x5d, 0xc3, 0x53, 0x2c, 0xbe, 0xc6, 0x93, 0x22, 0x8a, 0xc0, 0xee, 0x62, 0x83, 0x08, 0x57,
-	0x7a, 0x52, 0x24, 0x9f, 0xc3, 0x5e, 0xfc, 0x77, 0x50, 0xce, 0xde, 0x61, 0xaf, 0x8a, 0x62, 0x2a,
-	0xc7, 0x31, 0xc9, 0xdf, 0x0a, 0xd0, 0x19, 0x74, 0xd9, 0x71, 0x58, 0xc5, 0xde, 0x14, 0x13, 0x0d,
-	0x93, 0x6f, 0x28, 0xd7, 0xef, 0xb2, 0x19, 0x4a, 0x50, 0x33, 0xbf, 0xb6, 0x47, 0x36, 0x3b, 0x5e,
-	0xd1, 0x2c, 0x47, 0x43, 0xfa, 0xbf, 0x22, 0xa1, 0xa2, 0xc2, 0x14, 0x7c, 0x84, 0x6e, 0xc1, 0xbe,
-	0x47, 0xcb, 0xac, 0xd9, 0x2e, 0x61, 0xea, 0xb0, 0xd1, 0xd2, 0xc2, 0x10, 0x65, 0x26, 0x50, 0xbb,
-	0x11, 0x2a, 0x21, 0x94, 0xff, 0x20, 0xc0, 0x4d, 0x1e, 0xca, 0x18, 0x1b, 0xbe, 0x8a, 0xbd, 0x15,
-	0x09, 0xa6, 0x98, 0xe8, 0x38, 0x8e, 0xe5, 0x77, 0x70, 0x8d, 0x6c, 0xc7, 0xca, 0xff, 0xc1, 0x1f,
-	0x6c, 0xfd, 0x45, 0xde, 0x90, 0x16, 0x35, 0xcf, 0x91, 0xfc, 0xb7, 0xcd, 0xef, 0x92, 0x56, 0x07,
-	0x9d, 0x42, 0xd5, 0xa1, 0x55, 0xb2, 0x78, 0xf2, 0xda, 0x45, 0x7f, 0x79, 0xe5, 0x4c, 0xe5, 0x48,
-	0x64, 0x40, 0x8b, 0xe4, 0xc4, 0xc0, 0xd7, 0xf8, 0x87, 0xb9, 0x1c, 0x8b, 0xe2, 0x55, 0x73, 0x5d,
-	0xc9, 0xff, 0x60, 0xd7, 0x8a, 0xcc, 0x51, 0x17, 0xdd, 0x83, 0x5d, 0x87, 0x9f, 0x48, 0xde, 0x7c,
-	0xd6, 0x52, 0x43, 0x1c, 0xfa, 0x09, 0xd4, 0x7d, 0x62, 0xfe, 0x7f, 0xe7, 0x41, 0x75, 0x03, 0xa5,
-	0x66, 0x96, 0x1f, 0x0c, 0xf8, 0xef, 0xf1, 0x6d, 0x66, 0x11, 0x54, 0xfe, 0x02, 0xd0, 0xf6, 0x49,
-	0x1a, 0x7d, 0x02, 0xcd, 0xc0, 0x20, 0x57, 0x38, 0x88, 0x8e, 0x74, 0x6f, 0xf1, 0x97, 0x44, 0xdf,
-	0xf9, 0xab, 0x00, 0xfb, 0xa9, 0xc3, 0x32, 0x3a, 0xa6, 0x93, 0xcc, 0xc7, 0x43, 0x4d, 0xeb, 0x3d,
-	0x1e, 0xce, 0xf5, 0xc9, 0x93, 0xc9, 0xc5, 0xaf, 0x27, 0x62, 0x09, 0xb5, 0xe8, 0xdd, 0x70, 0xfe,
-	0x78, 0x38, 0x9b, 0x33, 0x57, 0xc3, 0xf3, 0x73, 0x4d, 0x14, 0x10, 0x82, 0x83, 0x84, 0x54, 0x1f,
-	0x6a, 0x62, 0x39, 0x83, 0x3c, 0x57, 0x26, 0x4f, 0x34, 0xb1, 0x82, 0xde, 0xa3, 0x09, 0x9f, 0x4f,
-	0x2f, 0xb4, 0xd9, 0x7c, 0xd4, 0x9b, 0x9c, 0x5d, 0xfc, 0x6a, 0xa8, 0x6a, 0xe2, 0x0e, 0x7a, 0x9f,
-	0x1e, 0xca, 0x43, 0xb1, 0x3a, 0x1e, 0x0f, 0x2e, 0x26, 0x9f, 0x29, 0x8f, 0x75, 0xb5, 0x37, 0x53,
-	0x2e, 0x26, 0xe2, 0xee, 0x1d, 0x3d, 0xea, 0x25, 0x46, 0xed, 0x1a, 0x1c, 0x0e, 0xba, 0xcc, 0x69,
-	0x82, 0x97, 0x48, 0x37, 0x83, 0x50, 0x48, 0x49, 0x89, 0x02, 0x3a, 0xa0, 0x46, 0x1c, 0x36, 0x14,
-	0xcb, 0x49, 0x04, 0x25, 0x23, 0x56, 0xee, 0xbc, 0x14, 0xe8, 0x61, 0x96, 0xef, 0xf5, 0xe8, 0x06,
-	0x3d, 0x03, 0xcd, 0xd9, 0x68, 0x3e, 0xed, 0xcd, 0xcf, 0xfa, 0xf3, 0xb1, 0x32, 0xd1, 0xb5, 0x47,
-	0x62, 0x09, 0x75, 0xa0, 0x9d, 0xa3, 0xfa, 0xf2, 0xe1, 0xd9, 0xc5, 0xec, 0xa3, 0x8f, 0x44, 0xa1,
-	0xc8, 0xf4, 0x81, 0x58, 0x2e, 0x30, 0xd5, 0xba, 0xa1, 0x69, 0x85, 0x67, 0x29, 0xa9, 0xbf, 0x2f,
-	0xee, 0xe4, 0x48, 0xbb, 0xe2, 0x6e, 0x8e, 0xf4, 0x54, 0xac, 0xe6, 0x48, 0x1f, 0x88, 0xb5, 0xd3,
-	0x7f, 0x57, 0x68, 0x01, 0x95, 0xa8, 0xfa, 0x74, 0x5d, 0xda, 0x26, 0x46, 0x63, 0xd8, 0x3b, 0xb7,
-	0xfd, 0x80, 0xbf, 0x33, 0xf8, 0x28, 0x73, 0x43, 0xdb, 0x7e, 0xd9, 0x68, 0xdf, 0xc8, 0x45, 0x28,
-	0xee, 0xe5, 0xea, 0xbe, 0x80, 0x7e, 0x0e, 0x35, 0x8a, 0xa5, 0x77, 0x81, 0xcc, 0xd5, 0x2b, 0xf5,
-	0xfc, 0xd1, 0x6e, 0x65, 0x95, 0xdc, 0xfe, 0x37, 0x20, 0x26, 0xe8, 0x84, 0x77, 0x82, 0x5b, 0x05,
-	0x94, 0x52, 0x8f, 0x20, 0xed, 0xef, 0x17, 0xa2, 0xb8, 0xeb, 0xcf, 0xa1, 0x19, 0x52, 0x0b, 0xbd,
-	0xde, 0xdc, 0xa6, 0x97, 0x76, 0x28, 0xe5, 0x01, 0xb8, 0xaf, 0x29, 0x1c, 0xce, 0x88, 0x7d, 0x75,
-	0x85, 0x49, 0xf4, 0xae, 0x82, 0x32, 0xf3, 0x67, 0x9e, 0x60, 0xda, 0x9d, 0x22, 0x75, 0x78, 0x8d,
-	0x44, 0x2a, 0xec, 0x6b, 0x38, 0x88, 0x1f, 0x5f, 0xb2, 0xfc, 0xb6, 0xde, 0x6a, 0xda, 0x27, 0xc5,
-	0x80, 0xd0, 0x67, 0x5f, 0xfa, 0xf6, 0x55, 0x47, 0x78, 0xf1, 0xaa, 0x23, 0xfc, 0xeb, 0x55, 0x47,
-	0xf8, 0xe3, 0xeb, 0x4e, 0xe9, 0xc5, 0xeb, 0x4e, 0xe9, 0x9f, 0xaf, 0x3b, 0xa5, 0x45, 0x95, 0x3d,
-	0x64, 0x3d, 0xf8, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x6e, 0x6d, 0x35, 0x8d, 0xe5, 0x12, 0x00,
-	0x00,
+	// 1887 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x58, 0xcf, 0x73, 0xdb, 0xc6,
+	0xf5, 0x27, 0x48, 0x8a, 0x12, 0x9f, 0x7e, 0x41, 0x1b, 0x45, 0x86, 0xf5, 0xcd, 0x97, 0xd6, 0xa0,
+	0x6e, 0xea, 0xd1, 0x38, 0xb2, 0x29, 0xb9, 0x4e, 0xd3, 0x24, 0x6d, 0x24, 0x92, 0x31, 0x11, 0x8b,
+	0x14, 0x0d, 0x12, 0x6d, 0xda, 0xe9, 0x94, 0x03, 0x02, 0x2b, 0x09, 0x13, 0x10, 0xa4, 0x17, 0x60,
+	0x6a, 0x1f, 0xfb, 0x17, 0xb4, 0x9d, 0xe9, 0xa5, 0x9d, 0xde, 0xda, 0x99, 0xde, 0xfb, 0x57, 0xe4,
+	0xe8, 0x63, 0x73, 0xeb, 0xd8, 0xff, 0x40, 0x2f, 0xbd, 0x77, 0x76, 0xb1, 0x20, 0x16, 0x20, 0x20,
+	0x45, 0x49, 0x6f, 0xd8, 0xf7, 0x3e, 0xef, 0xed, 0xe7, 0xbd, 0xb7, 0xd8, 0x7d, 0xbb, 0x70, 0xdb,
+	0x9c, 0x3a, 0x0f, 0xbc, 0xd1, 0x03, 0xab, 0xfe, 0x9e, 0xe3, 0x05, 0x98, 0x9c, 0x9b, 0x16, 0x3e,
+	0x98, 0x92, 0x49, 0x30, 0x41, 0x6b, 0xb1, 0xc0, 0xaa, 0xab, 0x87, 0x50, 0x6e, 0x35, 0x9e, 0x68,
+	0x68, 0x07, 0x2a, 0x53, 0x77, 0xec, 0x39, 0xb6, 0x22, 0xed, 0x49, 0xf7, 0xaa, 0x3a, 0x1f, 0x21,
+	0x04, 0x65, 0x6c, 0x39, 0xb6, 0x52, 0x64, 0x52, 0xf6, 0xad, 0x7e, 0x04, 0xa8, 0x1f, 0x98, 0x81,
+	0x33, 0xf1, 0x4e, 0x1d, 0x3f, 0xd0, 0xf1, 0xf3, 0x19, 0xf6, 0x03, 0xf4, 0x2e, 0x45, 0x5e, 0x38,
+	0xcc, 0x7e, 0xf5, 0x10, 0x1d, 0x88, 0xd3, 0x1c, 0xd0, 0x39, 0x74, 0xa6, 0x57, 0x31, 0xac, 0x72,
+	0x6b, 0xcd, 0x3b, 0x9f, 0x7c, 0x53, 0x33, 0x74, 0x00, 0x68, 0x6c, 0xbe, 0xe8, 0xce, 0xc6, 0x8d,
+	0x89, 0xe7, 0x61, 0x2b, 0xc0, 0xb6, 0x81, 0x7d, 0xa5, 0xc4, 0x68, 0x65, 0x68, 0xd4, 0x0e, 0xac,
+	0x1b, 0x2d, 0x91, 0xdf, 0x36, 0x2c, 0x59, 0xc4, 0x0b, 0x1c, 0x1e, 0x60, 0x38, 0x98, 0x4f, 0x5f,
+	0xbc, 0x86, 0xf5, 0x2f, 0xa1, 0x62, 0xb4, 0x18, 0xe1, 0xef, 0xe4, 0x87, 0xe6, 0xd3, 0x19, 0xfb,
+	0x0e, 0x27, 0xce, 0xbe, 0xd5, 0x4f, 0x60, 0x67, 0x9e, 0x4f, 0xef, 0x8b, 0x6f, 0x93, 0xd3, 0xe7,
+	0xb0, 0x29, 0x78, 0xb8, 0x51, 0x5e, 0x1f, 0xc3, 0x9a, 0x87, 0x9d, 0x8b, 0xcb, 0xd1, 0x84, 0x50,
+	0xa9, 0x52, 0xdc, 0x2b, 0xe5, 0xe0, 0x13, 0x38, 0xf5, 0x19, 0x6c, 0xd1, 0xfc, 0x26, 0xf9, 0x7e,
+	0xb7, 0x1c, 0xdb, 0x00, 0xa1, 0xcb, 0xff, 0x41, 0x9e, 0x15, 0x58, 0xb6, 0x9e, 0x3b, 0x6d, 0xc7,
+	0x0f, 0x94, 0xd2, 0x5e, 0xe9, 0x5e, 0x55, 0x8f, 0x86, 0xea, 0xef, 0x24, 0xd8, 0x6c, 0x9b, 0x9e,
+	0x7d, 0xf6, 0x25, 0x26, 0x57, 0xf3, 0x3e, 0x04, 0xf0, 0x89, 0xc5, 0x13, 0x7b, 0xc5, 0x8c, 0x02,
+	0x8a, 0xda, 0xd8, 0x7e, 0x10, 0xd9, 0x94, 0xf2, 0x6d, 0x62, 0x94, 0x7a, 0x1f, 0xe4, 0x98, 0x90,
+	0x3f, 0x9d, 0x78, 0x3e, 0xa6, 0xfc, 0xfd, 0x99, 0x65, 0x61, 0xdf, 0x67, 0x9c, 0x56, 0xf4, 0x68,
+	0xa8, 0x9a, 0xb0, 0xa5, 0x9b, 0xb6, 0x33, 0xe9, 0x4d, 0x7e, 0x13, 0x07, 0x80, 0x84, 0x6a, 0x57,
+	0x79, 0x0a, 0x7e, 0x04, 0x95, 0xc9, 0xf9, 0xb9, 0x8f, 0x03, 0x46, 0x7d, 0xe3, 0x70, 0x2f, 0x49,
+	0x83, 0xcf, 0xce, 0xdc, 0x9c, 0x31, 0x9c, 0xce, 0xf1, 0xea, 0x01, 0x20, 0x71, 0x8a, 0x6b, 0x29,
+	0xfd, 0x41, 0x02, 0xb9, 0x51, 0xe7, 0x5c, 0x3a, 0xd8, 0xf7, 0xcd, 0x0b, 0x8c, 0x3e, 0x82, 0xca,
+	0x25, 0x36, 0x6d, 0x4c, 0xf8, 0x12, 0xbc, 0x9b, 0x9c, 0x3e, 0x8d, 0x6f, 0x33, 0xac, 0xce, 0x6d,
+	0xd0, 0x4f, 0x61, 0x79, 0x6a, 0xbe, 0x74, 0x27, 0xa6, 0xcd, 0x13, 0xff, 0xfd, 0xab, 0xcd, 0x7b,
+	0x21, 0x58, 0x8f, 0xac, 0xd4, 0x3f, 0x4a, 0xb0, 0x45, 0x41, 0x21, 0xf9, 0x88, 0xd4, 0xc7, 0x29,
+	0x52, 0x19, 0x5e, 0x13, 0x06, 0x29, 0x56, 0x9f, 0xa4, 0x59, 0xbd, 0x7b, 0x8d, 0xfd, 0x02, 0x2d,
+	0x0d, 0x76, 0xb2, 0x23, 0x47, 0x0f, 0xa0, 0x1c, 0xbc, 0x9c, 0x62, 0x46, 0x6c, 0xe3, 0xf0, 0xff,
+	0xd2, 0x8e, 0x39, 0x78, 0xf0, 0x72, 0x8a, 0x75, 0x06, 0x54, 0xff, 0x54, 0x84, 0x5b, 0x39, 0x69,
+	0x40, 0x6d, 0xd8, 0x22, 0xa1, 0x02, 0xdb, 0x7a, 0x57, 0x3b, 0x19, 0xc4, 0x9e, 0x95, 0x05, 0xca,
+	0x5c, 0xdf, 0x2e, 0xe8, 0x8b, 0x46, 0xe8, 0x29, 0x6c, 0x5e, 0x9a, 0x9e, 0x3d, 0x89, 0xff, 0x16,
+	0x1e, 0xfa, 0x9d, 0xb4, 0x9f, 0x76, 0x12, 0xd6, 0x2e, 0xe8, 0x69, 0x4b, 0xf4, 0x2b, 0xb8, 0x45,
+	0x08, 0xdd, 0xa7, 0xcf, 0x9d, 0x8b, 0x19, 0x61, 0xeb, 0x2f, 0x72, 0x1a, 0xfe, 0x2a, 0x7b, 0x0b,
+	0xe4, 0xf4, 0x4e, 0x02, 0xde, 0x2e, 0xe8, 0x79, 0x2e, 0x4e, 0xaa, 0xb0, 0xcc, 0xf9, 0xab, 0x9f,
+	0x85, 0xa9, 0xc9, 0xa8, 0xe5, 0xcd, 0xf3, 0xfc, 0x1f, 0x09, 0x94, 0xbc, 0xc2, 0xa2, 0xbb, 0xb0,
+	0x46, 0xb8, 0xa6, 0x31, 0xb1, 0x43, 0xaf, 0xd5, 0x76, 0x41, 0x4f, 0x48, 0xd1, 0x07, 0x50, 0x25,
+	0x5d, 0xed, 0xa4, 0x81, 0x5d, 0xd7, 0xe7, 0xe9, 0xbb, 0x9d, 0x55, 0x06, 0x06, 0x68, 0x17, 0xf4,
+	0x18, 0x8d, 0x8e, 0x60, 0x99, 0x0e, 0x8c, 0x96, 0xcf, 0x53, 0x74, 0x2b, 0xcb, 0xd0, 0x68, 0x51,
+	0xb3, 0x08, 0x19, 0xcd, 0x47, 0xf7, 0x52, 0x5f, 0x29, 0xe7, 0xcf, 0xc7, 0x00, 0xd1, 0x7c, 0x6c,
+	0x70, 0xb2, 0x02, 0x15, 0x82, 0xfd, 0x99, 0x1b, 0xa8, 0x2d, 0x58, 0x15, 0x58, 0xa1, 0xc7, 0x62,
+	0x0c, 0x12, 0x3b, 0x25, 0x94, 0xbc, 0x18, 0x84, 0x00, 0xd4, 0x8f, 0xa1, 0x3a, 0xe7, 0x88, 0x1e,
+	0xc6, 0xd1, 0x84, 0x2e, 0x76, 0xb2, 0xa3, 0x99, 0x87, 0x12, 0xb3, 0x60, 0xf4, 0x22, 0x16, 0x61,
+	0x64, 0x57, 0xb0, 0xa0, 0x00, 0x21, 0x2c, 0xf5, 0x11, 0x54, 0x1a, 0x75, 0xb1, 0xd3, 0xd1, 0x12,
+	0x9d, 0x8e, 0x96, 0xdd, 0xe9, 0x7c, 0x48, 0x27, 0x6f, 0x98, 0x9e, 0xdd, 0xb7, 0xb0, 0xeb, 0x22,
+	0x19, 0x4a, 0x53, 0x2b, 0xda, 0x64, 0xe9, 0x27, 0xda, 0x85, 0x15, 0x6c, 0x92, 0x73, 0xcb, 0x6b,
+	0xba, 0xdc, 0x70, 0x3e, 0x56, 0xbf, 0x96, 0x00, 0xe2, 0x94, 0xa0, 0x7b, 0x89, 0x03, 0x79, 0x3b,
+	0x4d, 0x5a, 0x38, 0xbb, 0x9e, 0xc1, 0x16, 0x9d, 0x2e, 0xb1, 0xc6, 0xf9, 0xaa, 0xf9, 0x5e, 0xda,
+	0xac, 0x31, 0x07, 0x1e, 0x07, 0x01, 0x71, 0x46, 0xb3, 0x00, 0xeb, 0x8b, 0xd6, 0xa8, 0x0b, 0x72,
+	0xfa, 0xaf, 0xe1, 0xcb, 0x49, 0xcd, 0xfd, 0xe3, 0x62, 0x87, 0x0b, 0xb6, 0xea, 0xab, 0x32, 0xbc,
+	0x9d, 0x39, 0xf9, 0x0d, 0xc2, 0xe4, 0xd9, 0x2c, 0xc6, 0xd9, 0xfc, 0x00, 0xc0, 0x8a, 0x92, 0xed,
+	0xb3, 0x73, 0x3b, 0x63, 0xdd, 0xce, 0xcb, 0xa1, 0x0b, 0xe0, 0x44, 0x21, 0xca, 0xc9, 0x42, 0xc4,
+	0x3a, 0xc3, 0x55, 0x96, 0x44, 0x9d, 0xe1, 0xa2, 0x3d, 0x58, 0x25, 0x23, 0xbf, 0x87, 0xc9, 0x20,
+	0x70, 0x9a, 0xae, 0x52, 0x61, 0x6a, 0x51, 0x94, 0x40, 0x18, 0xae, 0xb2, 0x9c, 0x42, 0x18, 0x2e,
+	0x52, 0x61, 0xcd, 0x9b, 0x8d, 0x07, 0x2f, 0x8e, 0xbd, 0x00, 0x7b, 0x9e, 0xa9, 0xac, 0x30, 0x48,
+	0x42, 0x86, 0x6a, 0x00, 0xf6, 0x6c, 0xea, 0xe2, 0x17, 0x1d, 0xba, 0x4b, 0x54, 0x19, 0x42, 0x90,
+	0xe4, 0xb4, 0xb7, 0x90, 0xd7, 0xde, 0xa2, 0xc7, 0xb0, 0x93, 0x92, 0x9e, 0x60, 0x93, 0x60, 0xe2,
+	0x2b, 0xab, 0xcc, 0x26, 0x47, 0x1b, 0xdb, 0x19, 0xd8, 0xef, 0x5b, 0x97, 0xd8, 0x9e, 0x87, 0xbe,
+	0x26, 0xda, 0xa5, 0xb5, 0x79, 0x76, 0x86, 0xab, 0xac, 0xe7, 0xdb, 0x19, 0x74, 0xd5, 0x6f, 0xda,
+	0xee, 0x79, 0x28, 0x6c, 0x79, 0xe6, 0xc8, 0xc5, 0xca, 0x06, 0x33, 0x48, 0x8b, 0xd5, 0x1f, 0xd3,
+	0xbf, 0xa5, 0x67, 0x39, 0xc7, 0xb4, 0x32, 0x37, 0xfc, 0xd5, 0xfe, 0x5e, 0x82, 0xed, 0xac, 0x95,
+	0x7b, 0x83, 0xd5, 0x38, 0x6f, 0x01, 0x8b, 0xac, 0x5d, 0xe4, 0x2d, 0xe0, 0x23, 0x58, 0x99, 0x72,
+	0x4a, 0xfc, 0x7f, 0x59, 0xd8, 0x6d, 0x22, 0xca, 0xfa, 0x1c, 0x89, 0x7e, 0x00, 0xc5, 0xa9, 0xa9,
+	0x94, 0xf7, 0x4a, 0xf7, 0x36, 0x16, 0xb7, 0xeb, 0xcf, 0xb5, 0x86, 0xd6, 0xe8, 0x1d, 0xeb, 0xc5,
+	0x29, 0x5b, 0x15, 0x7e, 0x60, 0x92, 0xa0, 0x47, 0x46, 0x4d, 0xba, 0x36, 0xe9, 0xcc, 0x82, 0x84,
+	0xc5, 0xec, 0xd9, 0xa1, 0xb6, 0xc2, 0xb4, 0xf3, 0x31, 0xba, 0x0f, 0x5b, 0xfe, 0x6c, 0xf4, 0x29,
+	0x31, 0xc7, 0xf8, 0xc4, 0x09, 0xc6, 0xa6, 0xff, 0x45, 0x93, 0xae, 0x4e, 0x0a, 0x5a, 0x54, 0xa0,
+	0x77, 0xa0, 0x3a, 0x7d, 0x68, 0xe0, 0xde, 0xcc, 0xb7, 0x2e, 0x95, 0x15, 0x86, 0x8a, 0x05, 0x22,
+	0x0f, 0xc3, 0x55, 0xaa, 0x49, 0x1e, 0x86, 0xc0, 0xc3, 0x70, 0x15, 0x10, 0x79, 0x18, 0x59, 0x3c,
+	0x0c, 0x57, 0x59, 0xcd, 0xe4, 0x61, 0xb8, 0xea, 0xdf, 0x24, 0x58, 0x89, 0x36, 0xf9, 0xf9, 0x65,
+	0x48, 0x8a, 0x2f, 0x43, 0x62, 0x1d, 0x84, 0x56, 0x7c, 0x1f, 0x96, 0x7c, 0xba, 0xdb, 0xf0, 0x22,
+	0x64, 0x17, 0x32, 0x84, 0xd0, 0x1f, 0x76, 0x3c, 0xc6, 0x06, 0xee, 0xd7, 0xcd, 0xa9, 0x66, 0xf3,
+	0xdd, 0x40, 0x14, 0x51, 0x04, 0xf6, 0x46, 0x73, 0x44, 0xb8, 0x27, 0x88, 0x22, 0xf5, 0x14, 0xd6,
+	0xe2, 0x73, 0x44, 0x6b, 0xde, 0x60, 0x1d, 0x45, 0x31, 0x15, 0x85, 0x0b, 0xde, 0x57, 0x12, 0xd4,
+	0x1a, 0x75, 0xd6, 0x52, 0xeb, 0x78, 0xda, 0xc3, 0xa4, 0x8f, 0xc9, 0x97, 0x94, 0xeb, 0xb7, 0x59,
+	0xa8, 0xc2, 0xcd, 0xa6, 0x98, 0xb8, 0xd9, 0xd0, 0x93, 0x8d, 0x88, 0x57, 0x1e, 0x3e, 0x42, 0x77,
+	0x61, 0x7d, 0x4a, 0xcb, 0xdc, 0x77, 0x3c, 0xc2, 0xd4, 0x65, 0xa6, 0x4e, 0x0a, 0x43, 0x94, 0x25,
+	0xa0, 0x96, 0x22, 0x94, 0x20, 0x54, 0x7f, 0x2b, 0xc1, 0x1d, 0x1e, 0x4a, 0x07, 0x9b, 0xbe, 0x8e,
+	0xa7, 0x13, 0x12, 0xf4, 0x30, 0x31, 0x70, 0x1c, 0xcb, 0xaf, 0xe1, 0x2d, 0xb2, 0x18, 0x2b, 0x3f,
+	0xad, 0xef, 0x2f, 0x9c, 0x37, 0x57, 0xa4, 0x45, 0xcf, 0x72, 0xa4, 0xfe, 0x75, 0x7e, 0xb0, 0xd2,
+	0xea, 0xa0, 0x43, 0xa8, 0xb8, 0xb4, 0x4a, 0x36, 0x4f, 0xde, 0x6e, 0x5e, 0x3f, 0xa0, 0x35, 0x75,
+	0x8e, 0x44, 0x26, 0x6c, 0x93, 0x8c, 0x18, 0xf8, 0x29, 0xfb, 0x5e, 0x26, 0xc7, 0xbc, 0x78, 0xf5,
+	0x4c, 0x57, 0xea, 0x3f, 0xd8, 0x05, 0x24, 0xd5, 0x14, 0xa3, 0x07, 0xb0, 0xe4, 0xf2, 0xde, 0xe5,
+	0xea, 0xae, 0x4c, 0x0f, 0x71, 0xe8, 0x87, 0xb0, 0xe2, 0x13, 0xeb, 0x9b, 0x75, 0x8e, 0xfa, 0x1c,
+	0x4a, 0xcd, 0x6c, 0x3f, 0x68, 0xf0, 0x83, 0xf4, 0x3a, 0xb3, 0x08, 0xaa, 0x3e, 0x03, 0xb4, 0xd8,
+	0x73, 0xa3, 0x0f, 0x61, 0x35, 0x30, 0xc9, 0x05, 0x0e, 0xa2, 0xe6, 0xef, 0x1a, 0x7f, 0x22, 0x7a,
+	0xff, 0xcf, 0xd2, 0xfc, 0xb9, 0x48, 0xb8, 0x6b, 0x22, 0x19, 0xd6, 0x7a, 0xc7, 0xc3, 0xe6, 0xc9,
+	0xb0, 0xa3, 0x75, 0x8d, 0xfe, 0x63, 0xb9, 0x80, 0xde, 0x86, 0xad, 0x58, 0xf2, 0xf9, 0xa3, 0xe6,
+	0xd9, 0xe0, 0xfd, 0xf7, 0x65, 0x29, 0x05, 0x3c, 0x92, 0x8b, 0x49, 0x60, 0xbf, 0x1e, 0x02, 0x4b,
+	0x68, 0x15, 0x96, 0x43, 0xf1, 0x43, 0xb9, 0x1c, 0x0f, 0xea, 0xf2, 0x52, 0x3c, 0x38, 0x94, 0x2b,
+	0xf1, 0xe0, 0x48, 0x5e, 0xde, 0xff, 0x8b, 0x04, 0xeb, 0x89, 0x9e, 0x1f, 0xed, 0xd0, 0x0c, 0x0c,
+	0x3b, 0xad, 0x7e, 0xff, 0xf8, 0x49, 0x6b, 0x68, 0x74, 0x9f, 0x76, 0xcf, 0x7e, 0xde, 0x95, 0x0b,
+	0x68, 0x9b, 0x5e, 0x71, 0x87, 0x4f, 0x5a, 0x83, 0x21, 0x8b, 0xb3, 0x75, 0x7a, 0xda, 0x97, 0x25,
+	0x84, 0x60, 0x43, 0x90, 0x1a, 0xad, 0xbe, 0x5c, 0x4c, 0x21, 0x4f, 0xb5, 0xee, 0xd3, 0xbe, 0x5c,
+	0xa2, 0xa4, 0x1b, 0xf5, 0x61, 0xef, 0xac, 0x3f, 0x18, 0xb6, 0x8f, 0xbb, 0xcd, 0xb3, 0x9f, 0xb5,
+	0xf4, 0xbe, 0x5c, 0x46, 0xef, 0xd0, 0xbb, 0x45, 0x28, 0xd6, 0x3b, 0x9d, 0xc6, 0x59, 0xf7, 0x53,
+	0xed, 0x89, 0xa1, 0x1f, 0x0f, 0xb4, 0xb3, 0xae, 0xbc, 0xb4, 0x6f, 0x44, 0x0b, 0x9d, 0x51, 0x7b,
+	0x0b, 0x36, 0x1b, 0x75, 0xe6, 0x54, 0xe0, 0x25, 0xd3, 0x9d, 0x2a, 0x14, 0x52, 0x52, 0xb2, 0x84,
+	0x36, 0xa8, 0x11, 0x87, 0xb5, 0xe4, 0xa2, 0x88, 0xa0, 0x64, 0xe4, 0xd2, 0xfe, 0xd7, 0x12, 0xed,
+	0xc9, 0xf9, 0x41, 0x84, 0x6e, 0xd3, 0x56, 0x6e, 0xc8, 0x46, 0xc3, 0x54, 0x49, 0x6a, 0xb0, 0x9b,
+	0xa1, 0x8a, 0x6b, 0x93, 0x63, 0x4a, 0x8b, 0x94, 0x6d, 0x1a, 0x57, 0x2b, 0xcc, 0x92, 0xa8, 0xa7,
+	0x65, 0x5b, 0x94, 0xd2, 0xfa, 0x2d, 0x4a, 0x69, 0x21, 0x17, 0xa5, 0x47, 0xf2, 0xf2, 0xe1, 0xbf,
+	0x4b, 0xb4, 0x80, 0x5a, 0xb4, 0x34, 0xe9, 0xa6, 0xe1, 0x58, 0x18, 0x75, 0x60, 0xed, 0xd4, 0x99,
+	0x3f, 0xb9, 0xf8, 0x28, 0xfb, 0x31, 0x44, 0x78, 0xcb, 0xda, 0xbd, 0x9d, 0x89, 0xd0, 0xbc, 0xf3,
+	0xc9, 0x43, 0x09, 0xfd, 0x04, 0x96, 0x29, 0x96, 0x5e, 0x69, 0x52, 0x37, 0xc8, 0xc4, 0xa3, 0xe3,
+	0xee, 0x76, 0x5a, 0xc9, 0xed, 0x7f, 0x01, 0xb2, 0x40, 0x27, 0xbc, 0xda, 0xdc, 0xcd, 0xa1, 0x94,
+	0x78, 0x62, 0xdb, 0xfd, 0xff, 0x5c, 0x14, 0x77, 0xfd, 0x19, 0xac, 0x86, 0xd4, 0x42, 0xaf, 0x77,
+	0x16, 0xe9, 0x25, 0x1d, 0x2a, 0x59, 0x00, 0xee, 0xab, 0x07, 0x9b, 0x03, 0xe2, 0x5c, 0x5c, 0x60,
+	0x12, 0x3d, 0x50, 0xa1, 0xd4, 0xfc, 0xa9, 0x97, 0xb4, 0xdd, 0x5a, 0x9e, 0x9a, 0x3f, 0x22, 0xe9,
+	0xb0, 0xde, 0xc7, 0x41, 0xfc, 0xba, 0x94, 0xe6, 0xb7, 0xf0, 0xb4, 0xb5, 0xbb, 0x97, 0x0f, 0x08,
+	0x7d, 0x9e, 0x28, 0x5f, 0xbd, 0xae, 0x49, 0xaf, 0x5e, 0xd7, 0xa4, 0x7f, 0xbd, 0xae, 0x49, 0xbf,
+	0x7f, 0x53, 0x2b, 0xbc, 0x7a, 0x53, 0x2b, 0xfc, 0xf3, 0x4d, 0xad, 0x30, 0xaa, 0xb0, 0x27, 0xef,
+	0xa3, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0x25, 0xf0, 0x13, 0x47, 0x0f, 0x17, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -2345,8 +2499,10 @@ type C1InterfaceServiceClient interface {
 	// ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 	ListUELinks(ctx context.Context, in *UELinkListRequest, opts ...grpc.CallOption) (C1InterfaceService_ListUELinksClient, error)
 	// TriggerHandOver returns a hand-over response indicating success or failure.
+	// HO app will ask to handover to multiple UEs
 	TriggerHandOver(ctx context.Context, in *HandOverRequest, opts ...grpc.CallOption) (*HandOverResponse, error)
 	// SetRadioPower returns a response indicating success or failure.
+	// MLB app will ask to change transmission power to multiple stations
 	SetRadioPower(ctx context.Context, in *RadioPowerRequest, opts ...grpc.CallOption) (*RadioPowerResponse, error)
 }
 
@@ -2515,8 +2671,10 @@ type C1InterfaceServiceServer interface {
 	// ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 	ListUELinks(*UELinkListRequest, C1InterfaceService_ListUELinksServer) error
 	// TriggerHandOver returns a hand-over response indicating success or failure.
+	// HO app will ask to handover to multiple UEs
 	TriggerHandOver(context.Context, *HandOverRequest) (*HandOverResponse, error)
 	// SetRadioPower returns a response indicating success or failure.
+	// MLB app will ask to change transmission power to multiple stations
 	SetRadioPower(context.Context, *RadioPowerRequest) (*RadioPowerResponse, error)
 }
 
@@ -2705,6 +2863,43 @@ var _C1InterfaceService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "api/nb/c1-interface.proto",
 }
 
+func (m *ECGI) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ECGI) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ECGI) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Ecid) > 0 {
+		i -= len(m.Ecid)
+		copy(dAtA[i:], m.Ecid)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Ecid)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Plmnid) > 0 {
+		i -= len(m.Plmnid)
+		copy(dAtA[i:], m.Plmnid)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Plmnid)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *StationListRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -2725,6 +2920,18 @@ func (m *StationListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2748,6 +2955,25 @@ func (m *StationInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.MaxNumConnectedUes) > 0 {
+		i -= len(m.MaxNumConnectedUes)
+		copy(dAtA[i:], m.MaxNumConnectedUes)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.MaxNumConnectedUes)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2771,6 +2997,25 @@ func (m *UEListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Crnti) > 0 {
+		i -= len(m.Crnti)
+		copy(dAtA[i:], m.Crnti)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Crnti)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2794,6 +3039,32 @@ func (m *UEInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Imsi) > 0 {
+		i -= len(m.Imsi)
+		copy(dAtA[i:], m.Imsi)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Imsi)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Crnti) > 0 {
+		i -= len(m.Crnti)
+		copy(dAtA[i:], m.Crnti)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Crnti)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2817,6 +3088,18 @@ func (m *StationLinkListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	_ = i
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2840,6 +3123,32 @@ func (m *StationLinkInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.NeighborECGI) > 0 {
+		for iNdEx := len(m.NeighborECGI) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.NeighborECGI[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintC1Interface(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2863,6 +3172,25 @@ func (m *UELinkListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Crnti) > 0 {
+		i -= len(m.Crnti)
+		copy(dAtA[i:], m.Crnti)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Crnti)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2886,6 +3214,34 @@ func (m *UELinkInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.CqiHist) > 0 {
+		for iNdEx := len(m.CqiHist) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.CqiHist[iNdEx])
+			copy(dAtA[i:], m.CqiHist[iNdEx])
+			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.CqiHist[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Crnti) > 0 {
+		i -= len(m.Crnti)
+		copy(dAtA[i:], m.Crnti)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Crnti)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2909,6 +3265,37 @@ func (m *HandOverRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DstStation != nil {
+		{
+			size, err := m.DstStation.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.SrcStation != nil {
+		{
+			size, err := m.SrcStation.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Crnti) > 0 {
+		i -= len(m.Crnti)
+		copy(dAtA[i:], m.Crnti)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Crnti)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2932,6 +3319,16 @@ func (m *HandOverResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2955,6 +3352,18 @@ func (m *RadioPowerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Offset != 0 {
+		i = encodeVarintC1Interface(dAtA, i, uint64(m.Offset))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Ecgi) > 0 {
+		i -= len(m.Ecgi)
+		copy(dAtA[i:], m.Ecgi)
+		i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Ecgi)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2978,6 +3387,16 @@ func (m *RadioPowerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -3136,7 +3555,8 @@ func (m *C1RequestMessagePayload) MarshalToSizedBuffer(dAtA []byte) (int, error)
 }
 
 func (m *C1RequestMessagePayload_RequestedRNIBType) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *C1RequestMessagePayload_RequestedRNIBType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3147,7 +3567,8 @@ func (m *C1RequestMessagePayload_RequestedRNIBType) MarshalToSizedBuffer(dAtA []
 	return len(dAtA) - i, nil
 }
 func (m *C1RequestMessagePayload_HandoverRequest) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *C1RequestMessagePayload_HandoverRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3167,7 +3588,8 @@ func (m *C1RequestMessagePayload_HandoverRequest) MarshalToSizedBuffer(dAtA []by
 	return len(dAtA) - i, nil
 }
 func (m *C1RequestMessagePayload_RrmConfigurationRequest) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *C1RequestMessagePayload_RrmConfigurationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3247,7 +3669,8 @@ func (m *C1ResponseMessagePayload) MarshalToSizedBuffer(dAtA []byte) (int, error
 }
 
 func (m *C1ResponseMessagePayload_ResponseCode) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *C1ResponseMessagePayload_ResponseCode) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3260,7 +3683,8 @@ func (m *C1ResponseMessagePayload_ResponseCode) MarshalToSizedBuffer(dAtA []byte
 	return len(dAtA) - i, nil
 }
 func (m *C1ResponseMessagePayload_RNIBCells) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *C1ResponseMessagePayload_RNIBCells) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3280,7 +3704,8 @@ func (m *C1ResponseMessagePayload_RNIBCells) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 func (m *C1ResponseMessagePayload_RNIBUEs) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *C1ResponseMessagePayload_RNIBUEs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3300,7 +3725,8 @@ func (m *C1ResponseMessagePayload_RNIBUEs) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 func (m *C1ResponseMessagePayload_RNIBLinks) MarshalTo(dAtA []byte) (int, error) {
-	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
 func (m *C1ResponseMessagePayload_RNIBLinks) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -3759,7 +4185,7 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.SubFrameBitmaskUl[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.SubFrameBitmaskUl[iNdEx])))
 			i--
-			dAtA[i] = 0x52
+			dAtA[i] = 0x5a
 		}
 	}
 	if len(m.EndPrbUl) > 0 {
@@ -3768,7 +4194,7 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.EndPrbUl[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.EndPrbUl[iNdEx])))
 			i--
-			dAtA[i] = 0x4a
+			dAtA[i] = 0x52
 		}
 	}
 	if len(m.StartPrbUl) > 0 {
@@ -3777,7 +4203,7 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.StartPrbUl[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.StartPrbUl[iNdEx])))
 			i--
-			dAtA[i] = 0x42
+			dAtA[i] = 0x4a
 		}
 	}
 	if len(m.P0UePusch) > 0 {
@@ -3786,7 +4212,7 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.P0UePusch[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.P0UePusch[iNdEx])))
 			i--
-			dAtA[i] = 0x3a
+			dAtA[i] = 0x42
 		}
 	}
 	if len(m.SubFrameBitmaskDl) > 0 {
@@ -3795,7 +4221,7 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.SubFrameBitmaskDl[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.SubFrameBitmaskDl[iNdEx])))
 			i--
-			dAtA[i] = 0x32
+			dAtA[i] = 0x3a
 		}
 	}
 	if len(m.EndPrbDl) > 0 {
@@ -3804,7 +4230,7 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.EndPrbDl[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.EndPrbDl[iNdEx])))
 			i--
-			dAtA[i] = 0x2a
+			dAtA[i] = 0x32
 		}
 	}
 	if len(m.StartPrbDl) > 0 {
@@ -3813,26 +4239,26 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.StartPrbDl[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.StartPrbDl[iNdEx])))
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x2a
 		}
 	}
 	if len(m.Pa) > 0 {
-		dAtA15 := make([]byte, len(m.Pa)*10)
-		var j14 int
+		dAtA25 := make([]byte, len(m.Pa)*10)
+		var j24 int
 		for _, num := range m.Pa {
 			for num >= 1<<7 {
-				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA25[j24] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j14++
+				j24++
 			}
-			dAtA15[j14] = uint8(num)
-			j14++
+			dAtA25[j24] = uint8(num)
+			j24++
 		}
-		i -= j14
-		copy(dAtA[i:], dAtA15[:j14])
-		i = encodeVarintC1Interface(dAtA, i, uint64(j14))
+		i -= j24
+		copy(dAtA[i:], dAtA25[:j24])
+		i = encodeVarintC1Interface(dAtA, i, uint64(j24))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x22
 	}
 	if m.PciArfcn != nil {
 		{
@@ -3844,7 +4270,7 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintC1Interface(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x1a
 	}
 	if len(m.Crnti) > 0 {
 		for iNdEx := len(m.Crnti) - 1; iNdEx >= 0; iNdEx-- {
@@ -3852,8 +4278,20 @@ func (m *C1RRMConfigAttribute) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.Crnti[iNdEx])
 			i = encodeVarintC1Interface(dAtA, i, uint64(len(m.Crnti[iNdEx])))
 			i--
-			dAtA[i] = 0xa
+			dAtA[i] = 0x12
 		}
+	}
+	if m.Ecgi != nil {
+		{
+			size, err := m.Ecgi.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintC1Interface(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -4223,12 +4661,33 @@ func encodeVarintC1Interface(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *ECGI) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Plmnid)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	l = len(m.Ecid)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	return n
+}
+
 func (m *StationListRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	return n
 }
 
@@ -4238,6 +4697,14 @@ func (m *StationInfo) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	l = len(m.MaxNumConnectedUes)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	return n
 }
 
@@ -4247,6 +4714,14 @@ func (m *UEListRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Crnti)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	return n
 }
 
@@ -4256,6 +4731,18 @@ func (m *UEInfo) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Crnti)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	l = len(m.Imsi)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	return n
 }
 
@@ -4265,6 +4752,10 @@ func (m *StationLinkListRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	return n
 }
 
@@ -4274,6 +4765,16 @@ func (m *StationLinkInfo) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if len(m.NeighborECGI) > 0 {
+		for _, e := range m.NeighborECGI {
+			l = e.Size()
+			n += 1 + l + sovC1Interface(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -4283,6 +4784,14 @@ func (m *UELinkListRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Crnti)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	return n
 }
 
@@ -4292,6 +4801,20 @@ func (m *UELinkInfo) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Crnti)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if len(m.CqiHist) > 0 {
+		for _, s := range m.CqiHist {
+			l = len(s)
+			n += 1 + l + sovC1Interface(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -4301,6 +4824,18 @@ func (m *HandOverRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Crnti)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if m.SrcStation != nil {
+		l = m.SrcStation.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if m.DstStation != nil {
+		l = m.DstStation.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	return n
 }
 
@@ -4310,6 +4845,9 @@ func (m *HandOverResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Success {
+		n += 2
+	}
 	return n
 }
 
@@ -4319,6 +4857,13 @@ func (m *RadioPowerRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Ecgi)
+	if l > 0 {
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
+	if m.Offset != 0 {
+		n += 1 + sovC1Interface(uint64(m.Offset))
+	}
 	return n
 }
 
@@ -4328,6 +4873,9 @@ func (m *RadioPowerResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Success {
+		n += 2
+	}
 	return n
 }
 
@@ -4682,6 +5230,10 @@ func (m *C1RRMConfigAttribute) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Ecgi != nil {
+		l = m.Ecgi.Size()
+		n += 1 + l + sovC1Interface(uint64(l))
+	}
 	if len(m.Crnti) > 0 {
 		for _, s := range m.Crnti {
 			l = len(s)
@@ -4899,6 +5451,123 @@ func sovC1Interface(x uint64) (n int) {
 func sozC1Interface(x uint64) (n int) {
 	return sovC1Interface(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (m *ECGI) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowC1Interface
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ECGI: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ECGI: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Plmnid", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Plmnid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecid", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ecid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipC1Interface(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *StationListRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4928,6 +5597,42 @@ func (m *StationListRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: StationListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -4981,6 +5686,74 @@ func (m *StationInfo) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: StationInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxNumConnectedUes", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MaxNumConnectedUes = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5034,6 +5807,74 @@ func (m *UEListRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: UEListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Crnti", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Crnti = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5087,6 +5928,106 @@ func (m *UEInfo) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: UEInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Crnti", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Crnti = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Imsi", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Imsi = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5140,6 +6081,42 @@ func (m *StationLinkListRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: StationLinkListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5193,6 +6170,76 @@ func (m *StationLinkInfo) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: StationLinkInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NeighborECGI", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NeighborECGI = append(m.NeighborECGI, &ECGI{})
+			if err := m.NeighborECGI[len(m.NeighborECGI)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5246,6 +6293,74 @@ func (m *UELinkListRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: UELinkListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Crnti", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Crnti = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5299,6 +6414,106 @@ func (m *UELinkInfo) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: UELinkInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Crnti", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Crnti = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CqiHist", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CqiHist = append(m.CqiHist, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5352,6 +6567,110 @@ func (m *HandOverRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: HandOverRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Crnti", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Crnti = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SrcStation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SrcStation == nil {
+				m.SrcStation = &ECGI{}
+			}
+			if err := m.SrcStation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DstStation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DstStation == nil {
+				m.DstStation = &ECGI{}
+			}
+			if err := m.DstStation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5405,6 +6724,26 @@ func (m *HandOverResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: HandOverResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5458,6 +6797,57 @@ func (m *RadioPowerRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: RadioPowerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ecgi = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Offset", wireType)
+			}
+			m.Offset = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Offset |= StationPowerOffset(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -5511,6 +6901,26 @@ func (m *RadioPowerResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: RadioPowerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipC1Interface(dAtA[iNdEx:])
@@ -7573,6 +8983,42 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ecgi", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowC1Interface
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthC1Interface
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Ecgi == nil {
+				m.Ecgi = &C1ECGI{}
+			}
+			if err := m.Ecgi.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Crnti", wireType)
 			}
 			var stringLen uint64
@@ -7603,7 +9049,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			}
 			m.Crnti = append(m.Crnti, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 2:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PciArfcn", wireType)
 			}
@@ -7639,7 +9085,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
+		case 4:
 			if wireType == 0 {
 				var v C1XICICPA
 				for shift := uint(0); ; shift += 7 {
@@ -7708,7 +9154,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Pa", wireType)
 			}
-		case 4:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StartPrbDl", wireType)
 			}
@@ -7740,7 +9186,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			}
 			m.StartPrbDl = append(m.StartPrbDl, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EndPrbDl", wireType)
 			}
@@ -7772,7 +9218,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			}
 			m.EndPrbDl = append(m.EndPrbDl, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 6:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SubFrameBitmaskDl", wireType)
 			}
@@ -7804,7 +9250,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			}
 			m.SubFrameBitmaskDl = append(m.SubFrameBitmaskDl, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 7:
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field P0UePusch", wireType)
 			}
@@ -7836,7 +9282,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			}
 			m.P0UePusch = append(m.P0UePusch, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 8:
+		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StartPrbUl", wireType)
 			}
@@ -7868,7 +9314,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			}
 			m.StartPrbUl = append(m.StartPrbUl, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 9:
+		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EndPrbUl", wireType)
 			}
@@ -7900,7 +9346,7 @@ func (m *C1RRMConfigAttribute) Unmarshal(dAtA []byte) error {
 			}
 			m.EndPrbUl = append(m.EndPrbUl, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 10:
+		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SubFrameBitmaskUl", wireType)
 			}
@@ -8976,6 +10422,7 @@ func (m *C1RRMConfiguration) Unmarshal(dAtA []byte) error {
 func skipC1Interface(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -9007,10 +10454,8 @@ func skipC1Interface(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -9031,55 +10476,30 @@ func skipC1Interface(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthC1Interface
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthC1Interface
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowC1Interface
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipC1Interface(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthC1Interface
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupC1Interface
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthC1Interface
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthC1Interface = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowC1Interface   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthC1Interface        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowC1Interface          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupC1Interface = fmt.Errorf("proto: unexpected end of group")
 )
