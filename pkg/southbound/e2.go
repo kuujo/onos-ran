@@ -193,4 +193,5 @@ func (m *Sessions) processControlUpdate(msg *sb.ControlUpdate) {
 	default:
 		log.Fatalf("ControlReport has unexpected type %T", x)
 	}
+
 }

@@ -16,8 +16,9 @@
 package manager
 
 import (
+	"github.com/onosproject/onos-ran/api/sb"
 	"github.com/onosproject/onos-ran/pkg/southbound"
-	"github.com/onosproject/onos-ran/pkg/store"
+	"github.com/onosproject/onos-ran/pkg/store/ran"
 	log "k8s.io/klog"
 )
 
@@ -27,7 +28,7 @@ var mgr Manager
 func NewManager() (*Manager, error) {
 	log.Info("Creating Manager")
 
-	db, err := store.NewStore()
+	db, err := ran.NewRanStore()
 	if err != nil {
 		return nil, err
 	}
@@ -39,19 +40,24 @@ func NewManager() (*Manager, error) {
 
 	mgr = Manager{db, sb}
 	return &mgr, nil
+
 }
 
 // Manager single point of entry for the topology system.
 type Manager struct {
-	DB *store.Store
-	SB *southbound.Sessions
+	store ran.Store
+	SB    *southbound.Sessions
+}
+
+// GetControlUpdates gets a control update based on a given ID
+func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
+	return m.store.List(), nil
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
 	m.SB.Run()
-	// Start the main dispatcher system
 }
 
 //Close kills the channels and manager related objects
