@@ -218,6 +218,7 @@ message ECGI {
 message CandScell {
     string pci = 1;
     string earfcnDl = 2;
+    ECGI ecgi = 3;
 }
 
 // CellConfigRequest message
