@@ -216,7 +216,7 @@ message ECGI {
 }
 
 message CandScell {
-    uint32 pci = 1;
+    string pci = 1;
     string earfcnDl = 2;
     ECGI ecgi = 3;
 }
@@ -229,18 +229,18 @@ message CellConfigRequest {
 // CellConfigReport message
 message CellConfigReport {
     ECGI ecgi = 1;
-    uint32 pci = 2;
+    string pci = 2;
     repeated CandScell candScells = 3;
     string earfcnDl = 4;
     string earfcnUl = 5;
-    uint32 rbsPerTtiDl = 6;
-    uint32 rbsPerTtiUl = 7;
-    uint32 numTxAntenna = 8;
+    string rbsPerTtiDl = 6;
+    string rbsPerTtiUl = 7;
+    string numTxAntenna = 8;
     string duplexMode = 9;
-    uint32 maxNumConnectedUes = 10;
-    uint32 maxNumConnectedBearers = 11;
-    uint32 maxNumUesSchedPerTtiDl = 12;
-    uint32 maxNumUesSchedPerTtiUl = 13;
+    string maxNumConnectedUes = 10;
+    string maxNumConnectedBearers = 11;
+    string maxNumUesSchedPerTtiDl = 12;
+    string maxNumUesSchedPerTtiUl = 13;
     string dlfsSchedEnable = 14;
 }
 
@@ -335,7 +335,7 @@ message ERABParamsItem {
     ERABDirection direction = 2;
     ERABType type = 3;
     string qci = 4;
-    uint32 arp = 5;
+    string arp = 5;
     string gbrDl = 6;
     string gbrUl = 7;
     string mbrDl = 8;
@@ -352,7 +352,7 @@ message BearerAdmissionRequest {
     string crnti = 1;
     ECGI ecgi = 2;
     UEAMBR ueAmbr = 3;
-    uint32 numErabsList = 4;
+    string numErabsList = 4;
     repeated ERABParamsItem erabsParams = 5;
 }
 
@@ -360,7 +360,7 @@ message BearerAdmissionRequest {
 message BearerAdmissionResponse {
     string crnti = 1;
     ECGI ecgi = 2;
-    uint32 numErabsList = 3;
+    string numErabsList = 3;
     repeated ERABResponseItem erabResponse = 4;
 }
 
@@ -368,7 +368,7 @@ message BearerAdmissionResponse {
 message BearerAdmissionStatus {
     string crnti = 1;
     ECGI ecgi = 2;
-    uint32 numErabsList = 3;
+    string numErabsList = 3;
     repeated ERABResponseItem erabStatus = 4;
 }
 
@@ -376,7 +376,7 @@ message BearerAdmissionStatus {
 message BearerReleaseInd {
     string crnti = 1;
     ECGI ecgi = 2;
-    uint32 numErabsList = 3;
+    string numErabsList = 3;
     repeated string erabIds = 4;
 }
 
@@ -411,7 +411,7 @@ message HOCause {
 }
 
 message MeasCell {
-    uint32 pci = 1;
+    string pci = 1;
     string cellIndividualOffset = 2;
 }
 
@@ -592,7 +592,7 @@ message RRCMeasConfig {
 }
 
 message PCIARFCN {
-    uint32 pci = 1;
+    string pci = 1;
     string earfcnDl = 2;
 }
 
@@ -659,8 +659,8 @@ message RadioMeasReportPerUE {
 // RadioMeasReportPerCell message
 message RadioMeasReportPerCell {
     ECGI ecgi = 1;
-    repeated uint32 puschIntfPwrHist = 2;
-    repeated uint32 pucchIntfPowerHist = 3;
+    repeated string puschIntfPwrHist = 2;
+    repeated string pucchIntfPowerHist = 3;
 }
 
 message PRBUsage {
@@ -700,14 +700,14 @@ message PDCPMeasReportPerUe {
     ECGI ecgi = 1;
     string crnti = 2;
     repeated string qciVals = 3;
-    repeated uint32 dataVolDl = 4;
-    repeated uint32 dataVolUl = 5;
-    repeated uint32 pktDelayDl = 6;
-    repeated uint32 pktDiscardRateDl = 7;
-    repeated uint32 pktLossRateDl = 8;
-    repeated uint32 pktLossRateUl = 9;
-    repeated uint32 throughputDl = 10;
-    repeated uint32 throughputUl = 11;
+    repeated string dataVolDl = 4;
+    repeated string dataVolUl = 5;
+    repeated string pktDelayDl = 6;
+    repeated string pktDiscardRateDl = 7;
+    repeated string pktLossRateDl = 8;
+    repeated string pktLossRateUl = 9;
+    repeated string throughputDl = 10;
+    repeated string throughputUl = 11;
 }
 
 enum XICICPA {
@@ -727,12 +727,12 @@ message RRMConfig {
     repeated string crnti = 2;
     PCIARFCN pciArfcn = 3;
     repeated XICICPA pA = 4;
-    repeated uint32 startPrbDl = 5;
-    repeated uint32 endPrbDl = 6;
+    repeated string startPrbDl = 5;
+    repeated string endPrbDl = 6;
     repeated string subFrameBitmaskDl = 7;
-    repeated uint32 p0UePusch = 8;
-    repeated uint32 startPrbUl = 9;
-    repeated uint32 endPrbUl = 10;
+    repeated string p0UePusch = 8;
+    repeated string startPrbUl = 9;
+    repeated string endPrbUl = 10;
     repeated string subFrameBitmaskUl = 11;
 }
 
