@@ -15,7 +15,14 @@
 package cli
 
 import (
+	"context"
+	"fmt"
+	"github.com/onosproject/onos-ran/api/nb"
 	"github.com/spf13/cobra"
+	"io"
+	log "k8s.io/klog"
+	"text/tabwriter"
+	"time"
 )
 
 func getGetUeLinksCommand() *cobra.Command {
@@ -24,6 +31,9 @@ func getGetUeLinksCommand() *cobra.Command {
 		Short: "Get UE Links",
 		RunE:  runUeLinksCommand,
 	}
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
+	cmd.Flags().String("ecgi", "", "optional station identifier")
+	cmd.Flags().String("crnti", "", "optional UE identifier in the local station context")
 	return cmd
 }
 
@@ -34,19 +44,22 @@ func getWatchUeLinksCommand() *cobra.Command {
 		RunE:  runUeLinksCommand,
 	}
 	cmd.SetArgs([]string{_subscribe})
+	cmd.Flags().Bool("no-headers", false, "disables output headers")
+	cmd.Flags().String("ecgi", "", "optional station identifier")
+	cmd.Flags().String("crnti", "", "optional UE identifier in the local station context")
 	return cmd
 }
 
+func getCRNTI(cmd *cobra.Command) string {
+	crnti, _ := cmd.Flags().GetString("crnti")
+	return crnti
+}
+
 func runUeLinksCommand(cmd *cobra.Command, args []string) error {
+	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 	var subscribe bool
 	if len(args) == 1 && args[0] == _subscribe {
 		subscribe = true
-	}
-
-	if !subscribe {
-		Output("Getting list of UE Links\n")
-	} else {
-		Output("Watching list of UE Links\n")
 	}
 
 	conn, err := getConnection(cmd)
@@ -54,6 +67,55 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer conn.Close()
+	outputWriter := GetOutput()
+
+	request := nb.UELinkListRequest{}
+	if subscribe {
+		// TODO: indicate watch semantics in the request
+		Output("Watching list of UE links\n")
+	}
+
+	// Populate optional ECGI qualifier
+	ecgi := getECGI(cmd)
+	if ecgi != "" {
+		request.Ecgi = &nb.ECGI{Ecid: ecgi}
+	}
+
+	// Populate optional CRNTI qualifier
+	crnti := getCRNTI(cmd)
+	if ecgi != "" {
+		request.Crnti = crnti
+	}
+
+	client := nb.NewC1InterfaceServiceClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	stream, err := client.ListUELinks(ctx, &request)
+	if err != nil {
+		log.Error("list error ", err)
+		return err
+	}
+	writer := new(tabwriter.Writer)
+	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
+
+	if !noHeaders {
+		fmt.Fprintln(writer, "ECGI\tCRNTI\tCQI HISTORY")
+	}
+
+	for {
+		response, err := stream.Recv()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Error("rcv error ", err)
+			return err
+		}
+
+		// FIXME: properly format CQI history and add IMSI as an optional field
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s", response.Ecgi, response.Crnti, response.CqiHist))
+	}
+	writer.Flush()
 
 	return nil
 }
