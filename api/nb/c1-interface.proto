@@ -59,20 +59,30 @@ enum StationPowerOffset {
 
 // if ecgi is empty, stream all stations' information
 message StationListRequest {
+    // ecgi - optional station identifier - list for all stations if not present
     ECGI ecgi = 1;
+
+    // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+    // after all stations have been streamed to the client
+    bool subscribe = 2;
 }
 
 message StationInfo {
     // station's unique ID
     ECGI ecgi = 1;
-     // station's maximum number of connected UEs - used for MLB
+
+    // station's maximum number of connected UEs - used for MLB
     string maxNumConnectedUes = 3;
 }
 
 // if ECGI is empty, stream all station links' information
 message StationLinkListRequest {
-    // target station ID
+    // ecgi - optional station identifier - list for all stations if not present
     ECGI ecgi = 1;
+
+    // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+    // after all stationlinks have been streamed to the client
+    bool subscribe = 2;
 }
 
 message StationLinkInfo {
@@ -84,10 +94,23 @@ message StationLinkInfo {
 
 // if crnti and ecgi are empty, stream all UE links' information
 message UELinkListRequest {
-    // UE's local ID in serving station
+    // crnti - optional UE's local ID in serving station  - list for all UE local IDs if not present
     string crnti = 1;
-    // UE's serving station ID
+
+    // ecgi - optional UE's serving station identifier - list for all stations if not present
     ECGI ecgi = 2;
+
+    // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+    // after all uelinks have been streamed to the client
+    bool subscribe = 3;
+}
+
+message ChannelQuality {
+    // Target stations's ID
+    // This target station can be either the serving station or the serving station's neighbor stations.
+    ECGI targetEcgi = 1;
+    // CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
+    string cqiHist = 2;
 }
 
 // It shows the link quality between the UE -- having crnti (1) and serviced by the station having ecgi (2) -- and the station -- having targetECGI (3).
@@ -98,16 +121,15 @@ message UELinkInfo {
     string crnti = 1;
     // UE's serving station ID
     ECGI ecgi = 2;
-    
-    // Target stations's ID
-    // This target station can be either the serving station or the serving station's neighbor stations.
-    ECGI targetEcgi = 3;
-    // CQI history
-    // CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
-    // An UE reports CQI to an eNB at very short interval (few ms); the eNB will collect the CQI history for each UE.
-    // The minimum period of measurement messages in E2 interface is 10 ms and HO app will request link information more intermittently.
-    // Thus, each link (UE-serving eNB) should have multiple CQI values as a CQI history.
-    repeated string cqiHist = 4;
+
+    // Channel quality values between the UE and its serving or neighbor stations.
+    repeated ChannelQuality channelQualities = 3;
+
+    // optional value: IMSI which is a global unique UE ID 
+    // This value is from UEContextUpdate message
+    // The crnti is local ID only working in a serving base station. However, sometimes an app may need the unique ID
+    // Thus, add IMSI as an optional. 
+    string imsi = 4;
 }
 
 message HandOverRequest {
@@ -125,7 +147,7 @@ message HandOverResponse {
 
 message RadioPowerRequest {
     // target station's ID
-    string ecgi = 1;
+    ECGI ecgi = 1;
     // target station's power offset to adjust transmission power
     StationPowerOffset offset = 2;
 }

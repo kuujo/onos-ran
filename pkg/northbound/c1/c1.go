@@ -16,6 +16,7 @@ package c1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/onosproject/onos-ran/api/sb"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/onosproject/onos-ran/pkg/manager"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
+	log "k8s.io/klog"
 )
 
 // NewService returns a new device Service
@@ -48,49 +50,163 @@ type Server struct {
 
 // ListStations returns a stream of base station records.
 func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
-	if req.Ecgi.Plmnid == "" && req.Ecgi.Ecid == "" {
+	if req.Subscribe {
+		return fmt.Errorf("subscribe not yet implemented")
+	}
+
+	if req.Ecgi == nil {
 		controlUpdates, err := manager.GetManager().GetControlUpdates()
 		if err != nil {
-			for _, update := range controlUpdates {
-				switch update.GetMessageType() {
-				case sb.MessageType_CELL_CONFIG_REPORT:
-					cellConfigReport := update.GetCellConfigReport()
-					var baseStationInfo nb.StationInfo
-					baseStationInfo.Ecgi.Ecid = cellConfigReport.GetEcgi().GetEcid()
-					baseStationInfo.Ecgi.Plmnid = cellConfigReport.GetEcgi().GetPlmnId()
-					baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
-					err = stream.Send(&baseStationInfo)
-					if err != nil {
-						return err
-					}
+			return err
+		}
+		for _, update := range controlUpdates {
+			switch update.GetMessageType() {
+			case sb.MessageType_CELL_CONFIG_REPORT:
+				cellConfigReport := update.GetCellConfigReport()
+				ecgi := nb.ECGI{
+					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
 				}
+				baseStationInfo := nb.StationInfo{
+					Ecgi: &ecgi,
+				}
+				baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
+				err = stream.Send(&baseStationInfo)
+				if err != nil {
+					return err
+				}
+			default:
+				log.Infof("control update of type %s not listed", update.GetMessageType())
 			}
 		}
+	} else {
+		return fmt.Errorf("list stations for specific ecgi not yet implemented")
 	}
 	return nil
 }
 
-// ListUEs returns a stream of UE records.
-func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_ListUEsServer) error {
-	panic("implement me")
-}
-
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
-	panic("implement me")
+	if req.Ecgi == nil {
+		controlUpdates, err := manager.GetManager().GetControlUpdates()
+		if err != nil {
+			return err
+		}
+		for _, update := range controlUpdates {
+			switch update.GetMessageType() {
+			case sb.MessageType_CELL_CONFIG_REPORT:
+				cellConfigReport := update.GetCellConfigReport()
+				ecgi := nb.ECGI{
+					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+				}
+				stationLinkInfo := nb.StationLinkInfo{
+					Ecgi: &ecgi,
+				}
+				candScells := cellConfigReport.GetCandScells()
+				for _, candScell := range candScells {
+					candCellEcgi := candScell.GetEcgi()
+					nbEcgi := nb.ECGI{
+						Ecid:   candCellEcgi.GetEcid(),
+						Plmnid: candCellEcgi.GetPlmnId(),
+					}
+					stationLinkInfo.NeighborECGI = append(stationLinkInfo.NeighborECGI, &nbEcgi)
+				}
+				err = stream.Send(&stationLinkInfo)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return fmt.Errorf("req ecgi is not nil")
 }
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 func (s Server) ListUELinks(*nb.UELinkListRequest, nb.C1InterfaceService_ListUELinksServer) error {
-	panic("implement me")
+	return fmt.Errorf("not yet implemented")
 }
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
-func (s Server) TriggerHandOver(context.Context, *nb.HandOverRequest) (*nb.HandOverResponse, error) {
-	panic("implement me")
+func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
+	if req != nil {
+		src := req.GetSrcStation()
+		dst := req.GetDstStation()
+		crnti := req.GetCrnti()
+
+		srcEcgi := sb.ECGI{
+			Ecid:   src.GetEcid(),
+			PlmnId: src.GetPlmnid(),
+		}
+
+		dstEcgi := sb.ECGI{
+			Ecid:   dst.GetEcid(),
+			PlmnId: dst.GetPlmnid(),
+		}
+
+		ctrlResponse := sb.ControlResponse{
+			MessageType: sb.MessageType_HO_REQUEST,
+			S: &sb.ControlResponse_HORequest{
+				HORequest: &sb.HORequest{
+					Crnti: crnti,
+					EcgiS: &srcEcgi,
+					EcgiT: &dstEcgi,
+				},
+			},
+		}
+
+		err := manager.GetManager().SB.SendResponse(ctrlResponse)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, fmt.Errorf("HandOverRequest is nil")
 }
 
 // SetRadioPower returns a response indicating success or failure.
-func (s Server) SetRadioPower(context.Context, *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
-	panic("implement me")
+func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
+	if req != nil {
+		offset := req.GetOffset()
+		pa := make([]sb.XICICPA, 1)
+		switch offset {
+		case nb.StationPowerOffset_PA_DB_0:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_0)
+		case nb.StationPowerOffset_PA_DB_1:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_1)
+		case nb.StationPowerOffset_PA_DB_2:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_2)
+		case nb.StationPowerOffset_PA_DB_3:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_3)
+		case nb.StationPowerOffset_PA_DB_MINUS3:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS3)
+		case nb.StationPowerOffset_PA_DB_MINUS6:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS6)
+		case nb.StationPowerOffset_PA_DB_MINUS1DOT77:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS1DOT77)
+		case nb.StationPowerOffset_PA_DB_MINUX4DOT77:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUX4DOT77)
+
+		}
+
+		ecgi := sb.ECGI{
+			Ecid:   req.GetEcgi().GetEcid(),
+			PlmnId: req.GetEcgi().GetPlmnid(),
+		}
+
+		ctrlResponse := sb.ControlResponse{
+			MessageType: sb.MessageType_RRM_CONFIG,
+			S: &sb.ControlResponse_RRMConfig{
+				RRMConfig: &sb.RRMConfig{
+					Ecgi: &ecgi,
+					PA:   pa,
+				},
+			},
+		}
+		err := manager.GetManager().SB.SendResponse(ctrlResponse)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf("SetRadioPower request cannot be nil")
 }

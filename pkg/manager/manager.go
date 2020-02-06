@@ -60,6 +60,7 @@ type Manager struct {
 
 func (m *Manager) recvUpdates() {
 	for update := range mgr.updates {
+		_ = m.store.Put(update)
 		log.Infof("Got messageType %d", update.MessageType)
 		switch x := update.S.(type) {
 		case *sb.ControlUpdate_CellConfigReport:

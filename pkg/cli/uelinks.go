@@ -69,7 +69,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	defer conn.Close()
 	outputWriter := GetOutput()
 
-	request := nb.UELinkListRequest{}
+	request := nb.UELinkListRequest{Subscribe: subscribe}
 	if subscribe {
 		// TODO: indicate watch semantics in the request
 		Output("Watching list of UE links\n")
@@ -100,7 +100,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
 
 	if !noHeaders {
-		fmt.Fprintln(writer, "ECGI\tCRNTI\tCQI HISTORY")
+		fmt.Fprintln(writer, "ECID\tCRNTI\tCQI\tTARGET ECID")
 	}
 
 	for {
@@ -112,8 +112,9 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		// FIXME: properly format CQI history and add IMSI as an optional field
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s", response.Ecgi, response.Crnti, response.CqiHist))
+		for _, cqi := range response.ChannelQualities {
+			fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%s", response.Ecgi.Ecid, response.Crnti, cqi.CqiHist, cqi.TargetEcgi.Ecid))
+		}
 	}
 	writer.Flush()
 

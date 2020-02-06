@@ -68,11 +68,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 	defer conn.Close()
 	outputWriter := GetOutput()
 
-	request := nb.StationListRequest{}
-	if subscribe {
-		// TODO: indicate watch semantics in the request
-		Output("Watching list of Stations\n")
-	}
+	request := nb.StationListRequest{Subscribe: subscribe}
 
 	// Populate optional ECGI qualifier
 	ecgi := getECGI(cmd)
@@ -93,7 +89,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
 
 	if !noHeaders {
-		fmt.Fprintln(writer, "ID\tMAX")
+		fmt.Fprintln(writer, "ECID\tMAX")
 	}
 
 	for {
@@ -105,7 +101,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", response.Ecgi, response.MaxNumConnectedUes))
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", response.Ecgi.Ecid, response.MaxNumConnectedUes))
 	}
 	writer.Flush()
 
