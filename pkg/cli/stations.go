@@ -68,11 +68,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 	defer conn.Close()
 	outputWriter := GetOutput()
 
-	request := nb.StationListRequest{}
-	if subscribe {
-		// TODO: indicate watch semantics in the request
-		Output("Watching list of Stations\n")
-	}
+	request := nb.StationListRequest{Subscribe: subscribe}
 
 	// Populate optional ECGI qualifier
 	ecgi := getECGI(cmd)

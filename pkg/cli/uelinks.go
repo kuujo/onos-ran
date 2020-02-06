@@ -69,7 +69,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	defer conn.Close()
 	outputWriter := GetOutput()
 
-	request := nb.UELinkListRequest{}
+	request := nb.UELinkListRequest{Subscribe: subscribe}
 	if subscribe {
 		// TODO: indicate watch semantics in the request
 		Output("Watching list of UE links\n")

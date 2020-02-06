@@ -22,7 +22,6 @@ func getGetCommand() *cobra.Command {
 		Short: "Get RAN resources",
 	}
 	cmd.AddCommand(getGetStationsCommand())
-	cmd.AddCommand(getGetUesCommand())
 	cmd.AddCommand(getGetStationLinksCommand())
 	cmd.AddCommand(getGetUeLinksCommand())
 	return cmd
@@ -34,7 +33,6 @@ func getWatchCommand() *cobra.Command {
 		Short: "Watch for changes to a RAN resource type",
 	}
 	cmd.AddCommand(getWatchStationsCommand())
-	cmd.AddCommand(getWatchUesCommand())
 	cmd.AddCommand(getWatchStationLinksCommand())
 	cmd.AddCommand(getWatchUeLinksCommand())
 	return cmd

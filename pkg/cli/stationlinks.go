@@ -44,9 +44,9 @@ func runStationLinksCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if !subscribe {
-		Output("Getting list of Station Links\n")
+		Output("Getting list of Station Links - not yet implemented\n")
 	} else {
-		Output("Watching list of Station Links\n")
+		Output("Watching list of Station Links - not yet implemented\n")
 	}
 
 	conn, err := getConnection(cmd)

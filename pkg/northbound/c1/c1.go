@@ -16,6 +16,7 @@ package c1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/onosproject/onos-ran/api/sb"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/onosproject/onos-ran/pkg/manager"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
+	log "k8s.io/klog"
 )
 
 // NewService returns a new device Service
@@ -48,10 +50,14 @@ type Server struct {
 
 // ListStations returns a stream of base station records.
 func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
+	if req.Subscribe {
+		return fmt.Errorf("subscribe not yet implemented")
+	}
+
 	if req.Ecgi == nil {
 		controlUpdates, err := manager.GetManager().GetControlUpdates()
 		if err != nil {
-			return nil
+			return err
 		}
 		for _, update := range controlUpdates {
 			switch update.GetMessageType() {
@@ -69,33 +75,32 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 				if err != nil {
 					return err
 				}
+			default:
+				log.Infof("control update of type %s not listed", update.GetMessageType())
 			}
 		}
+	} else {
+		return fmt.Errorf("list stations for specific ecgi not yet implemented")
 	}
 	return nil
 }
 
-// ListUEs returns a stream of UE records.
-func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_ListUEsServer) error {
-	panic("implement me")
-}
-
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
-	panic("implement me")
+	return fmt.Errorf("not yet implemented")
 }
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 func (s Server) ListUELinks(*nb.UELinkListRequest, nb.C1InterfaceService_ListUELinksServer) error {
-	panic("implement me")
+	return fmt.Errorf("not yet implemented")
 }
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
 func (s Server) TriggerHandOver(context.Context, *nb.HandOverRequest) (*nb.HandOverResponse, error) {
-	panic("implement me")
+	return nil, fmt.Errorf("not yet implemented")
 }
 
 // SetRadioPower returns a response indicating success or failure.
 func (s Server) SetRadioPower(context.Context, *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
-	panic("implement me")
+	return nil, fmt.Errorf("not yet implemented")
 }
