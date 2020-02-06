@@ -128,11 +128,85 @@ func (s Server) ListUELinks(*nb.UELinkListRequest, nb.C1InterfaceService_ListUEL
 }
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
-func (s Server) TriggerHandOver(context.Context, *nb.HandOverRequest) (*nb.HandOverResponse, error) {
-	return nil, fmt.Errorf("not yet implemented")
+func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
+	if req != nil {
+		src := req.GetSrcStation()
+		dst := req.GetDstStation()
+		crnti := req.GetCrnti()
+
+		srcEcgi := sb.ECGI{
+			Ecid:   src.GetEcid(),
+			PlmnId: src.GetPlmnid(),
+		}
+
+		dstEcgi := sb.ECGI{
+			Ecid:   dst.GetEcid(),
+			PlmnId: dst.GetPlmnid(),
+		}
+
+		ctrlResponse := sb.ControlResponse{
+			MessageType: sb.MessageType_HO_REQUEST,
+			S: &sb.ControlResponse_HORequest{
+				HORequest: &sb.HORequest{
+					Crnti: crnti,
+					EcgiS: &srcEcgi,
+					EcgiT: &dstEcgi,
+				},
+			},
+		}
+
+		err := manager.GetManager().SB.SendResponse(ctrlResponse)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, fmt.Errorf("HandOverRequest is nil")
 }
 
 // SetRadioPower returns a response indicating success or failure.
-func (s Server) SetRadioPower(context.Context, *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
-	return nil, fmt.Errorf("not yet implemented")
+func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
+	if req != nil {
+		offset := req.GetOffset()
+		pa := make([]sb.XICICPA, 1)
+		switch offset {
+		case nb.StationPowerOffset_PA_DB_0:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_0)
+		case nb.StationPowerOffset_PA_DB_1:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_1)
+		case nb.StationPowerOffset_PA_DB_2:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_2)
+		case nb.StationPowerOffset_PA_DB_3:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_3)
+		case nb.StationPowerOffset_PA_DB_MINUS3:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS3)
+		case nb.StationPowerOffset_PA_DB_MINUS6:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS6)
+		case nb.StationPowerOffset_PA_DB_MINUS1DOT77:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS1DOT77)
+		case nb.StationPowerOffset_PA_DB_MINUX4DOT77:
+			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUX4DOT77)
+
+		}
+
+		ecgi := sb.ECGI{
+			Ecid:   req.GetEcgi().GetEcid(),
+			PlmnId: req.GetEcgi().GetPlmnid(),
+		}
+
+		ctrlResponse := sb.ControlResponse{
+			MessageType: sb.MessageType_RRM_CONFIG,
+			S: &sb.ControlResponse_RRMConfig{
+				RRMConfig: &sb.RRMConfig{
+					Ecgi: &ecgi,
+					PA:   pa,
+				},
+			},
+		}
+		err := manager.GetManager().SB.SendResponse(ctrlResponse)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf("SetRadioPower request cannot be nil")
 }
