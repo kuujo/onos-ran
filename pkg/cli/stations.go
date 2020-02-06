@@ -74,6 +74,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 		Output("Watching list of Stations\n")
 	}
 
+	// Populate optional ECGI qualifier
 	ecgi := getECGI(cmd)
 	if ecgi != "" {
 		request.Ecgi = &nb.ECGI{Ecid: ecgi}

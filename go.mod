@@ -11,6 +11,7 @@ require (
 	github.com/onosproject/onos-topo v0.0.0-20200124005303-f1408bf8e513
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.5.0
+	github.com/stretchr/testify v1.4.0
 	go.uber.org/multierr v1.4.0 // indirect
 	golang.org/x/net v0.0.0-20191112182307-2180aed22343 // indirect
 	golang.org/x/sys v0.0.0-20191113165036-4c7a9d0fe056 // indirect
