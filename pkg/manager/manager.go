@@ -33,20 +33,43 @@ func NewManager() (*Manager, error) {
 		return nil, err
 	}
 
-	sb, err := southbound.NewSessions()
+	sbSession, err := southbound.NewSessions()
 	if err != nil {
 		return nil, err
 	}
 
-	mgr = Manager{db, sb}
-	return &mgr, nil
+	mgr = Manager{
+		db,
+		sbSession,
+		make(chan sb.ControlUpdate),
+		make(chan sb.ControlResponse),
+	}
 
+	go mgr.recvUpdates()
+
+	return &mgr, nil
 }
 
 // Manager single point of entry for the topology system.
 type Manager struct {
-	store ran.Store
-	SB    *southbound.Sessions
+	store     ran.Store
+	SB        *southbound.Sessions
+	updates   chan sb.ControlUpdate
+	responses chan sb.ControlResponse
+}
+
+func (m *Manager) recvUpdates() {
+	for update := range mgr.updates {
+		log.Infof("Got messageType %d", update.MessageType)
+		switch x := update.S.(type) {
+		case *sb.ControlUpdate_CellConfigReport:
+			log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
+		case *sb.ControlUpdate_UEAdmissionRequest:
+			log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
+		default:
+			log.Fatalf("ControlReport has unexpected type %T", x)
+		}
+	}
 }
 
 // GetControlUpdates gets a control update based on a given ID
@@ -57,7 +80,7 @@ func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
-	m.SB.Run()
+	m.SB.Run(m.updates, m.responses)
 }
 
 //Close kills the channels and manager related objects

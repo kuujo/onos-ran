@@ -41,8 +41,10 @@ func NewSessions() (*Sessions, error) {
 }
 
 // Run starts the southbound control loop.
-func (m *Sessions) Run() {
+func (m *Sessions) Run(updates chan sb.ControlUpdate, responses chan sb.ControlResponse) {
 	// Kick off a go routine that manages the connection to the simulator
+	m.updates = updates
+	m.responses = responses
 	go m.manageConnections()
 }
 
@@ -83,8 +85,8 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	errors := make(chan error)
 
 	// FIXME: should be done separately
-	m.updates = make(chan sb.ControlUpdate)
-	m.responses = make(chan sb.ControlResponse)
+	//m.updates = make(chan sb.ControlUpdate)
+	//m.responses = make(chan sb.ControlResponse)
 
 	//go m.handleTelemetry(errors)
 	go m.handleControl(errors)
@@ -96,8 +98,8 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	_ = connection.Close()
 
 	// FIXME: should be done separately
-	close(m.responses)
-	close(m.updates)
+	//close(m.responses)
+	//close(m.updates)
 
 	close(errors)
 	log.Info("Disconnected from simulator")
@@ -186,11 +188,14 @@ func (m *Sessions) processTelemetry(msg *sb.TelemetryMessage) {
 }
 */
 
-func (m *Sessions) processControlUpdate(msg *sb.ControlUpdate) {
-	switch x := msg.S.(type) {
+func (m *Sessions) processControlUpdate(update *sb.ControlUpdate) {
+	switch x := update.S.(type) {
 	case *sb.ControlUpdate_CellConfigReport:
-		log.Infof("PlmnID %s, EcID %s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
+		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
+	case *sb.ControlUpdate_UEAdmissionRequest:
+		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
 	default:
 		log.Fatalf("ControlReport has unexpected type %T", x)
 	}
+	m.updates <- *update
 }
