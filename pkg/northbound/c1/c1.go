@@ -87,7 +87,39 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
-	return fmt.Errorf("not yet implemented")
+	if req.Ecgi == nil {
+		controlUpdates, err := manager.GetManager().GetControlUpdates()
+		if err != nil {
+			return err
+		}
+		for _, update := range controlUpdates {
+			switch update.GetMessageType() {
+			case sb.MessageType_CELL_CONFIG_REPORT:
+				cellConfigReport := update.GetCellConfigReport()
+				ecgi := nb.ECGI{
+					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+				}
+				stationLinkInfo := nb.StationLinkInfo{
+					Ecgi: &ecgi,
+				}
+				candScells := cellConfigReport.GetCandScells()
+				for _, candScell := range candScells {
+					candCellEcgi := candScell.GetEcgi()
+					nbEcgi := nb.ECGI{
+						Ecid:   candCellEcgi.GetEcid(),
+						Plmnid: candCellEcgi.GetPlmnId(),
+					}
+					stationLinkInfo.NeighborECGI = append(stationLinkInfo.NeighborECGI, &nbEcgi)
+				}
+				err = stream.Send(&stationLinkInfo)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return fmt.Errorf("req ecgi is not nil")
 }
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
