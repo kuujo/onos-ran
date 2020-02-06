@@ -147,7 +147,7 @@ message HandOverResponse {
 
 message RadioPowerRequest {
     // target station's ID
-    string ecgi = 1;
+    ECGI ecgi = 1;
     // target station's power offset to adjust transmission power
     StationPowerOffset offset = 2;
 }
