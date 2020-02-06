@@ -108,6 +108,12 @@ message UELinkInfo {
     // The minimum period of measurement messages in E2 interface is 10 ms and HO app will request link information more intermittently.
     // Thus, each link (UE-serving eNB) should have multiple CQI values as a CQI history.
     repeated string cqiHist = 4;
+
+    // optional value: IMSI which is a global unique UE ID 
+    // This value is from UEContextUpdate message
+    // The crnti is local ID only working in a serving base station. However, sometimes an app may need the unique ID
+    // Thus, add IMSI as an optional. 
+    string imsi = 5;
 }
 
 message HandOverRequest {
