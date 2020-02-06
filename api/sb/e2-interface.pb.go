@@ -24,7 +24,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Definition of all message types in E2 interface
 type MessageType int32
@@ -906,16 +906,16 @@ type isTelemetryMessage_S interface {
 }
 
 type TelemetryMessage_RadioMeasReportPerUE struct {
-	RadioMeasReportPerUE *RadioMeasReportPerUE `protobuf:"bytes,2,opt,name=radioMeasReportPerUE,proto3,oneof" json:"radioMeasReportPerUE,omitempty"`
+	RadioMeasReportPerUE *RadioMeasReportPerUE `protobuf:"bytes,2,opt,name=radioMeasReportPerUE,proto3,oneof"`
 }
 type TelemetryMessage_RadioMeasReportPerCell struct {
-	RadioMeasReportPerCell *RadioMeasReportPerCell `protobuf:"bytes,3,opt,name=radioMeasReportPerCell,proto3,oneof" json:"radioMeasReportPerCell,omitempty"`
+	RadioMeasReportPerCell *RadioMeasReportPerCell `protobuf:"bytes,3,opt,name=radioMeasReportPerCell,proto3,oneof"`
 }
 type TelemetryMessage_SchedMeasReportPerCell struct {
-	SchedMeasReportPerCell *SchedMeasReportPerCell `protobuf:"bytes,4,opt,name=schedMeasReportPerCell,proto3,oneof" json:"schedMeasReportPerCell,omitempty"`
+	SchedMeasReportPerCell *SchedMeasReportPerCell `protobuf:"bytes,4,opt,name=schedMeasReportPerCell,proto3,oneof"`
 }
 type TelemetryMessage_PDCPMeasReportPerUe struct {
-	PDCPMeasReportPerUe *PDCPMeasReportPerUe `protobuf:"bytes,5,opt,name=pDCPMeasReportPerUe,proto3,oneof" json:"pDCPMeasReportPerUe,omitempty"`
+	PDCPMeasReportPerUe *PDCPMeasReportPerUe `protobuf:"bytes,5,opt,name=pDCPMeasReportPerUe,proto3,oneof"`
 }
 
 func (*TelemetryMessage_RadioMeasReportPerUE) isTelemetryMessage_S()   {}
@@ -965,14 +965,116 @@ func (m *TelemetryMessage) GetPDCPMeasReportPerUe() *PDCPMeasReportPerUe {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*TelemetryMessage) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*TelemetryMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _TelemetryMessage_OneofMarshaler, _TelemetryMessage_OneofUnmarshaler, _TelemetryMessage_OneofSizer, []interface{}{
 		(*TelemetryMessage_RadioMeasReportPerUE)(nil),
 		(*TelemetryMessage_RadioMeasReportPerCell)(nil),
 		(*TelemetryMessage_SchedMeasReportPerCell)(nil),
 		(*TelemetryMessage_PDCPMeasReportPerUe)(nil),
 	}
+}
+
+func _TelemetryMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*TelemetryMessage)
+	// s
+	switch x := m.S.(type) {
+	case *TelemetryMessage_RadioMeasReportPerUE:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RadioMeasReportPerUE); err != nil {
+			return err
+		}
+	case *TelemetryMessage_RadioMeasReportPerCell:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RadioMeasReportPerCell); err != nil {
+			return err
+		}
+	case *TelemetryMessage_SchedMeasReportPerCell:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SchedMeasReportPerCell); err != nil {
+			return err
+		}
+	case *TelemetryMessage_PDCPMeasReportPerUe:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.PDCPMeasReportPerUe); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("TelemetryMessage.S has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _TelemetryMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*TelemetryMessage)
+	switch tag {
+	case 2: // s.radioMeasReportPerUE
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RadioMeasReportPerUE)
+		err := b.DecodeMessage(msg)
+		m.S = &TelemetryMessage_RadioMeasReportPerUE{msg}
+		return true, err
+	case 3: // s.radioMeasReportPerCell
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RadioMeasReportPerCell)
+		err := b.DecodeMessage(msg)
+		m.S = &TelemetryMessage_RadioMeasReportPerCell{msg}
+		return true, err
+	case 4: // s.schedMeasReportPerCell
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SchedMeasReportPerCell)
+		err := b.DecodeMessage(msg)
+		m.S = &TelemetryMessage_SchedMeasReportPerCell{msg}
+		return true, err
+	case 5: // s.pDCPMeasReportPerUe
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(PDCPMeasReportPerUe)
+		err := b.DecodeMessage(msg)
+		m.S = &TelemetryMessage_PDCPMeasReportPerUe{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _TelemetryMessage_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*TelemetryMessage)
+	// s
+	switch x := m.S.(type) {
+	case *TelemetryMessage_RadioMeasReportPerUE:
+		s := proto.Size(x.RadioMeasReportPerUE)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *TelemetryMessage_RadioMeasReportPerCell:
+		s := proto.Size(x.RadioMeasReportPerCell)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *TelemetryMessage_SchedMeasReportPerCell:
+		s := proto.Size(x.SchedMeasReportPerCell)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *TelemetryMessage_PDCPMeasReportPerUe:
+		s := proto.Size(x.PDCPMeasReportPerUe)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 // ControlUpdate carries a class of asynchronous control messages initiated by the RAN environment.
@@ -1032,34 +1134,34 @@ type isControlUpdate_S interface {
 }
 
 type ControlUpdate_CellConfigReport struct {
-	CellConfigReport *CellConfigReport `protobuf:"bytes,2,opt,name=cellConfigReport,proto3,oneof" json:"cellConfigReport,omitempty"`
+	CellConfigReport *CellConfigReport `protobuf:"bytes,2,opt,name=cellConfigReport,proto3,oneof"`
 }
 type ControlUpdate_RRMConfigStatus struct {
-	RRMConfigStatus *RRMConfigStatus `protobuf:"bytes,3,opt,name=rRMConfigStatus,proto3,oneof" json:"rRMConfigStatus,omitempty"`
+	RRMConfigStatus *RRMConfigStatus `protobuf:"bytes,3,opt,name=rRMConfigStatus,proto3,oneof"`
 }
 type ControlUpdate_UEAdmissionRequest struct {
-	UEAdmissionRequest *UEAdmissionRequest `protobuf:"bytes,4,opt,name=uEAdmissionRequest,proto3,oneof" json:"uEAdmissionRequest,omitempty"`
+	UEAdmissionRequest *UEAdmissionRequest `protobuf:"bytes,4,opt,name=uEAdmissionRequest,proto3,oneof"`
 }
 type ControlUpdate_UEAdmissionStatus struct {
-	UEAdmissionStatus *UEAdmissionStatus `protobuf:"bytes,5,opt,name=uEAdmissionStatus,proto3,oneof" json:"uEAdmissionStatus,omitempty"`
+	UEAdmissionStatus *UEAdmissionStatus `protobuf:"bytes,5,opt,name=uEAdmissionStatus,proto3,oneof"`
 }
 type ControlUpdate_UEContextUpdate struct {
-	UEContextUpdate *UEContextUpdate `protobuf:"bytes,6,opt,name=uEContextUpdate,proto3,oneof" json:"uEContextUpdate,omitempty"`
+	UEContextUpdate *UEContextUpdate `protobuf:"bytes,6,opt,name=uEContextUpdate,proto3,oneof"`
 }
 type ControlUpdate_BearerAdmissionRequest struct {
-	BearerAdmissionRequest *BearerAdmissionRequest `protobuf:"bytes,7,opt,name=bearerAdmissionRequest,proto3,oneof" json:"bearerAdmissionRequest,omitempty"`
+	BearerAdmissionRequest *BearerAdmissionRequest `protobuf:"bytes,7,opt,name=bearerAdmissionRequest,proto3,oneof"`
 }
 type ControlUpdate_BearerAdmissionStatus struct {
-	BearerAdmissionStatus *BearerAdmissionStatus `protobuf:"bytes,8,opt,name=bearerAdmissionStatus,proto3,oneof" json:"bearerAdmissionStatus,omitempty"`
+	BearerAdmissionStatus *BearerAdmissionStatus `protobuf:"bytes,8,opt,name=bearerAdmissionStatus,proto3,oneof"`
 }
 type ControlUpdate_HOComplete struct {
-	HOComplete *HOComplete `protobuf:"bytes,9,opt,name=hOComplete,proto3,oneof" json:"hOComplete,omitempty"`
+	HOComplete *HOComplete `protobuf:"bytes,9,opt,name=hOComplete,proto3,oneof"`
 }
 type ControlUpdate_HOFailure struct {
-	HOFailure *HOFailure `protobuf:"bytes,10,opt,name=hOFailure,proto3,oneof" json:"hOFailure,omitempty"`
+	HOFailure *HOFailure `protobuf:"bytes,10,opt,name=hOFailure,proto3,oneof"`
 }
 type ControlUpdate_HOCause struct {
-	HOCause *HOCause `protobuf:"bytes,11,opt,name=hOCause,proto3,oneof" json:"hOCause,omitempty"`
+	HOCause *HOCause `protobuf:"bytes,11,opt,name=hOCause,proto3,oneof"`
 }
 
 func (*ControlUpdate_CellConfigReport) isControlUpdate_S()       {}
@@ -1157,9 +1259,9 @@ func (m *ControlUpdate) GetHOCause() *HOCause {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*ControlUpdate) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ControlUpdate) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ControlUpdate_OneofMarshaler, _ControlUpdate_OneofUnmarshaler, _ControlUpdate_OneofSizer, []interface{}{
 		(*ControlUpdate_CellConfigReport)(nil),
 		(*ControlUpdate_RRMConfigStatus)(nil),
 		(*ControlUpdate_UEAdmissionRequest)(nil),
@@ -1171,6 +1273,216 @@ func (*ControlUpdate) XXX_OneofWrappers() []interface{} {
 		(*ControlUpdate_HOFailure)(nil),
 		(*ControlUpdate_HOCause)(nil),
 	}
+}
+
+func _ControlUpdate_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ControlUpdate)
+	// s
+	switch x := m.S.(type) {
+	case *ControlUpdate_CellConfigReport:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CellConfigReport); err != nil {
+			return err
+		}
+	case *ControlUpdate_RRMConfigStatus:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RRMConfigStatus); err != nil {
+			return err
+		}
+	case *ControlUpdate_UEAdmissionRequest:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEAdmissionRequest); err != nil {
+			return err
+		}
+	case *ControlUpdate_UEAdmissionStatus:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEAdmissionStatus); err != nil {
+			return err
+		}
+	case *ControlUpdate_UEContextUpdate:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEContextUpdate); err != nil {
+			return err
+		}
+	case *ControlUpdate_BearerAdmissionRequest:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BearerAdmissionRequest); err != nil {
+			return err
+		}
+	case *ControlUpdate_BearerAdmissionStatus:
+		_ = b.EncodeVarint(8<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BearerAdmissionStatus); err != nil {
+			return err
+		}
+	case *ControlUpdate_HOComplete:
+		_ = b.EncodeVarint(9<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HOComplete); err != nil {
+			return err
+		}
+	case *ControlUpdate_HOFailure:
+		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HOFailure); err != nil {
+			return err
+		}
+	case *ControlUpdate_HOCause:
+		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HOCause); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ControlUpdate.S has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ControlUpdate_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ControlUpdate)
+	switch tag {
+	case 2: // s.cellConfigReport
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CellConfigReport)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_CellConfigReport{msg}
+		return true, err
+	case 3: // s.rRMConfigStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RRMConfigStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_RRMConfigStatus{msg}
+		return true, err
+	case 4: // s.uEAdmissionRequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEAdmissionRequest)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_UEAdmissionRequest{msg}
+		return true, err
+	case 5: // s.uEAdmissionStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEAdmissionStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_UEAdmissionStatus{msg}
+		return true, err
+	case 6: // s.uEContextUpdate
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEContextUpdate)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_UEContextUpdate{msg}
+		return true, err
+	case 7: // s.bearerAdmissionRequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BearerAdmissionRequest)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_BearerAdmissionRequest{msg}
+		return true, err
+	case 8: // s.bearerAdmissionStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BearerAdmissionStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_BearerAdmissionStatus{msg}
+		return true, err
+	case 9: // s.hOComplete
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HOComplete)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_HOComplete{msg}
+		return true, err
+	case 10: // s.hOFailure
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HOFailure)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_HOFailure{msg}
+		return true, err
+	case 11: // s.hOCause
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HOCause)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlUpdate_HOCause{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ControlUpdate_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ControlUpdate)
+	// s
+	switch x := m.S.(type) {
+	case *ControlUpdate_CellConfigReport:
+		s := proto.Size(x.CellConfigReport)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_RRMConfigStatus:
+		s := proto.Size(x.RRMConfigStatus)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_UEAdmissionRequest:
+		s := proto.Size(x.UEAdmissionRequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_UEAdmissionStatus:
+		s := proto.Size(x.UEAdmissionStatus)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_UEContextUpdate:
+		s := proto.Size(x.UEContextUpdate)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_BearerAdmissionRequest:
+		s := proto.Size(x.BearerAdmissionRequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_BearerAdmissionStatus:
+		s := proto.Size(x.BearerAdmissionStatus)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_HOComplete:
+		s := proto.Size(x.HOComplete)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_HOFailure:
+		s := proto.Size(x.HOFailure)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlUpdate_HOCause:
+		s := proto.Size(x.HOCause)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 // ControlResponse contains asynchronous responses to control updates, e.g. admission response.
@@ -1226,22 +1538,22 @@ type isControlResponse_S interface {
 }
 
 type ControlResponse_CellConfigRequest struct {
-	CellConfigRequest *CellConfigRequest `protobuf:"bytes,2,opt,name=cellConfigRequest,proto3,oneof" json:"cellConfigRequest,omitempty"`
+	CellConfigRequest *CellConfigRequest `protobuf:"bytes,2,opt,name=cellConfigRequest,proto3,oneof"`
 }
 type ControlResponse_RRMConfig struct {
-	RRMConfig *RRMConfig `protobuf:"bytes,3,opt,name=rRMConfig,proto3,oneof" json:"rRMConfig,omitempty"`
+	RRMConfig *RRMConfig `protobuf:"bytes,3,opt,name=rRMConfig,proto3,oneof"`
 }
 type ControlResponse_L2MeasConfig struct {
-	L2MeasConfig *L2MeasConfig `protobuf:"bytes,4,opt,name=l2MeasConfig,proto3,oneof" json:"l2MeasConfig,omitempty"`
+	L2MeasConfig *L2MeasConfig `protobuf:"bytes,4,opt,name=l2MeasConfig,proto3,oneof"`
 }
 type ControlResponse_UEAdmissionResponse struct {
-	UEAdmissionResponse *UEAdmissionResponse `protobuf:"bytes,5,opt,name=uEAdmissionResponse,proto3,oneof" json:"uEAdmissionResponse,omitempty"`
+	UEAdmissionResponse *UEAdmissionResponse `protobuf:"bytes,5,opt,name=uEAdmissionResponse,proto3,oneof"`
 }
 type ControlResponse_BearerAdmissionResponse struct {
-	BearerAdmissionResponse *BearerAdmissionResponse `protobuf:"bytes,6,opt,name=bearerAdmissionResponse,proto3,oneof" json:"bearerAdmissionResponse,omitempty"`
+	BearerAdmissionResponse *BearerAdmissionResponse `protobuf:"bytes,6,opt,name=bearerAdmissionResponse,proto3,oneof"`
 }
 type ControlResponse_HORequest struct {
-	HORequest *HORequest `protobuf:"bytes,7,opt,name=hORequest,proto3,oneof" json:"hORequest,omitempty"`
+	HORequest *HORequest `protobuf:"bytes,7,opt,name=hORequest,proto3,oneof"`
 }
 
 func (*ControlResponse_CellConfigRequest) isControlResponse_S()       {}
@@ -1307,9 +1619,9 @@ func (m *ControlResponse) GetHORequest() *HORequest {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*ControlResponse) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ControlResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ControlResponse_OneofMarshaler, _ControlResponse_OneofUnmarshaler, _ControlResponse_OneofSizer, []interface{}{
 		(*ControlResponse_CellConfigRequest)(nil),
 		(*ControlResponse_RRMConfig)(nil),
 		(*ControlResponse_L2MeasConfig)(nil),
@@ -1317,6 +1629,144 @@ func (*ControlResponse) XXX_OneofWrappers() []interface{} {
 		(*ControlResponse_BearerAdmissionResponse)(nil),
 		(*ControlResponse_HORequest)(nil),
 	}
+}
+
+func _ControlResponse_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ControlResponse)
+	// s
+	switch x := m.S.(type) {
+	case *ControlResponse_CellConfigRequest:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CellConfigRequest); err != nil {
+			return err
+		}
+	case *ControlResponse_RRMConfig:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RRMConfig); err != nil {
+			return err
+		}
+	case *ControlResponse_L2MeasConfig:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.L2MeasConfig); err != nil {
+			return err
+		}
+	case *ControlResponse_UEAdmissionResponse:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEAdmissionResponse); err != nil {
+			return err
+		}
+	case *ControlResponse_BearerAdmissionResponse:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BearerAdmissionResponse); err != nil {
+			return err
+		}
+	case *ControlResponse_HORequest:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HORequest); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ControlResponse.S has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ControlResponse_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ControlResponse)
+	switch tag {
+	case 2: // s.cellConfigRequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CellConfigRequest)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlResponse_CellConfigRequest{msg}
+		return true, err
+	case 3: // s.rRMConfig
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RRMConfig)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlResponse_RRMConfig{msg}
+		return true, err
+	case 4: // s.l2MeasConfig
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(L2MeasConfig)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlResponse_L2MeasConfig{msg}
+		return true, err
+	case 5: // s.uEAdmissionResponse
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEAdmissionResponse)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlResponse_UEAdmissionResponse{msg}
+		return true, err
+	case 6: // s.bearerAdmissionResponse
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BearerAdmissionResponse)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlResponse_BearerAdmissionResponse{msg}
+		return true, err
+	case 7: // s.hORequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HORequest)
+		err := b.DecodeMessage(msg)
+		m.S = &ControlResponse_HORequest{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ControlResponse_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ControlResponse)
+	// s
+	switch x := m.S.(type) {
+	case *ControlResponse_CellConfigRequest:
+		s := proto.Size(x.CellConfigRequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlResponse_RRMConfig:
+		s := proto.Size(x.RRMConfig)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlResponse_L2MeasConfig:
+		s := proto.Size(x.L2MeasConfig)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlResponse_UEAdmissionResponse:
+		s := proto.Size(x.UEAdmissionResponse)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlResponse_BearerAdmissionResponse:
+		s := proto.Size(x.BearerAdmissionResponse)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ControlResponse_HORequest:
+		s := proto.Size(x.HORequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 // Message header
@@ -1445,109 +1895,109 @@ type isMessagePayload_S interface {
 }
 
 type MessagePayload_CellConfigRequest struct {
-	CellConfigRequest *CellConfigRequest `protobuf:"bytes,1,opt,name=cellConfigRequest,proto3,oneof" json:"cellConfigRequest,omitempty"`
+	CellConfigRequest *CellConfigRequest `protobuf:"bytes,1,opt,name=cellConfigRequest,proto3,oneof"`
 }
 type MessagePayload_CellConfigReport struct {
-	CellConfigReport *CellConfigReport `protobuf:"bytes,2,opt,name=cellConfigReport,proto3,oneof" json:"cellConfigReport,omitempty"`
+	CellConfigReport *CellConfigReport `protobuf:"bytes,2,opt,name=cellConfigReport,proto3,oneof"`
 }
 type MessagePayload_UEAdmissionRequest struct {
-	UEAdmissionRequest *UEAdmissionRequest `protobuf:"bytes,3,opt,name=uEAdmissionRequest,proto3,oneof" json:"uEAdmissionRequest,omitempty"`
+	UEAdmissionRequest *UEAdmissionRequest `protobuf:"bytes,3,opt,name=uEAdmissionRequest,proto3,oneof"`
 }
 type MessagePayload_UEAdmissionResponse struct {
-	UEAdmissionResponse *UEAdmissionResponse `protobuf:"bytes,4,opt,name=uEAdmissionResponse,proto3,oneof" json:"uEAdmissionResponse,omitempty"`
+	UEAdmissionResponse *UEAdmissionResponse `protobuf:"bytes,4,opt,name=uEAdmissionResponse,proto3,oneof"`
 }
 type MessagePayload_UEAdmissionStatus struct {
-	UEAdmissionStatus *UEAdmissionStatus `protobuf:"bytes,5,opt,name=uEAdmissionStatus,proto3,oneof" json:"uEAdmissionStatus,omitempty"`
+	UEAdmissionStatus *UEAdmissionStatus `protobuf:"bytes,5,opt,name=uEAdmissionStatus,proto3,oneof"`
 }
 type MessagePayload_UEContextUpdate struct {
-	UEContextUpdate *UEContextUpdate `protobuf:"bytes,6,opt,name=uEContextUpdate,proto3,oneof" json:"uEContextUpdate,omitempty"`
+	UEContextUpdate *UEContextUpdate `protobuf:"bytes,6,opt,name=uEContextUpdate,proto3,oneof"`
 }
 type MessagePayload_UEReconfigInd struct {
-	UEReconfigInd *UEReconfigInd `protobuf:"bytes,7,opt,name=uEReconfigInd,proto3,oneof" json:"uEReconfigInd,omitempty"`
+	UEReconfigInd *UEReconfigInd `protobuf:"bytes,7,opt,name=uEReconfigInd,proto3,oneof"`
 }
 type MessagePayload_UEReleaseInd struct {
-	UEReleaseInd *UEReleaseInd `protobuf:"bytes,8,opt,name=uEReleaseInd,proto3,oneof" json:"uEReleaseInd,omitempty"`
+	UEReleaseInd *UEReleaseInd `protobuf:"bytes,8,opt,name=uEReleaseInd,proto3,oneof"`
 }
 type MessagePayload_BearerAdmissionRequest struct {
-	BearerAdmissionRequest *BearerAdmissionRequest `protobuf:"bytes,9,opt,name=bearerAdmissionRequest,proto3,oneof" json:"bearerAdmissionRequest,omitempty"`
+	BearerAdmissionRequest *BearerAdmissionRequest `protobuf:"bytes,9,opt,name=bearerAdmissionRequest,proto3,oneof"`
 }
 type MessagePayload_BearerAdmissionResponse struct {
-	BearerAdmissionResponse *BearerAdmissionResponse `protobuf:"bytes,10,opt,name=bearerAdmissionResponse,proto3,oneof" json:"bearerAdmissionResponse,omitempty"`
+	BearerAdmissionResponse *BearerAdmissionResponse `protobuf:"bytes,10,opt,name=bearerAdmissionResponse,proto3,oneof"`
 }
 type MessagePayload_BearerAdmissionStatus struct {
-	BearerAdmissionStatus *BearerAdmissionStatus `protobuf:"bytes,11,opt,name=bearerAdmissionStatus,proto3,oneof" json:"bearerAdmissionStatus,omitempty"`
+	BearerAdmissionStatus *BearerAdmissionStatus `protobuf:"bytes,11,opt,name=bearerAdmissionStatus,proto3,oneof"`
 }
 type MessagePayload_BearerReleaseInd struct {
-	BearerReleaseInd *BearerReleaseInd `protobuf:"bytes,12,opt,name=bearerReleaseInd,proto3,oneof" json:"bearerReleaseInd,omitempty"`
+	BearerReleaseInd *BearerReleaseInd `protobuf:"bytes,12,opt,name=bearerReleaseInd,proto3,oneof"`
 }
 type MessagePayload_HORequest struct {
-	HORequest *HORequest `protobuf:"bytes,13,opt,name=hORequest,proto3,oneof" json:"hORequest,omitempty"`
+	HORequest *HORequest `protobuf:"bytes,13,opt,name=hORequest,proto3,oneof"`
 }
 type MessagePayload_HOFailure struct {
-	HOFailure *HOFailure `protobuf:"bytes,14,opt,name=hOFailure,proto3,oneof" json:"hOFailure,omitempty"`
+	HOFailure *HOFailure `protobuf:"bytes,14,opt,name=hOFailure,proto3,oneof"`
 }
 type MessagePayload_HOComplete struct {
-	HOComplete *HOComplete `protobuf:"bytes,15,opt,name=hOComplete,proto3,oneof" json:"hOComplete,omitempty"`
+	HOComplete *HOComplete `protobuf:"bytes,15,opt,name=hOComplete,proto3,oneof"`
 }
 type MessagePayload_HOCause struct {
-	HOCause *HOCause `protobuf:"bytes,16,opt,name=hOCause,proto3,oneof" json:"hOCause,omitempty"`
+	HOCause *HOCause `protobuf:"bytes,16,opt,name=hOCause,proto3,oneof"`
 }
 type MessagePayload_RRCMeasConfig struct {
-	RRCMeasConfig *RRCMeasConfig `protobuf:"bytes,17,opt,name=rRCMeasConfig,proto3,oneof" json:"rRCMeasConfig,omitempty"`
+	RRCMeasConfig *RRCMeasConfig `protobuf:"bytes,17,opt,name=rRCMeasConfig,proto3,oneof"`
 }
 type MessagePayload_RxSigMeasReport struct {
-	RxSigMeasReport *RxSigMeasReport `protobuf:"bytes,18,opt,name=rxSigMeasReport,proto3,oneof" json:"rxSigMeasReport,omitempty"`
+	RxSigMeasReport *RxSigMeasReport `protobuf:"bytes,18,opt,name=rxSigMeasReport,proto3,oneof"`
 }
 type MessagePayload_L2MeasConfig struct {
-	L2MeasConfig *L2MeasConfig `protobuf:"bytes,19,opt,name=l2MeasConfig,proto3,oneof" json:"l2MeasConfig,omitempty"`
+	L2MeasConfig *L2MeasConfig `protobuf:"bytes,19,opt,name=l2MeasConfig,proto3,oneof"`
 }
 type MessagePayload_RadioMeasReportPerU struct {
-	RadioMeasReportPerU *RadioMeasReportPerUE `protobuf:"bytes,20,opt,name=radioMeasReportPerU,proto3,oneof" json:"radioMeasReportPerU,omitempty"`
+	RadioMeasReportPerU *RadioMeasReportPerUE `protobuf:"bytes,20,opt,name=radioMeasReportPerU,proto3,oneof"`
 }
 type MessagePayload_RadioMeasReportPerCell struct {
-	RadioMeasReportPerCell *RadioMeasReportPerCell `protobuf:"bytes,21,opt,name=radioMeasReportPerCell,proto3,oneof" json:"radioMeasReportPerCell,omitempty"`
+	RadioMeasReportPerCell *RadioMeasReportPerCell `protobuf:"bytes,21,opt,name=radioMeasReportPerCell,proto3,oneof"`
 }
 type MessagePayload_SchedMeasReportPerUE struct {
-	SchedMeasReportPerUE *SchedMeasReportPerUE `protobuf:"bytes,22,opt,name=schedMeasReportPerUE,proto3,oneof" json:"schedMeasReportPerUE,omitempty"`
+	SchedMeasReportPerUE *SchedMeasReportPerUE `protobuf:"bytes,22,opt,name=schedMeasReportPerUE,proto3,oneof"`
 }
 type MessagePayload_SchedMeasReportPerCell struct {
-	SchedMeasReportPerCell *SchedMeasReportPerCell `protobuf:"bytes,23,opt,name=schedMeasReportPerCell,proto3,oneof" json:"schedMeasReportPerCell,omitempty"`
+	SchedMeasReportPerCell *SchedMeasReportPerCell `protobuf:"bytes,23,opt,name=schedMeasReportPerCell,proto3,oneof"`
 }
 type MessagePayload_PDCPMeasReportPerUe struct {
-	PDCPMeasReportPerUe *PDCPMeasReportPerUe `protobuf:"bytes,24,opt,name=pDCPMeasReportPerUe,proto3,oneof" json:"pDCPMeasReportPerUe,omitempty"`
+	PDCPMeasReportPerUe *PDCPMeasReportPerUe `protobuf:"bytes,24,opt,name=pDCPMeasReportPerUe,proto3,oneof"`
 }
 type MessagePayload_RRMConfig struct {
-	RRMConfig *RRMConfig `protobuf:"bytes,25,opt,name=rRMConfig,proto3,oneof" json:"rRMConfig,omitempty"`
+	RRMConfig *RRMConfig `protobuf:"bytes,25,opt,name=rRMConfig,proto3,oneof"`
 }
 type MessagePayload_RRMConfigStatus struct {
-	RRMConfigStatus *RRMConfigStatus `protobuf:"bytes,26,opt,name=rRMConfigStatus,proto3,oneof" json:"rRMConfigStatus,omitempty"`
+	RRMConfigStatus *RRMConfigStatus `protobuf:"bytes,26,opt,name=rRMConfigStatus,proto3,oneof"`
 }
 type MessagePayload_UECapabilityEnquiry struct {
-	UECapabilityEnquiry *UECapabilityEnquiry `protobuf:"bytes,27,opt,name=uECapabilityEnquiry,proto3,oneof" json:"uECapabilityEnquiry,omitempty"`
+	UECapabilityEnquiry *UECapabilityEnquiry `protobuf:"bytes,27,opt,name=uECapabilityEnquiry,proto3,oneof"`
 }
 type MessagePayload_UECapabilityInfo struct {
-	UECapabilityInfo *UECapabilityInfo `protobuf:"bytes,28,opt,name=uECapabilityInfo,proto3,oneof" json:"uECapabilityInfo,omitempty"`
+	UECapabilityInfo *UECapabilityInfo `protobuf:"bytes,28,opt,name=uECapabilityInfo,proto3,oneof"`
 }
 type MessagePayload_ScellAdd struct {
-	ScellAdd *ScellAdd `protobuf:"bytes,29,opt,name=scellAdd,proto3,oneof" json:"scellAdd,omitempty"`
+	ScellAdd *ScellAdd `protobuf:"bytes,29,opt,name=scellAdd,proto3,oneof"`
 }
 type MessagePayload_ScellAddStatus struct {
-	ScellAddStatus *ScellAddStatus `protobuf:"bytes,30,opt,name=scellAddStatus,proto3,oneof" json:"scellAddStatus,omitempty"`
+	ScellAddStatus *ScellAddStatus `protobuf:"bytes,30,opt,name=scellAddStatus,proto3,oneof"`
 }
 type MessagePayload_ScellDelete struct {
-	ScellDelete *ScellDelete `protobuf:"bytes,31,opt,name=scellDelete,proto3,oneof" json:"scellDelete,omitempty"`
+	ScellDelete *ScellDelete `protobuf:"bytes,31,opt,name=scellDelete,proto3,oneof"`
 }
 type MessagePayload_SeNBAdd struct {
-	SeNBAdd *SeNBAdd `protobuf:"bytes,32,opt,name=seNBAdd,proto3,oneof" json:"seNBAdd,omitempty"`
+	SeNBAdd *SeNBAdd `protobuf:"bytes,32,opt,name=seNBAdd,proto3,oneof"`
 }
 type MessagePayload_SeNBAddStatus struct {
-	SeNBAddStatus *SeNBAddStatus `protobuf:"bytes,33,opt,name=seNBAddStatus,proto3,oneof" json:"seNBAddStatus,omitempty"`
+	SeNBAddStatus *SeNBAddStatus `protobuf:"bytes,33,opt,name=seNBAddStatus,proto3,oneof"`
 }
 type MessagePayload_SeNBDelete struct {
-	SeNBDelete *SeNBDelete `protobuf:"bytes,34,opt,name=seNBDelete,proto3,oneof" json:"seNBDelete,omitempty"`
+	SeNBDelete *SeNBDelete `protobuf:"bytes,34,opt,name=seNBDelete,proto3,oneof"`
 }
 type MessagePayload_TrafficSplitConfig struct {
-	TrafficSplitConfig *TrafficSplitConfig `protobuf:"bytes,35,opt,name=trafficSplitConfig,proto3,oneof" json:"trafficSplitConfig,omitempty"`
+	TrafficSplitConfig *TrafficSplitConfig `protobuf:"bytes,35,opt,name=trafficSplitConfig,proto3,oneof"`
 }
 
 func (*MessagePayload_CellConfigRequest) isMessagePayload_S()       {}
@@ -1838,9 +2288,9 @@ func (m *MessagePayload) GetTrafficSplitConfig() *TrafficSplitConfig {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*MessagePayload) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*MessagePayload) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _MessagePayload_OneofMarshaler, _MessagePayload_OneofUnmarshaler, _MessagePayload_OneofSizer, []interface{}{
 		(*MessagePayload_CellConfigRequest)(nil),
 		(*MessagePayload_CellConfigReport)(nil),
 		(*MessagePayload_UEAdmissionRequest)(nil),
@@ -1877,6 +2327,666 @@ func (*MessagePayload) XXX_OneofWrappers() []interface{} {
 		(*MessagePayload_SeNBDelete)(nil),
 		(*MessagePayload_TrafficSplitConfig)(nil),
 	}
+}
+
+func _MessagePayload_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*MessagePayload)
+	// s
+	switch x := m.S.(type) {
+	case *MessagePayload_CellConfigRequest:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CellConfigRequest); err != nil {
+			return err
+		}
+	case *MessagePayload_CellConfigReport:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CellConfigReport); err != nil {
+			return err
+		}
+	case *MessagePayload_UEAdmissionRequest:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEAdmissionRequest); err != nil {
+			return err
+		}
+	case *MessagePayload_UEAdmissionResponse:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEAdmissionResponse); err != nil {
+			return err
+		}
+	case *MessagePayload_UEAdmissionStatus:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEAdmissionStatus); err != nil {
+			return err
+		}
+	case *MessagePayload_UEContextUpdate:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEContextUpdate); err != nil {
+			return err
+		}
+	case *MessagePayload_UEReconfigInd:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEReconfigInd); err != nil {
+			return err
+		}
+	case *MessagePayload_UEReleaseInd:
+		_ = b.EncodeVarint(8<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UEReleaseInd); err != nil {
+			return err
+		}
+	case *MessagePayload_BearerAdmissionRequest:
+		_ = b.EncodeVarint(9<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BearerAdmissionRequest); err != nil {
+			return err
+		}
+	case *MessagePayload_BearerAdmissionResponse:
+		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BearerAdmissionResponse); err != nil {
+			return err
+		}
+	case *MessagePayload_BearerAdmissionStatus:
+		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BearerAdmissionStatus); err != nil {
+			return err
+		}
+	case *MessagePayload_BearerReleaseInd:
+		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.BearerReleaseInd); err != nil {
+			return err
+		}
+	case *MessagePayload_HORequest:
+		_ = b.EncodeVarint(13<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HORequest); err != nil {
+			return err
+		}
+	case *MessagePayload_HOFailure:
+		_ = b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HOFailure); err != nil {
+			return err
+		}
+	case *MessagePayload_HOComplete:
+		_ = b.EncodeVarint(15<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HOComplete); err != nil {
+			return err
+		}
+	case *MessagePayload_HOCause:
+		_ = b.EncodeVarint(16<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HOCause); err != nil {
+			return err
+		}
+	case *MessagePayload_RRCMeasConfig:
+		_ = b.EncodeVarint(17<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RRCMeasConfig); err != nil {
+			return err
+		}
+	case *MessagePayload_RxSigMeasReport:
+		_ = b.EncodeVarint(18<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RxSigMeasReport); err != nil {
+			return err
+		}
+	case *MessagePayload_L2MeasConfig:
+		_ = b.EncodeVarint(19<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.L2MeasConfig); err != nil {
+			return err
+		}
+	case *MessagePayload_RadioMeasReportPerU:
+		_ = b.EncodeVarint(20<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RadioMeasReportPerU); err != nil {
+			return err
+		}
+	case *MessagePayload_RadioMeasReportPerCell:
+		_ = b.EncodeVarint(21<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RadioMeasReportPerCell); err != nil {
+			return err
+		}
+	case *MessagePayload_SchedMeasReportPerUE:
+		_ = b.EncodeVarint(22<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SchedMeasReportPerUE); err != nil {
+			return err
+		}
+	case *MessagePayload_SchedMeasReportPerCell:
+		_ = b.EncodeVarint(23<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SchedMeasReportPerCell); err != nil {
+			return err
+		}
+	case *MessagePayload_PDCPMeasReportPerUe:
+		_ = b.EncodeVarint(24<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.PDCPMeasReportPerUe); err != nil {
+			return err
+		}
+	case *MessagePayload_RRMConfig:
+		_ = b.EncodeVarint(25<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RRMConfig); err != nil {
+			return err
+		}
+	case *MessagePayload_RRMConfigStatus:
+		_ = b.EncodeVarint(26<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RRMConfigStatus); err != nil {
+			return err
+		}
+	case *MessagePayload_UECapabilityEnquiry:
+		_ = b.EncodeVarint(27<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UECapabilityEnquiry); err != nil {
+			return err
+		}
+	case *MessagePayload_UECapabilityInfo:
+		_ = b.EncodeVarint(28<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.UECapabilityInfo); err != nil {
+			return err
+		}
+	case *MessagePayload_ScellAdd:
+		_ = b.EncodeVarint(29<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ScellAdd); err != nil {
+			return err
+		}
+	case *MessagePayload_ScellAddStatus:
+		_ = b.EncodeVarint(30<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ScellAddStatus); err != nil {
+			return err
+		}
+	case *MessagePayload_ScellDelete:
+		_ = b.EncodeVarint(31<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ScellDelete); err != nil {
+			return err
+		}
+	case *MessagePayload_SeNBAdd:
+		_ = b.EncodeVarint(32<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SeNBAdd); err != nil {
+			return err
+		}
+	case *MessagePayload_SeNBAddStatus:
+		_ = b.EncodeVarint(33<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SeNBAddStatus); err != nil {
+			return err
+		}
+	case *MessagePayload_SeNBDelete:
+		_ = b.EncodeVarint(34<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.SeNBDelete); err != nil {
+			return err
+		}
+	case *MessagePayload_TrafficSplitConfig:
+		_ = b.EncodeVarint(35<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.TrafficSplitConfig); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("MessagePayload.S has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _MessagePayload_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*MessagePayload)
+	switch tag {
+	case 1: // s.cellConfigRequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CellConfigRequest)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_CellConfigRequest{msg}
+		return true, err
+	case 2: // s.cellConfigReport
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(CellConfigReport)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_CellConfigReport{msg}
+		return true, err
+	case 3: // s.uEAdmissionRequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEAdmissionRequest)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UEAdmissionRequest{msg}
+		return true, err
+	case 4: // s.uEAdmissionResponse
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEAdmissionResponse)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UEAdmissionResponse{msg}
+		return true, err
+	case 5: // s.uEAdmissionStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEAdmissionStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UEAdmissionStatus{msg}
+		return true, err
+	case 6: // s.uEContextUpdate
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEContextUpdate)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UEContextUpdate{msg}
+		return true, err
+	case 7: // s.uEReconfigInd
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEReconfigInd)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UEReconfigInd{msg}
+		return true, err
+	case 8: // s.uEReleaseInd
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UEReleaseInd)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UEReleaseInd{msg}
+		return true, err
+	case 9: // s.bearerAdmissionRequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BearerAdmissionRequest)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_BearerAdmissionRequest{msg}
+		return true, err
+	case 10: // s.bearerAdmissionResponse
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BearerAdmissionResponse)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_BearerAdmissionResponse{msg}
+		return true, err
+	case 11: // s.bearerAdmissionStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BearerAdmissionStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_BearerAdmissionStatus{msg}
+		return true, err
+	case 12: // s.bearerReleaseInd
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(BearerReleaseInd)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_BearerReleaseInd{msg}
+		return true, err
+	case 13: // s.hORequest
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HORequest)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_HORequest{msg}
+		return true, err
+	case 14: // s.hOFailure
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HOFailure)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_HOFailure{msg}
+		return true, err
+	case 15: // s.hOComplete
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HOComplete)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_HOComplete{msg}
+		return true, err
+	case 16: // s.hOCause
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HOCause)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_HOCause{msg}
+		return true, err
+	case 17: // s.rRCMeasConfig
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RRCMeasConfig)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_RRCMeasConfig{msg}
+		return true, err
+	case 18: // s.rxSigMeasReport
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RxSigMeasReport)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_RxSigMeasReport{msg}
+		return true, err
+	case 19: // s.l2MeasConfig
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(L2MeasConfig)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_L2MeasConfig{msg}
+		return true, err
+	case 20: // s.radioMeasReportPerU
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RadioMeasReportPerUE)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_RadioMeasReportPerU{msg}
+		return true, err
+	case 21: // s.radioMeasReportPerCell
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RadioMeasReportPerCell)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_RadioMeasReportPerCell{msg}
+		return true, err
+	case 22: // s.schedMeasReportPerUE
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SchedMeasReportPerUE)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_SchedMeasReportPerUE{msg}
+		return true, err
+	case 23: // s.schedMeasReportPerCell
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SchedMeasReportPerCell)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_SchedMeasReportPerCell{msg}
+		return true, err
+	case 24: // s.pDCPMeasReportPerUe
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(PDCPMeasReportPerUe)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_PDCPMeasReportPerUe{msg}
+		return true, err
+	case 25: // s.rRMConfig
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RRMConfig)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_RRMConfig{msg}
+		return true, err
+	case 26: // s.rRMConfigStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(RRMConfigStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_RRMConfigStatus{msg}
+		return true, err
+	case 27: // s.uECapabilityEnquiry
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UECapabilityEnquiry)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UECapabilityEnquiry{msg}
+		return true, err
+	case 28: // s.uECapabilityInfo
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UECapabilityInfo)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_UECapabilityInfo{msg}
+		return true, err
+	case 29: // s.scellAdd
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScellAdd)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_ScellAdd{msg}
+		return true, err
+	case 30: // s.scellAddStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScellAddStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_ScellAddStatus{msg}
+		return true, err
+	case 31: // s.scellDelete
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(ScellDelete)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_ScellDelete{msg}
+		return true, err
+	case 32: // s.seNBAdd
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SeNBAdd)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_SeNBAdd{msg}
+		return true, err
+	case 33: // s.seNBAddStatus
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SeNBAddStatus)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_SeNBAddStatus{msg}
+		return true, err
+	case 34: // s.seNBDelete
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(SeNBDelete)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_SeNBDelete{msg}
+		return true, err
+	case 35: // s.trafficSplitConfig
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(TrafficSplitConfig)
+		err := b.DecodeMessage(msg)
+		m.S = &MessagePayload_TrafficSplitConfig{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _MessagePayload_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*MessagePayload)
+	// s
+	switch x := m.S.(type) {
+	case *MessagePayload_CellConfigRequest:
+		s := proto.Size(x.CellConfigRequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_CellConfigReport:
+		s := proto.Size(x.CellConfigReport)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UEAdmissionRequest:
+		s := proto.Size(x.UEAdmissionRequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UEAdmissionResponse:
+		s := proto.Size(x.UEAdmissionResponse)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UEAdmissionStatus:
+		s := proto.Size(x.UEAdmissionStatus)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UEContextUpdate:
+		s := proto.Size(x.UEContextUpdate)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UEReconfigInd:
+		s := proto.Size(x.UEReconfigInd)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UEReleaseInd:
+		s := proto.Size(x.UEReleaseInd)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_BearerAdmissionRequest:
+		s := proto.Size(x.BearerAdmissionRequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_BearerAdmissionResponse:
+		s := proto.Size(x.BearerAdmissionResponse)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_BearerAdmissionStatus:
+		s := proto.Size(x.BearerAdmissionStatus)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_BearerReleaseInd:
+		s := proto.Size(x.BearerReleaseInd)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_HORequest:
+		s := proto.Size(x.HORequest)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_HOFailure:
+		s := proto.Size(x.HOFailure)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_HOComplete:
+		s := proto.Size(x.HOComplete)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_HOCause:
+		s := proto.Size(x.HOCause)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_RRCMeasConfig:
+		s := proto.Size(x.RRCMeasConfig)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_RxSigMeasReport:
+		s := proto.Size(x.RxSigMeasReport)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_L2MeasConfig:
+		s := proto.Size(x.L2MeasConfig)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_RadioMeasReportPerU:
+		s := proto.Size(x.RadioMeasReportPerU)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_RadioMeasReportPerCell:
+		s := proto.Size(x.RadioMeasReportPerCell)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_SchedMeasReportPerUE:
+		s := proto.Size(x.SchedMeasReportPerUE)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_SchedMeasReportPerCell:
+		s := proto.Size(x.SchedMeasReportPerCell)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_PDCPMeasReportPerUe:
+		s := proto.Size(x.PDCPMeasReportPerUe)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_RRMConfig:
+		s := proto.Size(x.RRMConfig)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_RRMConfigStatus:
+		s := proto.Size(x.RRMConfigStatus)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UECapabilityEnquiry:
+		s := proto.Size(x.UECapabilityEnquiry)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_UECapabilityInfo:
+		s := proto.Size(x.UECapabilityInfo)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_ScellAdd:
+		s := proto.Size(x.ScellAdd)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_ScellAddStatus:
+		s := proto.Size(x.ScellAddStatus)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_ScellDelete:
+		s := proto.Size(x.ScellDelete)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_SeNBAdd:
+		s := proto.Size(x.SeNBAdd)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_SeNBAddStatus:
+		s := proto.Size(x.SeNBAddStatus)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_SeNBDelete:
+		s := proto.Size(x.SeNBDelete)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MessagePayload_TrafficSplitConfig:
+		s := proto.Size(x.TrafficSplitConfig)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 // Full message frame having one header and one payload
@@ -3593,25 +4703,25 @@ type isReportParamChoice_Choice interface {
 }
 
 type ReportParamChoice_PerParam struct {
-	PerParam *PerParam `protobuf:"bytes,1,opt,name=perParam,proto3,oneof" json:"perParam,omitempty"`
+	PerParam *PerParam `protobuf:"bytes,1,opt,name=perParam,proto3,oneof"`
 }
 type ReportParamChoice_A1Param struct {
-	A1Param *A1Param `protobuf:"bytes,2,opt,name=a1Param,proto3,oneof" json:"a1Param,omitempty"`
+	A1Param *A1Param `protobuf:"bytes,2,opt,name=a1Param,proto3,oneof"`
 }
 type ReportParamChoice_A2Param struct {
-	A2Param *A2Param `protobuf:"bytes,3,opt,name=a2Param,proto3,oneof" json:"a2Param,omitempty"`
+	A2Param *A2Param `protobuf:"bytes,3,opt,name=a2Param,proto3,oneof"`
 }
 type ReportParamChoice_A3Param struct {
-	A3Param *A3Param `protobuf:"bytes,4,opt,name=a3Param,proto3,oneof" json:"a3Param,omitempty"`
+	A3Param *A3Param `protobuf:"bytes,4,opt,name=a3Param,proto3,oneof"`
 }
 type ReportParamChoice_A4Param struct {
-	A4Param *A4Param `protobuf:"bytes,5,opt,name=a4Param,proto3,oneof" json:"a4Param,omitempty"`
+	A4Param *A4Param `protobuf:"bytes,5,opt,name=a4Param,proto3,oneof"`
 }
 type ReportParamChoice_A5Param struct {
-	A5Param *A5Param `protobuf:"bytes,6,opt,name=a5Param,proto3,oneof" json:"a5Param,omitempty"`
+	A5Param *A5Param `protobuf:"bytes,6,opt,name=a5Param,proto3,oneof"`
 }
 type ReportParamChoice_A6Param struct {
-	A6Param *A6Param `protobuf:"bytes,7,opt,name=a6Param,proto3,oneof" json:"a6Param,omitempty"`
+	A6Param *A6Param `protobuf:"bytes,7,opt,name=a6Param,proto3,oneof"`
 }
 
 func (*ReportParamChoice_PerParam) isReportParamChoice_Choice() {}
@@ -3678,9 +4788,9 @@ func (m *ReportParamChoice) GetA6Param() *A6Param {
 	return nil
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*ReportParamChoice) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ReportParamChoice) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ReportParamChoice_OneofMarshaler, _ReportParamChoice_OneofUnmarshaler, _ReportParamChoice_OneofSizer, []interface{}{
 		(*ReportParamChoice_PerParam)(nil),
 		(*ReportParamChoice_A1Param)(nil),
 		(*ReportParamChoice_A2Param)(nil),
@@ -3689,6 +4799,162 @@ func (*ReportParamChoice) XXX_OneofWrappers() []interface{} {
 		(*ReportParamChoice_A5Param)(nil),
 		(*ReportParamChoice_A6Param)(nil),
 	}
+}
+
+func _ReportParamChoice_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ReportParamChoice)
+	// choice
+	switch x := m.Choice.(type) {
+	case *ReportParamChoice_PerParam:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.PerParam); err != nil {
+			return err
+		}
+	case *ReportParamChoice_A1Param:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.A1Param); err != nil {
+			return err
+		}
+	case *ReportParamChoice_A2Param:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.A2Param); err != nil {
+			return err
+		}
+	case *ReportParamChoice_A3Param:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.A3Param); err != nil {
+			return err
+		}
+	case *ReportParamChoice_A4Param:
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.A4Param); err != nil {
+			return err
+		}
+	case *ReportParamChoice_A5Param:
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.A5Param); err != nil {
+			return err
+		}
+	case *ReportParamChoice_A6Param:
+		_ = b.EncodeVarint(7<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.A6Param); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ReportParamChoice.Choice has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ReportParamChoice_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ReportParamChoice)
+	switch tag {
+	case 1: // choice.perParam
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(PerParam)
+		err := b.DecodeMessage(msg)
+		m.Choice = &ReportParamChoice_PerParam{msg}
+		return true, err
+	case 2: // choice.a1Param
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(A1Param)
+		err := b.DecodeMessage(msg)
+		m.Choice = &ReportParamChoice_A1Param{msg}
+		return true, err
+	case 3: // choice.a2Param
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(A2Param)
+		err := b.DecodeMessage(msg)
+		m.Choice = &ReportParamChoice_A2Param{msg}
+		return true, err
+	case 4: // choice.a3Param
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(A3Param)
+		err := b.DecodeMessage(msg)
+		m.Choice = &ReportParamChoice_A3Param{msg}
+		return true, err
+	case 5: // choice.a4Param
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(A4Param)
+		err := b.DecodeMessage(msg)
+		m.Choice = &ReportParamChoice_A4Param{msg}
+		return true, err
+	case 6: // choice.a5Param
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(A5Param)
+		err := b.DecodeMessage(msg)
+		m.Choice = &ReportParamChoice_A5Param{msg}
+		return true, err
+	case 7: // choice.a6Param
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(A6Param)
+		err := b.DecodeMessage(msg)
+		m.Choice = &ReportParamChoice_A6Param{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ReportParamChoice_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ReportParamChoice)
+	// choice
+	switch x := m.Choice.(type) {
+	case *ReportParamChoice_PerParam:
+		s := proto.Size(x.PerParam)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ReportParamChoice_A1Param:
+		s := proto.Size(x.A1Param)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ReportParamChoice_A2Param:
+		s := proto.Size(x.A2Param)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ReportParamChoice_A3Param:
+		s := proto.Size(x.A3Param)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ReportParamChoice_A4Param:
+		s := proto.Size(x.A4Param)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ReportParamChoice_A5Param:
+		s := proto.Size(x.A5Param)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ReportParamChoice_A6Param:
+		s := proto.Size(x.A6Param)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 type ThresholdEUTRAChoice struct {
@@ -3738,10 +5004,10 @@ type isThresholdEUTRAChoice_Choice interface {
 }
 
 type ThresholdEUTRAChoice_ThresholdRSRP struct {
-	ThresholdRSRP string `protobuf:"bytes,1,opt,name=thresholdRSRP,proto3,oneof" json:"thresholdRSRP,omitempty"`
+	ThresholdRSRP string `protobuf:"bytes,1,opt,name=thresholdRSRP,proto3,oneof"`
 }
 type ThresholdEUTRAChoice_ThresholdRSRQ struct {
-	ThresholdRSRQ string `protobuf:"bytes,2,opt,name=thresholdRSRQ,proto3,oneof" json:"thresholdRSRQ,omitempty"`
+	ThresholdRSRQ string `protobuf:"bytes,2,opt,name=thresholdRSRQ,proto3,oneof"`
 }
 
 func (*ThresholdEUTRAChoice_ThresholdRSRP) isThresholdEUTRAChoice_Choice() {}
@@ -3768,12 +5034,70 @@ func (m *ThresholdEUTRAChoice) GetThresholdRSRQ() string {
 	return ""
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*ThresholdEUTRAChoice) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ThresholdEUTRAChoice) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ThresholdEUTRAChoice_OneofMarshaler, _ThresholdEUTRAChoice_OneofUnmarshaler, _ThresholdEUTRAChoice_OneofSizer, []interface{}{
 		(*ThresholdEUTRAChoice_ThresholdRSRP)(nil),
 		(*ThresholdEUTRAChoice_ThresholdRSRQ)(nil),
 	}
+}
+
+func _ThresholdEUTRAChoice_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ThresholdEUTRAChoice)
+	// choice
+	switch x := m.Choice.(type) {
+	case *ThresholdEUTRAChoice_ThresholdRSRP:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.ThresholdRSRP)
+	case *ThresholdEUTRAChoice_ThresholdRSRQ:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.ThresholdRSRQ)
+	case nil:
+	default:
+		return fmt.Errorf("ThresholdEUTRAChoice.Choice has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ThresholdEUTRAChoice_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ThresholdEUTRAChoice)
+	switch tag {
+	case 1: // choice.thresholdRSRP
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Choice = &ThresholdEUTRAChoice_ThresholdRSRP{x}
+		return true, err
+	case 2: // choice.thresholdRSRQ
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Choice = &ThresholdEUTRAChoice_ThresholdRSRQ{x}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ThresholdEUTRAChoice_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ThresholdEUTRAChoice)
+	// choice
+	switch x := m.Choice.(type) {
+	case *ThresholdEUTRAChoice_ThresholdRSRP:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.ThresholdRSRP)))
+		n += len(x.ThresholdRSRP)
+	case *ThresholdEUTRAChoice_ThresholdRSRQ:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.ThresholdRSRQ)))
+		n += len(x.ThresholdRSRQ)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 type ThreasholdEUTRA struct {
@@ -4408,13 +5732,13 @@ type isMeasIdActionChoice_Choice interface {
 }
 
 type MeasIdActionChoice_AddMeasId struct {
-	AddMeasId *AddMeasId `protobuf:"bytes,1,opt,name=addMeasId,proto3,oneof" json:"addMeasId,omitempty"`
+	AddMeasId *AddMeasId `protobuf:"bytes,1,opt,name=addMeasId,proto3,oneof"`
 }
 type MeasIdActionChoice_DelMeasId struct {
-	DelMeasId *DelMeasId `protobuf:"bytes,2,opt,name=delMeasId,proto3,oneof" json:"delMeasId,omitempty"`
+	DelMeasId *DelMeasId `protobuf:"bytes,2,opt,name=delMeasId,proto3,oneof"`
 }
 type MeasIdActionChoice_Hototarget struct {
-	Hototarget string `protobuf:"bytes,3,opt,name=hototarget,proto3,oneof" json:"hototarget,omitempty"`
+	Hototarget string `protobuf:"bytes,3,opt,name=hototarget,proto3,oneof"`
 }
 
 func (*MeasIdActionChoice_AddMeasId) isMeasIdActionChoice_Choice()  {}
@@ -4449,13 +5773,93 @@ func (m *MeasIdActionChoice) GetHototarget() string {
 	return ""
 }
 
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*MeasIdActionChoice) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*MeasIdActionChoice) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _MeasIdActionChoice_OneofMarshaler, _MeasIdActionChoice_OneofUnmarshaler, _MeasIdActionChoice_OneofSizer, []interface{}{
 		(*MeasIdActionChoice_AddMeasId)(nil),
 		(*MeasIdActionChoice_DelMeasId)(nil),
 		(*MeasIdActionChoice_Hototarget)(nil),
 	}
+}
+
+func _MeasIdActionChoice_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*MeasIdActionChoice)
+	// choice
+	switch x := m.Choice.(type) {
+	case *MeasIdActionChoice_AddMeasId:
+		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.AddMeasId); err != nil {
+			return err
+		}
+	case *MeasIdActionChoice_DelMeasId:
+		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.DelMeasId); err != nil {
+			return err
+		}
+	case *MeasIdActionChoice_Hototarget:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.Hototarget)
+	case nil:
+	default:
+		return fmt.Errorf("MeasIdActionChoice.Choice has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _MeasIdActionChoice_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*MeasIdActionChoice)
+	switch tag {
+	case 1: // choice.addMeasId
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(AddMeasId)
+		err := b.DecodeMessage(msg)
+		m.Choice = &MeasIdActionChoice_AddMeasId{msg}
+		return true, err
+	case 2: // choice.delMeasId
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DelMeasId)
+		err := b.DecodeMessage(msg)
+		m.Choice = &MeasIdActionChoice_DelMeasId{msg}
+		return true, err
+	case 3: // choice.hototarget
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Choice = &MeasIdActionChoice_Hototarget{x}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _MeasIdActionChoice_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*MeasIdActionChoice)
+	// choice
+	switch x := m.Choice.(type) {
+	case *MeasIdActionChoice_AddMeasId:
+		s := proto.Size(x.AddMeasId)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MeasIdActionChoice_DelMeasId:
+		s := proto.Size(x.DelMeasId)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *MeasIdActionChoice_Hototarget:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.Hototarget)))
+		n += len(x.Hototarget)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 type MeasIdAction struct {
@@ -7242,8 +8646,7 @@ func (m *TelemetryMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *TelemetryMessage_RadioMeasReportPerUE) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *TelemetryMessage_RadioMeasReportPerUE) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7263,8 +8666,7 @@ func (m *TelemetryMessage_RadioMeasReportPerUE) MarshalToSizedBuffer(dAtA []byte
 	return len(dAtA) - i, nil
 }
 func (m *TelemetryMessage_RadioMeasReportPerCell) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *TelemetryMessage_RadioMeasReportPerCell) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7284,8 +8686,7 @@ func (m *TelemetryMessage_RadioMeasReportPerCell) MarshalToSizedBuffer(dAtA []by
 	return len(dAtA) - i, nil
 }
 func (m *TelemetryMessage_SchedMeasReportPerCell) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *TelemetryMessage_SchedMeasReportPerCell) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7305,8 +8706,7 @@ func (m *TelemetryMessage_SchedMeasReportPerCell) MarshalToSizedBuffer(dAtA []by
 	return len(dAtA) - i, nil
 }
 func (m *TelemetryMessage_PDCPMeasReportPerUe) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *TelemetryMessage_PDCPMeasReportPerUe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7363,8 +8763,7 @@ func (m *ControlUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ControlUpdate_CellConfigReport) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_CellConfigReport) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7384,8 +8783,7 @@ func (m *ControlUpdate_CellConfigReport) MarshalToSizedBuffer(dAtA []byte) (int,
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_RRMConfigStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_RRMConfigStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7405,8 +8803,7 @@ func (m *ControlUpdate_RRMConfigStatus) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_UEAdmissionRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_UEAdmissionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7426,8 +8823,7 @@ func (m *ControlUpdate_UEAdmissionRequest) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_UEAdmissionStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_UEAdmissionStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7447,8 +8843,7 @@ func (m *ControlUpdate_UEAdmissionStatus) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_UEContextUpdate) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_UEContextUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7468,8 +8863,7 @@ func (m *ControlUpdate_UEContextUpdate) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_BearerAdmissionRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_BearerAdmissionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7489,8 +8883,7 @@ func (m *ControlUpdate_BearerAdmissionRequest) MarshalToSizedBuffer(dAtA []byte)
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_BearerAdmissionStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_BearerAdmissionStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7510,8 +8903,7 @@ func (m *ControlUpdate_BearerAdmissionStatus) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_HOComplete) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_HOComplete) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7531,8 +8923,7 @@ func (m *ControlUpdate_HOComplete) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_HOFailure) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_HOFailure) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7552,8 +8943,7 @@ func (m *ControlUpdate_HOFailure) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 func (m *ControlUpdate_HOCause) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlUpdate_HOCause) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7610,8 +9000,7 @@ func (m *ControlResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ControlResponse_CellConfigRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlResponse_CellConfigRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7631,8 +9020,7 @@ func (m *ControlResponse_CellConfigRequest) MarshalToSizedBuffer(dAtA []byte) (i
 	return len(dAtA) - i, nil
 }
 func (m *ControlResponse_RRMConfig) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlResponse_RRMConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7652,8 +9040,7 @@ func (m *ControlResponse_RRMConfig) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ControlResponse_L2MeasConfig) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlResponse_L2MeasConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7673,8 +9060,7 @@ func (m *ControlResponse_L2MeasConfig) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 func (m *ControlResponse_UEAdmissionResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlResponse_UEAdmissionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7694,8 +9080,7 @@ func (m *ControlResponse_UEAdmissionResponse) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 func (m *ControlResponse_BearerAdmissionResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlResponse_BearerAdmissionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7715,8 +9100,7 @@ func (m *ControlResponse_BearerAdmissionResponse) MarshalToSizedBuffer(dAtA []by
 	return len(dAtA) - i, nil
 }
 func (m *ControlResponse_HORequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ControlResponse_HORequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7796,8 +9180,7 @@ func (m *MessagePayload) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *MessagePayload_CellConfigRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_CellConfigRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7817,8 +9200,7 @@ func (m *MessagePayload_CellConfigRequest) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_CellConfigReport) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_CellConfigReport) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7838,8 +9220,7 @@ func (m *MessagePayload_CellConfigReport) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UEAdmissionRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UEAdmissionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7859,8 +9240,7 @@ func (m *MessagePayload_UEAdmissionRequest) MarshalToSizedBuffer(dAtA []byte) (i
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UEAdmissionResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UEAdmissionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7880,8 +9260,7 @@ func (m *MessagePayload_UEAdmissionResponse) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UEAdmissionStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UEAdmissionStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7901,8 +9280,7 @@ func (m *MessagePayload_UEAdmissionStatus) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UEContextUpdate) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UEContextUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7922,8 +9300,7 @@ func (m *MessagePayload_UEContextUpdate) MarshalToSizedBuffer(dAtA []byte) (int,
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UEReconfigInd) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UEReconfigInd) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7943,8 +9320,7 @@ func (m *MessagePayload_UEReconfigInd) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UEReleaseInd) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UEReleaseInd) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7964,8 +9340,7 @@ func (m *MessagePayload_UEReleaseInd) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_BearerAdmissionRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_BearerAdmissionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -7985,8 +9360,7 @@ func (m *MessagePayload_BearerAdmissionRequest) MarshalToSizedBuffer(dAtA []byte
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_BearerAdmissionResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_BearerAdmissionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8006,8 +9380,7 @@ func (m *MessagePayload_BearerAdmissionResponse) MarshalToSizedBuffer(dAtA []byt
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_BearerAdmissionStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_BearerAdmissionStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8027,8 +9400,7 @@ func (m *MessagePayload_BearerAdmissionStatus) MarshalToSizedBuffer(dAtA []byte)
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_BearerReleaseInd) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_BearerReleaseInd) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8048,8 +9420,7 @@ func (m *MessagePayload_BearerReleaseInd) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_HORequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_HORequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8069,8 +9440,7 @@ func (m *MessagePayload_HORequest) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_HOFailure) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_HOFailure) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8090,8 +9460,7 @@ func (m *MessagePayload_HOFailure) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_HOComplete) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_HOComplete) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8111,8 +9480,7 @@ func (m *MessagePayload_HOComplete) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_HOCause) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_HOCause) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8134,8 +9502,7 @@ func (m *MessagePayload_HOCause) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_RRCMeasConfig) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_RRCMeasConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8157,8 +9524,7 @@ func (m *MessagePayload_RRCMeasConfig) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_RxSigMeasReport) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_RxSigMeasReport) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8180,8 +9546,7 @@ func (m *MessagePayload_RxSigMeasReport) MarshalToSizedBuffer(dAtA []byte) (int,
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_L2MeasConfig) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_L2MeasConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8203,8 +9568,7 @@ func (m *MessagePayload_L2MeasConfig) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_RadioMeasReportPerU) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_RadioMeasReportPerU) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8226,8 +9590,7 @@ func (m *MessagePayload_RadioMeasReportPerU) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_RadioMeasReportPerCell) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_RadioMeasReportPerCell) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8249,8 +9612,7 @@ func (m *MessagePayload_RadioMeasReportPerCell) MarshalToSizedBuffer(dAtA []byte
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_SchedMeasReportPerUE) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_SchedMeasReportPerUE) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8272,8 +9634,7 @@ func (m *MessagePayload_SchedMeasReportPerUE) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_SchedMeasReportPerCell) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_SchedMeasReportPerCell) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8295,8 +9656,7 @@ func (m *MessagePayload_SchedMeasReportPerCell) MarshalToSizedBuffer(dAtA []byte
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_PDCPMeasReportPerUe) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_PDCPMeasReportPerUe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8318,8 +9678,7 @@ func (m *MessagePayload_PDCPMeasReportPerUe) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_RRMConfig) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_RRMConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8341,8 +9700,7 @@ func (m *MessagePayload_RRMConfig) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_RRMConfigStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_RRMConfigStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8364,8 +9722,7 @@ func (m *MessagePayload_RRMConfigStatus) MarshalToSizedBuffer(dAtA []byte) (int,
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UECapabilityEnquiry) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UECapabilityEnquiry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8387,8 +9744,7 @@ func (m *MessagePayload_UECapabilityEnquiry) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_UECapabilityInfo) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_UECapabilityInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8410,8 +9766,7 @@ func (m *MessagePayload_UECapabilityInfo) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_ScellAdd) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_ScellAdd) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8433,8 +9788,7 @@ func (m *MessagePayload_ScellAdd) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_ScellAddStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_ScellAddStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8456,8 +9810,7 @@ func (m *MessagePayload_ScellAddStatus) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_ScellDelete) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_ScellDelete) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8479,8 +9832,7 @@ func (m *MessagePayload_ScellDelete) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_SeNBAdd) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_SeNBAdd) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8502,8 +9854,7 @@ func (m *MessagePayload_SeNBAdd) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_SeNBAddStatus) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_SeNBAddStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8525,8 +9876,7 @@ func (m *MessagePayload_SeNBAddStatus) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_SeNBDelete) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_SeNBDelete) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -8548,8 +9898,7 @@ func (m *MessagePayload_SeNBDelete) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *MessagePayload_TrafficSplitConfig) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MessagePayload_TrafficSplitConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -9970,8 +11319,7 @@ func (m *ReportParamChoice) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ReportParamChoice_PerParam) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ReportParamChoice_PerParam) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -9991,8 +11339,7 @@ func (m *ReportParamChoice_PerParam) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 func (m *ReportParamChoice_A1Param) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ReportParamChoice_A1Param) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10012,8 +11359,7 @@ func (m *ReportParamChoice_A1Param) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ReportParamChoice_A2Param) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ReportParamChoice_A2Param) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10033,8 +11379,7 @@ func (m *ReportParamChoice_A2Param) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ReportParamChoice_A3Param) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ReportParamChoice_A3Param) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10054,8 +11399,7 @@ func (m *ReportParamChoice_A3Param) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ReportParamChoice_A4Param) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ReportParamChoice_A4Param) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10075,8 +11419,7 @@ func (m *ReportParamChoice_A4Param) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ReportParamChoice_A5Param) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ReportParamChoice_A5Param) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10096,8 +11439,7 @@ func (m *ReportParamChoice_A5Param) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 func (m *ReportParamChoice_A6Param) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ReportParamChoice_A6Param) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10149,8 +11491,7 @@ func (m *ThresholdEUTRAChoice) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *ThresholdEUTRAChoice_ThresholdRSRP) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ThresholdEUTRAChoice_ThresholdRSRP) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10163,8 +11504,7 @@ func (m *ThresholdEUTRAChoice_ThresholdRSRP) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 func (m *ThresholdEUTRAChoice_ThresholdRSRQ) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *ThresholdEUTRAChoice_ThresholdRSRQ) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10650,8 +11990,7 @@ func (m *MeasIdActionChoice) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 }
 
 func (m *MeasIdActionChoice_AddMeasId) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MeasIdActionChoice_AddMeasId) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10671,8 +12010,7 @@ func (m *MeasIdActionChoice_AddMeasId) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 func (m *MeasIdActionChoice_DelMeasId) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MeasIdActionChoice_DelMeasId) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -10692,8 +12030,7 @@ func (m *MeasIdActionChoice_DelMeasId) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 func (m *MeasIdActionChoice_Hototarget) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
+	return m.MarshalToSizedBuffer(dAtA[:m.Size()])
 }
 
 func (m *MeasIdActionChoice_Hototarget) MarshalToSizedBuffer(dAtA []byte) (int, error) {
@@ -29193,7 +30530,6 @@ func (m *TrafficSplitConfig) Unmarshal(dAtA []byte) error {
 func skipE2Interface(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
-	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -29225,8 +30561,10 @@ func skipE2Interface(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
+			return iNdEx, nil
 		case 1:
 			iNdEx += 8
+			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -29247,30 +30585,55 @@ func skipE2Interface(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthE2Interface
 			}
 			iNdEx += length
-		case 3:
-			depth++
-		case 4:
-			if depth == 0 {
-				return 0, ErrUnexpectedEndOfGroupE2Interface
+			if iNdEx < 0 {
+				return 0, ErrInvalidLengthE2Interface
 			}
-			depth--
+			return iNdEx, nil
+		case 3:
+			for {
+				var innerWire uint64
+				var start int = iNdEx
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return 0, ErrIntOverflowE2Interface
+					}
+					if iNdEx >= l {
+						return 0, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					innerWire |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				innerWireType := int(innerWire & 0x7)
+				if innerWireType == 4 {
+					break
+				}
+				next, err := skipE2Interface(dAtA[start:])
+				if err != nil {
+					return 0, err
+				}
+				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthE2Interface
+				}
+			}
+			return iNdEx, nil
+		case 4:
+			return iNdEx, nil
 		case 5:
 			iNdEx += 4
+			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
-		if iNdEx < 0 {
-			return 0, ErrInvalidLengthE2Interface
-		}
-		if depth == 0 {
-			return iNdEx, nil
-		}
 	}
-	return 0, io.ErrUnexpectedEOF
+	panic("unreachable")
 }
 
 var (
-	ErrInvalidLengthE2Interface        = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowE2Interface          = fmt.Errorf("proto: integer overflow")
-	ErrUnexpectedEndOfGroupE2Interface = fmt.Errorf("proto: unexpected end of group")
+	ErrInvalidLengthE2Interface = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowE2Interface   = fmt.Errorf("proto: integer overflow")
 )

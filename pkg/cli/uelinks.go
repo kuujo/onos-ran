@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	log "k8s.io/klog"
-	"strings"
 	"text/tabwriter"
 	"time"
 )
@@ -101,7 +100,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
 
 	if !noHeaders {
-		fmt.Fprintln(writer, "ECID\tCRNTI\tCQI HISTORY")
+		fmt.Fprintln(writer, "ECID\tCRNTI\tCQI\tTARGET ECID")
 	}
 
 	for {
@@ -113,8 +112,9 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s", response.Ecgi.Ecid, response.Crnti,
-			strings.Join(response.CqiHist, ", ")))
+		for _, cqi := range response.ChannelQualities {
+			fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%s", response.Ecgi.Ecid, response.Crnti, cqi.CqiHist, cqi.TargetEcgi.Ecid))
+		}
 	}
 	writer.Flush()
 
