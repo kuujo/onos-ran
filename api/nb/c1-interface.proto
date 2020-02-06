@@ -105,6 +105,14 @@ message UELinkListRequest {
     bool subscribe = 3;
 }
 
+message ChannelQuality {
+    // Target stations's ID
+    // This target station can be either the serving station or the serving station's neighbor stations.
+    ECGI targetEcgi = 1;
+    // CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
+    string cqiHist = 2;
+}
+
 // It shows the link quality between the UE -- having crnti (1) and serviced by the station having ecgi (2) -- and the station -- having targetECGI (3).
 // Target station can be not only UE's serving station but also the station's neighbor stations.
 message UELinkInfo {
@@ -113,22 +121,15 @@ message UELinkInfo {
     string crnti = 1;
     // UE's serving station ID
     ECGI ecgi = 2;
-    
-    // Target stations's ID
-    // This target station can be either the serving station or the serving station's neighbor stations.
-    ECGI targetEcgi = 3;
-    // CQI history
-    // CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
-    // An UE reports CQI to an eNB at very short interval (few ms); the eNB will collect the CQI history for each UE.
-    // The minimum period of measurement messages in E2 interface is 10 ms and HO app will request link information more intermittently.
-    // Thus, each link (UE-serving eNB) should have multiple CQI values as a CQI history.
-    repeated string cqiHist = 4;
+
+    // Channel quality values between the UE and its serving or neighbor stations.
+    repeated ChannelQuality channelQualities = 3;
 
     // optional value: IMSI which is a global unique UE ID 
     // This value is from UEContextUpdate message
     // The crnti is local ID only working in a serving base station. However, sometimes an app may need the unique ID
     // Thus, add IMSI as an optional. 
-    string imsi = 5;
+    string imsi = 4;
 }
 
 message HandOverRequest {
