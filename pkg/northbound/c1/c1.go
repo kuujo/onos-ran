@@ -48,21 +48,26 @@ type Server struct {
 
 // ListStations returns a stream of base station records.
 func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
-	if req.Ecgi.Plmnid == "" && req.Ecgi.Ecid == "" {
+	if req.Ecgi == nil {
 		controlUpdates, err := manager.GetManager().GetControlUpdates()
 		if err != nil {
-			for _, update := range controlUpdates {
-				switch update.GetMessageType() {
-				case sb.MessageType_CELL_CONFIG_REPORT:
-					cellConfigReport := update.GetCellConfigReport()
-					var baseStationInfo nb.StationInfo
-					baseStationInfo.Ecgi.Ecid = cellConfigReport.GetEcgi().GetEcid()
-					baseStationInfo.Ecgi.Plmnid = cellConfigReport.GetEcgi().GetPlmnId()
-					baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
-					err = stream.Send(&baseStationInfo)
-					if err != nil {
-						return err
-					}
+			return nil
+		}
+		for _, update := range controlUpdates {
+			switch update.GetMessageType() {
+			case sb.MessageType_CELL_CONFIG_REPORT:
+				cellConfigReport := update.GetCellConfigReport()
+				ecgi := nb.ECGI{
+					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+				}
+				baseStationInfo := nb.StationInfo{
+					Ecgi: &ecgi,
+				}
+				baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
+				err = stream.Send(&baseStationInfo)
+				if err != nil {
+					return err
 				}
 			}
 		}
