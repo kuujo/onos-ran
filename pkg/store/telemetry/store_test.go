@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ran
+package telemetry
 
 import (
 	"testing"
@@ -22,13 +22,13 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	testStore, err := NewRanStore()
+	testStore, err := NewStore()
 	assert.Nil(t, err)
 	assert.NotNil(t, testStore)
-	controlUpdate1 := sb.ControlUpdate{
-		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
-		S: &sb.ControlUpdate_CellConfigReport{
-			CellConfigReport: &sb.CellConfigReport{
+	telemetry1 := sb.TelemetryMessage{
+		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_CELL,
+		S: &sb.TelemetryMessage_RadioMeasReportPerCell{
+			RadioMeasReportPerCell: &sb.RadioMeasReportPerCell{
 				Ecgi: &sb.ECGI{
 					Ecid:   "test-ecid",
 					PlmnId: "test-plmnid",
@@ -36,7 +36,7 @@ func TestStore(t *testing.T) {
 			},
 		},
 	}
-	err = testStore.Put(controlUpdate1)
+	err = testStore.Put(telemetry1)
 	assert.Nil(t, err)
 	ecigTest1 := sb.ECGI{
 		Ecid:   "test-ecid",
@@ -45,16 +45,16 @@ func TestStore(t *testing.T) {
 	id1 := ID{
 		Ecid:        ecigTest1.GetEcid(),
 		PlmnID:      ecigTest1.GetPlmnId(),
-		MessageType: controlUpdate1.GetMessageType(),
+		MessageType: telemetry1.GetMessageType(),
 	}
 	value1, err := testStore.Get(id1)
 	assert.Nil(t, err)
-	assert.Equal(t, value1.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
+	assert.Equal(t, value1.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
 
-	controlUpdate2 := sb.ControlUpdate{
-		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
-		S: &sb.ControlUpdate_CellConfigReport{
-			CellConfigReport: &sb.CellConfigReport{
+	telemetry2 := sb.TelemetryMessage{
+		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_CELL,
+		S: &sb.TelemetryMessage_RadioMeasReportPerCell{
+			RadioMeasReportPerCell: &sb.RadioMeasReportPerCell{
 				Ecgi: &sb.ECGI{
 					Ecid:   "test-ecid-2",
 					PlmnId: "test-plmnid-2",
@@ -62,9 +62,9 @@ func TestStore(t *testing.T) {
 			},
 		},
 	}
-	err = testStore.Put(controlUpdate2)
-	assert.Nil(t, err)
 
+	err = testStore.Put(telemetry2)
+	assert.Nil(t, err)
 	ecigTest2 := sb.ECGI{
 		Ecid:   "test-ecid-2",
 		PlmnId: "test-plmnid-2",
@@ -72,16 +72,16 @@ func TestStore(t *testing.T) {
 	id2 := ID{
 		Ecid:        ecigTest2.GetEcid(),
 		PlmnID:      ecigTest2.GetPlmnId(),
-		MessageType: controlUpdate2.GetMessageType(),
+		MessageType: telemetry2.GetMessageType(),
 	}
 	value2, err := testStore.Get(id2)
 	assert.Nil(t, err)
-	assert.Equal(t, value2.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
+	assert.Equal(t, value2.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
 
-	controlUpdate3 := sb.ControlUpdate{
-		MessageType: sb.MessageType_UE_ADMISSION_STATUS,
-		S: &sb.ControlUpdate_UEAdmissionStatus{
-			UEAdmissionStatus: &sb.UEAdmissionStatus{
+	telemetry3 := sb.TelemetryMessage{
+		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
+		S: &sb.TelemetryMessage_RadioMeasReportPerUE{
+			RadioMeasReportPerUE: &sb.RadioMeasReportPerUE{
 				Ecgi: &sb.ECGI{
 					Ecid:   "test-ecid-3",
 					PlmnId: "test-plmnid-3",
@@ -90,7 +90,7 @@ func TestStore(t *testing.T) {
 			},
 		},
 	}
-	err = testStore.Put(controlUpdate3)
+	err = testStore.Put(telemetry3)
 	assert.Nil(t, err)
 
 	ecigTest3 := sb.ECGI{
@@ -101,10 +101,10 @@ func TestStore(t *testing.T) {
 		Ecid:        ecigTest3.GetEcid(),
 		PlmnID:      ecigTest3.GetPlmnId(),
 		Crnti:       "test-crnti-3",
-		MessageType: controlUpdate3.GetMessageType(),
+		MessageType: telemetry3.GetMessageType(),
 	}
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
-	assert.Equal(t, value3.MessageType.String(), sb.MessageType_UE_ADMISSION_STATUS.String())
+	assert.Equal(t, value3.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_UE.String())
 
 }

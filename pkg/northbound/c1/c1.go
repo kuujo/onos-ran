@@ -123,7 +123,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 }
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
-func (s Server) ListUELinks(*nb.UELinkListRequest, nb.C1InterfaceService_ListUELinksServer) error {
+func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
 	return fmt.Errorf("not yet implemented")
 }
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ran
+package updates
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ type Store interface {
 }
 
 // Get gets a control update message based on a given ID
-func (s *ranStore) Get(id ID) (sb.ControlUpdate, error) {
+func (s *updatesStore) Get(id ID) (sb.ControlUpdate, error) {
 	s.mu.RLock()
 	if controlUpdate, ok := s.controlUpdates[id]; ok {
 		s.mu.RUnlock()
@@ -87,7 +87,7 @@ func getKey(update sb.ControlUpdate) ID {
 }
 
 // Put puts a control update message in the store
-func (s *ranStore) Put(update sb.ControlUpdate) error {
+func (s *updatesStore) Put(update sb.ControlUpdate) error {
 	id := getKey(update)
 	s.mu.Lock()
 	s.controlUpdates[id] = update
@@ -96,7 +96,7 @@ func (s *ranStore) Put(update sb.ControlUpdate) error {
 }
 
 // List gets all of the control update messages in the store
-func (s *ranStore) List() []sb.ControlUpdate {
+func (s *updatesStore) List() []sb.ControlUpdate {
 	var controlUpdates []sb.ControlUpdate
 	s.mu.RLock()
 	for _, value := range s.controlUpdates {
@@ -107,15 +107,15 @@ func (s *ranStore) List() []sb.ControlUpdate {
 }
 
 // RanStore is responsible for tracking the RAN data.
-type ranStore struct {
+type updatesStore struct {
 	controlUpdates map[ID]sb.ControlUpdate
 	mu             sync.RWMutex
 }
 
-// NewRanStore creates a new RAN store controller.
-func NewRanStore() (Store, error) {
-	log.Info("Creating Ran Store")
-	return &ranStore{
+// NewStore creates a new Control updates store
+func NewStore() (Store, error) {
+	log.Info("Creating Control Updates Store")
+	return &updatesStore{
 		controlUpdates: make(map[ID]sb.ControlUpdate),
 	}, nil
 }
