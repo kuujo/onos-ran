@@ -87,6 +87,11 @@ func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
 	return m.updatesStore.List(), nil
 }
 
+// GetTelemetry gets telemeter messages
+func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
+	return m.telemetryStore.List(), nil
+}
+
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")

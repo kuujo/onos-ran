@@ -123,7 +123,56 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
-	return fmt.Errorf("not yet implemented")
+	if req.Ecgi == nil {
+		telemetry, err := manager.GetManager().GetTelemetry()
+		if err != nil {
+			return err
+		}
+		for _, msg := range telemetry {
+			switch msg.GetMessageType() {
+			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+				radioReportUe := msg.GetRadioMeasReportPerUE()
+				ecgi := nb.ECGI{
+					Ecid:   radioReportUe.GetEcgi().GetEcid(),
+					Plmnid: radioReportUe.GetEcgi().GetPlmnId(),
+				}
+				radioReportServCells := radioReportUe.GetRadioReportServCells()
+				var cqis []*nb.ChannelQuality
+				for _, radioReportServCell := range radioReportServCells {
+					servCellEcgi := radioReportServCell.GetEcgi()
+					ecgi := nb.ECGI{
+						Ecid:   servCellEcgi.GetEcid(),
+						Plmnid: servCellEcgi.GetPlmnId(),
+					}
+					cqiHist := radioReportServCell.GetCqiHist()
+					for _, cqi := range cqiHist {
+						nbCqi := nb.ChannelQuality{
+							TargetEcgi: &ecgi,
+							CqiHist:    cqi,
+						}
+						cqis = append(cqis, &nbCqi)
+					}
+
+				}
+				ueLinkInfo := nb.UELinkInfo{
+					Ecgi:             &ecgi,
+					Crnti:            radioReportUe.GetCrnti(),
+					ChannelQualities: cqis,
+				}
+
+				err = stream.Send(&ueLinkInfo)
+				if err != nil {
+					return err
+				}
+
+			}
+		}
+
+	} else {
+
+		return fmt.Errorf("UELinkListRequest is not empty")
+	}
+	return nil
 }
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
