@@ -60,6 +60,8 @@ func (m *Sessions) manageConnections() {
 		opts := []grpc.DialOption{
 			grpc.WithInsecure(),
 			grpc.WithBlock(),
+			// TODO: Adapt the new API here. This one is deprecated.
+			grpc.WithTimeout(5 * time.Second),
 		}
 
 		log.Infof("Connecting to simulator...%s", *m.Simulator)
