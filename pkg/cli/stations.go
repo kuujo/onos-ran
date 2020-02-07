@@ -17,12 +17,13 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-ran/api/nb"
-	"github.com/spf13/cobra"
 	"io"
-	log "k8s.io/klog"
 	"text/tabwriter"
 	"time"
+
+	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/spf13/cobra"
+	log "k8s.io/klog"
 )
 
 const _subscribe = "subscribe"
@@ -101,7 +102,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", response.Ecgi.Ecid, response.MaxNumConnectedUes))
+		fmt.Fprintln(writer, fmt.Sprintf("%s\t%d", response.Ecgi.Ecid, response.MaxNumConnectedUes))
 	}
 	writer.Flush()
 
