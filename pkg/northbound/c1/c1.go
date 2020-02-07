@@ -25,7 +25,6 @@ import (
 	"github.com/onosproject/onos-ran/pkg/manager"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
-	log "k8s.io/klog"
 )
 
 // NewService returns a new device Service
@@ -75,8 +74,6 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 				if err != nil {
 					return err
 				}
-			default:
-				log.Infof("control update of type %s not listed", update.GetMessageType())
 			}
 		}
 	} else {
@@ -118,8 +115,10 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 				}
 			}
 		}
+	} else {
+		return fmt.Errorf("req ecgi is not nil")
 	}
-	return fmt.Errorf("req ecgi is not nil")
+	return nil
 }
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
