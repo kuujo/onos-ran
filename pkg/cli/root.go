@@ -31,10 +31,10 @@ func Init() {
 	// noop for now
 }
 
-// GetCommand returns the root command for the topo service
+// GetCommand returns the root command for the RAN service
 func GetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ran {get|watch} [args]",
+		Use:   "ran {get|set|watch|handover} [args]",
 		Short: "ONOS Ran subsystem commands",
 	}
 
@@ -42,6 +42,7 @@ func GetCommand() *cobra.Command {
 	cmd.AddCommand(getConfigCommand())
 	cmd.AddCommand(getGetCommand())
 	cmd.AddCommand(getWatchCommand())
-
+	cmd.AddCommand(getSetCommand())
+	cmd.AddCommand(getHandOverCommand())
 	return cmd
 }
