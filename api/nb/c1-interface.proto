@@ -72,7 +72,7 @@ message StationInfo {
     ECGI ecgi = 1;
 
     // station's maximum number of connected UEs - used for MLB
-    string maxNumConnectedUes = 3;
+    uint32 maxNumConnectedUes = 3;
 }
 
 // if ECGI is empty, stream all station links' information
