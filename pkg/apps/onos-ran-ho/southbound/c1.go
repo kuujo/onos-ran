@@ -19,7 +19,6 @@ import (
 	"context"
 	"io"
 	"time"
-	"unsafe"
 
 	"github.com/onosproject/onos-ran/api/nb"
 	hoapphandover "github.com/onosproject/onos-ran/pkg/apps/onos-ran-ho/handover"
@@ -148,8 +147,12 @@ func (m *HOSessions) getListStationLinks() {
 		}
 
 		// For debugging
-		log.Infof("The station (PLMNID: %s and ECID: %s) has %d neighbor stations",
-			stationLinkInfo.GetEcgi().GetPlmnid(), stationLinkInfo.GetEcgi().GetEcid(), len(stationLinkInfo.GetNeighborECGI()))
+		printNeighbors := ""
+		for _, n := range stationLinkInfo.GetNeighborECGI() {
+			printNeighbors = printNeighbors + " PLMNID: " + n.GetPlmnid() + ",ECID: " + n.GetEcid() + "\t"
+		}
+		log.Infof("The station (PLMNID: %s and ECID: %s) has %d neighbor stations: %s",
+			stationLinkInfo.GetEcgi().GetPlmnid(), stationLinkInfo.GetEcgi().GetEcid(), len(stationLinkInfo.GetNeighborECGI()), printNeighbors)
 	}
 }
 
@@ -180,7 +183,9 @@ func (m *HOSessions) getListUELinks() {
 
 func (m *HOSessions) sendHandoverTrigger(hoReq nb.HandOverRequest) {
 
-	if unsafe.Sizeof(hoReq) == 0 {
+	// HODecisionMaker function returns nb.HandOverRequest{} when serving stations is the best one
+	// No need to trigger handover because serving station is the best one
+	if hoReq.GetDstStation() == nil && hoReq.GetSrcStation() == nil {
 		return
 	}
 
