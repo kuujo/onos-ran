@@ -25,7 +25,6 @@ import (
 	"github.com/onosproject/onos-ran/pkg/manager"
 	"github.com/onosproject/onos-ran/pkg/service"
 	"google.golang.org/grpc"
-	log "k8s.io/klog"
 )
 
 // NewService returns a new device Service
@@ -75,8 +74,6 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 				if err != nil {
 					return err
 				}
-			default:
-				log.Infof("control update of type %s not listed", update.GetMessageType())
 			}
 		}
 	} else {
@@ -118,13 +115,64 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 				}
 			}
 		}
+	} else {
+		return fmt.Errorf("req ecgi is not nil")
 	}
-	return fmt.Errorf("req ecgi is not nil")
+	return nil
 }
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
-func (s Server) ListUELinks(*nb.UELinkListRequest, nb.C1InterfaceService_ListUELinksServer) error {
-	return fmt.Errorf("not yet implemented")
+func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
+	if req.Ecgi == nil {
+		telemetry, err := manager.GetManager().GetTelemetry()
+		if err != nil {
+			return err
+		}
+		for _, msg := range telemetry {
+			switch msg.GetMessageType() {
+			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+				radioReportUe := msg.GetRadioMeasReportPerUE()
+				ecgi := nb.ECGI{
+					Ecid:   radioReportUe.GetEcgi().GetEcid(),
+					Plmnid: radioReportUe.GetEcgi().GetPlmnId(),
+				}
+				radioReportServCells := radioReportUe.GetRadioReportServCells()
+				var cqis []*nb.ChannelQuality
+				for _, radioReportServCell := range radioReportServCells {
+					servCellEcgi := radioReportServCell.GetEcgi()
+					ecgi := nb.ECGI{
+						Ecid:   servCellEcgi.GetEcid(),
+						Plmnid: servCellEcgi.GetPlmnId(),
+					}
+					cqiHist := radioReportServCell.GetCqiHist()
+					for _, cqi := range cqiHist {
+						nbCqi := nb.ChannelQuality{
+							TargetEcgi: &ecgi,
+							CqiHist:    cqi,
+						}
+						cqis = append(cqis, &nbCqi)
+					}
+
+				}
+				ueLinkInfo := nb.UELinkInfo{
+					Ecgi:             &ecgi,
+					Crnti:            radioReportUe.GetCrnti(),
+					ChannelQualities: cqis,
+				}
+
+				err = stream.Send(&ueLinkInfo)
+				if err != nil {
+					return err
+				}
+
+			}
+		}
+
+	} else {
+
+		return fmt.Errorf("UELinkListRequest is not empty")
+	}
+	return nil
 }
 
 // TriggerHandOver returns a hand-over response indicating success or failure.

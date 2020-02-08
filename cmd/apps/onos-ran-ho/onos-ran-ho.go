@@ -57,4 +57,6 @@ func main() {
 		appMgr.SB.ONOSRANAddr = onosranaddr
 		appMgr.Run()
 	}
+
+	// If this application requires gRPC server, should be called here.
 }

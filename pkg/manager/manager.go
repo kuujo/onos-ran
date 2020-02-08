@@ -18,7 +18,9 @@ package manager
 import (
 	"github.com/onosproject/onos-ran/api/sb"
 	"github.com/onosproject/onos-ran/pkg/southbound"
-	"github.com/onosproject/onos-ran/pkg/store/ran"
+	"github.com/onosproject/onos-ran/pkg/store/telemetry"
+	"github.com/onosproject/onos-ran/pkg/store/updates"
+
 	log "k8s.io/klog"
 )
 
@@ -28,7 +30,12 @@ var mgr Manager
 func NewManager() (*Manager, error) {
 	log.Info("Creating Manager")
 
-	db, err := ran.NewRanStore()
+	updatesStore, err := updates.NewStore()
+	if err != nil {
+		return nil, err
+	}
+
+	telemetryStore, err := telemetry.NewStore()
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +46,8 @@ func NewManager() (*Manager, error) {
 	}
 
 	mgr = Manager{
-		db,
+		updatesStore,
+		telemetryStore,
 		sbSession,
 		make(chan sb.ControlUpdate),
 		make(chan sb.ControlResponse),
@@ -50,17 +58,18 @@ func NewManager() (*Manager, error) {
 	return &mgr, nil
 }
 
-// Manager single point of entry for the topology system.
+// Manager single point of entry for the RAN system.
 type Manager struct {
-	store     ran.Store
-	SB        *southbound.Sessions
-	updates   chan sb.ControlUpdate
-	responses chan sb.ControlResponse
+	updatesStore   updates.Store
+	telemetryStore telemetry.Store
+	SB             *southbound.Sessions
+	updates        chan sb.ControlUpdate
+	responses      chan sb.ControlResponse
 }
 
 func (m *Manager) recvUpdates() {
 	for update := range mgr.updates {
-		_ = m.store.Put(update)
+		_ = m.updatesStore.Put(update)
 		log.Infof("Got messageType %d", update.MessageType)
 		switch x := update.S.(type) {
 		case *sb.ControlUpdate_CellConfigReport:
@@ -75,7 +84,12 @@ func (m *Manager) recvUpdates() {
 
 // GetControlUpdates gets a control update based on a given ID
 func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
-	return m.store.List(), nil
+	return m.updatesStore.List(), nil
+}
+
+// GetTelemetry gets telemeter messages
+func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
+	return m.telemetryStore.List(), nil
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.

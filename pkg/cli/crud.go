@@ -18,7 +18,7 @@ import "github.com/spf13/cobra"
 
 func getGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get {stations|ues|stationLinks|ueLinks} [args]",
+		Use:   "get {stations|stationlinks|uelinks} [args]",
 		Short: "Get RAN resources",
 	}
 	cmd.AddCommand(getGetStationsCommand())
@@ -29,11 +29,20 @@ func getGetCommand() *cobra.Command {
 
 func getWatchCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "watch {stations|ues|stationLinks|ueLinks} [args]",
+		Use:   "watch {stations|stationlinks|uelinks} [args]",
 		Short: "Watch for changes to a RAN resource type",
 	}
 	cmd.AddCommand(getWatchStationsCommand())
 	cmd.AddCommand(getWatchStationLinksCommand())
 	cmd.AddCommand(getWatchUeLinksCommand())
+	return cmd
+}
+
+func getSetCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set {power} [args]",
+		Short: "Set RAN resource parameters",
+	}
+	cmd.AddCommand(getSetPowerCommand())
 	return cmd
 }
