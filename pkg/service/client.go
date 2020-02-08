@@ -15,13 +15,14 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"google.golang.org/grpc"
 )
 
 // Connect establishes a client-side connection to the gRPC end-point.
-func Connect(address string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(address, opts...)
+func Connect(ctx context.Context, address string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	conn, err := grpc.DialContext(ctx, address, opts...)
 	if err != nil {
 		fmt.Println("Can't connect", err)
 		return nil, err

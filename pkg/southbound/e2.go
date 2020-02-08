@@ -60,12 +60,12 @@ func (m *Sessions) manageConnections() {
 		opts := []grpc.DialOption{
 			grpc.WithInsecure(),
 			grpc.WithBlock(),
-			// TODO: Adapt the new API here. This one is deprecated.
-			grpc.WithTimeout(5 * time.Second),
 		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-		log.Infof("Connecting to simulator...%s", *m.Simulator)
-		connection, err := service.Connect(*m.Simulator, opts...)
+		log.Infof("Connecting to simulator...%s with context", *m.Simulator)
+		connection, err := service.Connect(ctx, *m.Simulator, opts...)
+		cancel()
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.
