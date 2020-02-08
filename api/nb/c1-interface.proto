@@ -110,7 +110,7 @@ message ChannelQuality {
     // This target station can be either the serving station or the serving station's neighbor stations.
     ECGI targetEcgi = 1;
     // CQI stands for Channel Quality Indicator in LTE, which ranges from 0 (out of range) to 15 (64 QAM and 948 Code rate)
-    string cqiHist = 2;
+    uint32 cqiHist = 2;
 }
 
 // It shows the link quality between the UE -- having crnti (1) and serviced by the station having ecgi (2) -- and the station -- having targetECGI (3).

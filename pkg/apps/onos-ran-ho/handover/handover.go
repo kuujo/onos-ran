@@ -15,8 +15,6 @@
 package hoapphandover
 
 import (
-	"strconv"
-
 	"github.com/onosproject/onos-ran/api/nb"
 )
 
@@ -26,11 +24,11 @@ func HODecisionMaker(ueinfo *nb.UELinkInfo) nb.HandOverRequest {
 
 	numNeighborCells := len(ueinfo.GetChannelQualities())
 	bestStationID := ueinfo.GetChannelQualities()[0].GetTargetEcgi()
-	bestCQI, _ := strconv.Atoi(ueinfo.GetChannelQualities()[0].GetCqiHist())
+	bestCQI := ueinfo.GetChannelQualities()[0].GetCqiHist()
 
 	// start loop
 	for i := 1; i < numNeighborCells; i++ {
-		tmpCQI, _ := strconv.Atoi(ueinfo.GetChannelQualities()[i].GetCqiHist())
+		tmpCQI := ueinfo.GetChannelQualities()[i].GetCqiHist()
 		if bestCQI < tmpCQI {
 			bestStationID = ueinfo.GetChannelQualities()[i].GetTargetEcgi()
 			bestCQI = tmpCQI
