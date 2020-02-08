@@ -31,7 +31,7 @@ func TestHODecisionMakerCase1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0001",
 		},
-		CqiHist: "15",
+		CqiHist: 15,
 	}
 	cqV1 = append(cqV1, &cqV1S)
 	cqV1N1 := nb.ChannelQuality{
@@ -39,7 +39,7 @@ func TestHODecisionMakerCase1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0002",
 		},
-		CqiHist: "12",
+		CqiHist: 12,
 	}
 	cqV1 = append(cqV1, &cqV1N1)
 	cqV1N2 := nb.ChannelQuality{
@@ -47,7 +47,7 @@ func TestHODecisionMakerCase1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0003",
 		},
-		CqiHist: "11",
+		CqiHist: 11,
 	}
 	cqV1 = append(cqV1, &cqV1N2)
 	cqV1N3 := nb.ChannelQuality{
@@ -55,7 +55,7 @@ func TestHODecisionMakerCase1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0004",
 		},
-		CqiHist: "1",
+		CqiHist: 1,
 	}
 	cqV1 = append(cqV1, &cqV1N3)
 	value1 := nb.UELinkInfo{
@@ -81,7 +81,7 @@ func TestHODecisionMakerCase2Dot1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0001",
 		},
-		CqiHist: "10",
+		CqiHist: 10,
 	}
 	cqV2 = append(cqV2, &cqV2S)
 	cqV2N1 := nb.ChannelQuality{
@@ -89,7 +89,7 @@ func TestHODecisionMakerCase2Dot1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0002",
 		},
-		CqiHist: "12",
+		CqiHist: 12,
 	}
 	cqV2 = append(cqV2, &cqV2N1)
 	cqV2N2 := nb.ChannelQuality{
@@ -97,7 +97,7 @@ func TestHODecisionMakerCase2Dot1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0003",
 		},
-		CqiHist: "11",
+		CqiHist: 11,
 	}
 	cqV2 = append(cqV2, &cqV2N2)
 	cqV2N3 := nb.ChannelQuality{
@@ -105,7 +105,7 @@ func TestHODecisionMakerCase2Dot1(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0004",
 		},
-		CqiHist: "1",
+		CqiHist: 1,
 	}
 	cqV2 = append(cqV2, &cqV2N3)
 	value2 := nb.UELinkInfo{
@@ -130,7 +130,7 @@ func TestHODecisionMakerCase2Dot2(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0001",
 		},
-		CqiHist: "10",
+		CqiHist: 10,
 	}
 	cqV2 = append(cqV2, &cqV2S)
 	cqV2N1 := nb.ChannelQuality{
@@ -138,7 +138,7 @@ func TestHODecisionMakerCase2Dot2(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0002",
 		},
-		CqiHist: "9",
+		CqiHist: 9,
 	}
 	cqV2 = append(cqV2, &cqV2N1)
 	cqV2N2 := nb.ChannelQuality{
@@ -146,7 +146,7 @@ func TestHODecisionMakerCase2Dot2(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0003",
 		},
-		CqiHist: "11",
+		CqiHist: 11,
 	}
 	cqV2 = append(cqV2, &cqV2N2)
 	cqV2N3 := nb.ChannelQuality{
@@ -154,7 +154,7 @@ func TestHODecisionMakerCase2Dot2(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0004",
 		},
-		CqiHist: "1",
+		CqiHist: 1,
 	}
 	cqV2 = append(cqV2, &cqV2N3)
 	value2 := nb.UELinkInfo{
@@ -179,7 +179,7 @@ func TestHODecisionMakerCase2Dot3(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0001",
 		},
-		CqiHist: "10",
+		CqiHist: 10,
 	}
 	cqV2 = append(cqV2, &cqV2S)
 	cqV2N1 := nb.ChannelQuality{
@@ -187,7 +187,7 @@ func TestHODecisionMakerCase2Dot3(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0002",
 		},
-		CqiHist: "9",
+		CqiHist: 9,
 	}
 	cqV2 = append(cqV2, &cqV2N1)
 	cqV2N2 := nb.ChannelQuality{
@@ -195,7 +195,7 @@ func TestHODecisionMakerCase2Dot3(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0003",
 		},
-		CqiHist: "11",
+		CqiHist: 11,
 	}
 	cqV2 = append(cqV2, &cqV2N2)
 	cqV2N3 := nb.ChannelQuality{
@@ -203,7 +203,7 @@ func TestHODecisionMakerCase2Dot3(t *testing.T) {
 			Plmnid: "315010",
 			Ecid:   "0004",
 		},
-		CqiHist: "15",
+		CqiHist: 15,
 	}
 	cqV2 = append(cqV2, &cqV2N3)
 	value2 := nb.UELinkInfo{

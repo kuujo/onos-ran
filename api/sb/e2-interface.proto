@@ -23,11 +23,8 @@ service InterfaceService {
     rpc SendControl (stream ControlResponse) returns (stream ControlUpdate) {}
 
     // SendTelemetry is used by the controller to start receiving a stream of telemetry messages from RAN environment.
-    rpc SendTelemetry (TelemetryRequest) returns (stream TelemetryMessage) {}
-}
+    rpc SendTelemetry (L2MeasConfig) returns (stream TelemetryMessage) {}
 
-// TelemetryRequest is a specification on how telemetry data messages should be sent; possibly empty.
-message TelemetryRequest {
 }
 
 // TelemetryMessage carries sensory data about the RAN environment.
@@ -36,7 +33,7 @@ message TelemetryMessage {
     oneof s {
         RadioMeasReportPerUE radioMeasReportPerUE = 2;
 
-        // Implement laterLater
+        // Implement later
         RadioMeasReportPerCell radioMeasReportPerCell = 3;
         SchedMeasReportPerCell schedMeasReportPerCell = 4;
         PDCPMeasReportPerUe pDCPMeasReportPerUe = 5;
@@ -85,9 +82,6 @@ message ControlResponse {
 
         // 3. RRMConfig
         RRMConfig rRMConfig = 3;
-
-        // 5. L2MeasConfig   (done after SendTelemetry is setup)
-        L2MeasConfig l2MeasConfig = 4;
 
         // 12. UEAdmissionResponse
         UEAdmissionResponse uEAdmissionResponse = 5;
@@ -643,7 +637,7 @@ message L2MeasConfig {
 // L2MeasureReports (periodic) messages
 message RadioRepPerServCell {
     ECGI ecgi = 1;
-    repeated string cqiHist = 2;
+    repeated uint32 cqiHist = 2;
     repeated string riHist = 3;
     repeated string puschSinrHist = 4;
     repeated string pucchSinrHist = 5;

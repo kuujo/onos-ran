@@ -17,12 +17,13 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-ran/api/nb"
-	"github.com/spf13/cobra"
 	"io"
-	log "k8s.io/klog"
 	"text/tabwriter"
 	"time"
+
+	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/spf13/cobra"
+	log "k8s.io/klog"
 )
 
 func getGetUeLinksCommand() *cobra.Command {
@@ -113,7 +114,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 		}
 
 		for _, cqi := range response.ChannelQualities {
-			fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%s\t%s", response.Ecgi.Ecid, response.Crnti, cqi.CqiHist, cqi.TargetEcgi.Ecid))
+			fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%d\t%s", response.Ecgi.Ecid, response.Crnti, cqi.CqiHist, cqi.TargetEcgi.Ecid))
 		}
 	}
 	writer.Flush()
