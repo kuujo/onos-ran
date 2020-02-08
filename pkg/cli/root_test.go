@@ -30,6 +30,7 @@ func Test_RootUsage(t *testing.T) {
 		expected    string
 	}{
 		{description: "Get command", expected: `Get RAN resources`},
+		{description: "Set command", expected: `Set RAN resource parameters`},
 		{description: "Watch command", expected: `Watch for changes to a RAN resource type`},
 		{description: "Usage header", expected: `Usage:`},
 		{description: "Usage config command", expected: `ran [command]`},
@@ -62,6 +63,8 @@ func Test_SubCommands(t *testing.T) {
 		{commandName: "config", expectedShort: "Manage the CLI configuration"},
 		{commandName: "get", expectedShort: "Get RAN resources"},
 		{commandName: "watch", expectedShort: "Watch for changes to a RAN resource type"},
+		{commandName: "set", expectedShort: "Set RAN resource parameters"},
+		{commandName: "handover", expectedShort: "Trigger UE handover between two base stations"},
 	}
 
 	var subCommandsFound = make(map[string]bool)
