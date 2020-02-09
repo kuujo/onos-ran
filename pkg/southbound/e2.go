@@ -30,8 +30,10 @@ type Sessions struct {
 	Simulator *string
 	client    sb.InterfaceServiceClient
 
-	responses chan sb.ControlResponse
-	updates   chan sb.ControlUpdate
+	controlResponses chan sb.ControlResponse
+	controlUpdates   chan sb.ControlUpdate
+
+	telemetryUpdates chan sb.TelemetryMessage
 }
 
 // NewSessions creates a new southbound sessions controller.
@@ -41,16 +43,17 @@ func NewSessions() (*Sessions, error) {
 }
 
 // Run starts the southbound control loop.
-func (m *Sessions) Run(updates chan sb.ControlUpdate, responses chan sb.ControlResponse) {
+func (m *Sessions) Run(controlUpdates chan sb.ControlUpdate, controlResponses chan sb.ControlResponse, telemetryUpdates chan sb.TelemetryMessage) {
 	// Kick off a go routine that manages the connection to the simulator
-	m.updates = updates
-	m.responses = responses
+	m.controlUpdates = controlUpdates
+	m.controlResponses = controlResponses
+	m.telemetryUpdates = telemetryUpdates
 	go m.manageConnections()
 }
 
 // SendResponse sends the specified response on the control channel.
 func (m *Sessions) SendResponse(response sb.ControlResponse) error {
-	m.responses <- response
+	m.controlResponses <- response
 	return nil
 }
 
@@ -86,12 +89,9 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	// Setup coordination channel
 	errors := make(chan error)
 
-	// FIXME: should be done separately
-	//m.updates = make(chan sb.ControlUpdate)
-	//m.responses = make(chan sb.ControlResponse)
-
-	//go m.handleTelemetry(errors)
 	go m.handleControl(errors)
+
+	go m.handleTelemetry(errors)
 
 	// Wait for the first error on the coordination channel.
 	<-errors
@@ -169,7 +169,7 @@ func (m *Sessions) handleControl(errors chan error) {
 
 	go func() {
 		for {
-			response := <-m.responses
+			response := <-m.controlResponses
 			err := stream.Send(&response)
 			if err != nil {
 				waitc <- err
@@ -197,7 +197,42 @@ func (m *Sessions) processControlUpdate(update *sb.ControlUpdate) {
 	case *sb.ControlUpdate_UEAdmissionRequest:
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
 	default:
-		log.Fatalf("ControlReport has unexpected type %T", x)
+		log.Fatalf("Control update has unexpected type %T", x)
 	}
-	m.updates <- *update
+	m.controlUpdates <- *update
+}
+
+func (m *Sessions) handleTelemetry(errors chan error) {
+	log.Infof("********************************************************")
+	l2MeasConfig := &sb.L2MeasConfig{
+		Ecgi: &sb.ECGI{PlmnId: "test", Ecid: "test"},
+	}
+
+	stream, err := m.client.SendTelemetry(context.Background(), l2MeasConfig)
+	if err != nil {
+		errors <- err
+		return
+	}
+
+	waitc := make(chan error)
+	go func() {
+		for {
+			update, err := stream.Recv()
+			if err != nil {
+				close(waitc)
+				return
+			}
+			log.Infof("Got telemetry messageType %d", update.MessageType)
+			m.processTelemetryUpdate(update)
+		}
+	}()
+}
+
+func (m *Sessions) processTelemetryUpdate(update *sb.TelemetryMessage) {
+	switch x := update.S.(type) {
+	case *sb.TelemetryMessage_RadioMeasReportPerUE:
+	default:
+		log.Fatalf("Telemetry update has unexpected type %T", x)
+	}
+	m.telemetryUpdates <- *update
 }
