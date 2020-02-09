@@ -115,6 +115,7 @@ func GetManager() *Manager {
 
 func (m *Manager) recvTelemetryUpdates() {
 	for update := range mgr.telemetryUpdates {
+		_ = m.telemetryStore.Put(update)
 		switch x := update.S.(type) {
 		case *sb.TelemetryMessage_RadioMeasReportPerUE:
 			log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d,%d,%d",

@@ -107,32 +107,6 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	log.Info("Disconnected from simulator")
 }
 
-/*
-func (m *Sessions) handleTelemetry(errors chan error) {
-	stream, err := m.client.SendTelemetry(context.Background(), &sb.TelemetryRequest{})
-	if err != nil {
-		errors <- err
-		return
-	}
-
-	waitc := make(chan error)
-	go func() {
-		for {
-			telemetry, err := stream.Recv()
-			if err != nil {
-				close(waitc)
-				return
-			}
-			m.processTelemetry(telemetry)
-		}
-	}()
-
-	_ = stream.CloseSend()
-	<-waitc
-	errors <- io.EOF
-}
-*/
-
 func (m *Sessions) handleControl(errors chan error) {
 
 	cellConfigRequest := &sb.ControlResponse{
@@ -182,13 +156,6 @@ func (m *Sessions) handleControl(errors chan error) {
 	<-waitc
 	errors <- io.EOF
 }
-
-/*
-func (m *Sessions) processTelemetry(msg *sb.TelemetryMessage) {
-	// TODO: process the telemetry message
-	fmt.Println(msg)
-}
-*/
 
 func (m *Sessions) processControlUpdate(update *sb.ControlUpdate) {
 	switch x := update.S.(type) {
