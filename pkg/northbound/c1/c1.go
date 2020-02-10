@@ -207,8 +207,10 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, fmt.Errorf("HandOverRequest is nil")
 	}
-	return nil, fmt.Errorf("HandOverRequest is nil")
+	return &nb.HandOverResponse{}, nil
 }
 
 // SetRadioPower returns a response indicating success or failure.
@@ -254,7 +256,8 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, fmt.Errorf("SetRadioPower request cannot be nil")
 	}
-
-	return nil, fmt.Errorf("SetRadioPower request cannot be nil")
+	return &nb.RadioPowerResponse{}, nil
 }

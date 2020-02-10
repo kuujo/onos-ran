@@ -51,24 +51,28 @@ func NewManager() (*Manager, error) {
 		sbSession,
 		make(chan sb.ControlUpdate),
 		make(chan sb.ControlResponse),
+		make(chan sb.TelemetryMessage),
 	}
 
 	go mgr.recvUpdates()
+
+	go mgr.recvTelemetryUpdates()
 
 	return &mgr, nil
 }
 
 // Manager single point of entry for the RAN system.
 type Manager struct {
-	updatesStore   updates.Store
-	telemetryStore telemetry.Store
-	SB             *southbound.Sessions
-	updates        chan sb.ControlUpdate
-	responses      chan sb.ControlResponse
+	updatesStore     updates.Store
+	telemetryStore   telemetry.Store
+	SB               *southbound.Sessions
+	controlUpdates   chan sb.ControlUpdate
+	controlResponses chan sb.ControlResponse
+	telemetryUpdates chan sb.TelemetryMessage
 }
 
 func (m *Manager) recvUpdates() {
-	for update := range mgr.updates {
+	for update := range mgr.controlUpdates {
 		_ = m.updatesStore.Put(update)
 		log.Infof("Got messageType %d", update.MessageType)
 		switch x := update.S.(type) {
@@ -95,7 +99,7 @@ func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
-	m.SB.Run(m.updates, m.responses)
+	m.SB.Run(m.controlUpdates, m.controlResponses, m.telemetryUpdates)
 }
 
 //Close kills the channels and manager related objects
@@ -107,4 +111,27 @@ func (m *Manager) Close() {
 // Should be called only after NewManager and Run are done.
 func GetManager() *Manager {
 	return &mgr
+}
+
+func (m *Manager) recvTelemetryUpdates() {
+	for update := range mgr.telemetryUpdates {
+		_ = m.telemetryStore.Put(update)
+		switch x := update.S.(type) {
+		case *sb.TelemetryMessage_RadioMeasReportPerUE:
+			log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
+				x.RadioMeasReportPerUE.Ecgi.PlmnId,
+				x.RadioMeasReportPerUE.Ecgi.Ecid,
+				x.RadioMeasReportPerUE.Crnti,
+				x.RadioMeasReportPerUE.RadioReportServCells[0].CqiHist[0],
+				x.RadioMeasReportPerUE.RadioReportServCells[0].GetEcgi().GetEcid(),
+				x.RadioMeasReportPerUE.RadioReportServCells[1].CqiHist[0],
+				x.RadioMeasReportPerUE.RadioReportServCells[1].GetEcgi().GetEcid(),
+				x.RadioMeasReportPerUE.RadioReportServCells[2].CqiHist[0],
+				x.RadioMeasReportPerUE.RadioReportServCells[2].GetEcgi().GetEcid(),
+			)
+		default:
+			log.Fatalf("Telemetry update has unexpected type %T", x)
+			log.Infof("Got telemetry messageType %d", update.MessageType)
+		}
+	}
 }
