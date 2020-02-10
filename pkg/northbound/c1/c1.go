@@ -259,5 +259,5 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 	} else {
 		return nil, fmt.Errorf("SetRadioPower request cannot be nil")
 	}
-	return nil, nil
+	return &nb.RadioPowerResponse{}, nil
 }

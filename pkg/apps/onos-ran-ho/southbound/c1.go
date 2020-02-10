@@ -120,6 +120,7 @@ func (m *HOSessions) getListUELinks() {
 	}
 }
 
+// sendHanmdoverTrigger sends handover trigger to appropriate stations.
 func (m *HOSessions) sendHandoverTrigger(hoReq nb.HandOverRequest, joinChan chan int32) {
 
 	// HODecisionMaker function returns nb.HandOverRequest{} when serving stations is the best one
