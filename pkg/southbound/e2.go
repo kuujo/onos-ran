@@ -16,7 +16,6 @@ package southbound
 
 import (
 	"context"
-	"io"
 	"time"
 
 	"github.com/onosproject/onos-ran/api/sb"
@@ -143,20 +142,14 @@ func (m *Sessions) handleControl(errors chan error) {
 		log.Fatalf("Failed to send a note: %v", err)
 	}
 
-	go func() {
-		for {
-			response := <-m.controlResponses
-			err := stream.Send(&response)
-			if err != nil {
-				waitc <- err
-				return
-			}
+	for {
+		response := <-m.controlResponses
+		err := stream.Send(&response)
+		if err != nil {
+			waitc <- err
+			return
 		}
-	}()
-
-	_ = stream.CloseSend()
-	<-waitc
-	errors <- io.EOF
+	}
 }
 
 func (m *Sessions) processControlUpdate(update *sb.ControlUpdate) {
@@ -172,7 +165,6 @@ func (m *Sessions) processControlUpdate(update *sb.ControlUpdate) {
 }
 
 func (m *Sessions) handleTelemetry(errors chan error) {
-	log.Infof("********************************************************")
 	l2MeasConfig := &sb.L2MeasConfig{
 		Ecgi: &sb.ECGI{PlmnId: "test", Ecid: "test"},
 	}
