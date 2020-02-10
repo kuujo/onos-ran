@@ -118,13 +118,16 @@ func (m *Manager) recvTelemetryUpdates() {
 		_ = m.telemetryStore.Put(update)
 		switch x := update.S.(type) {
 		case *sb.TelemetryMessage_RadioMeasReportPerUE:
-			log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d,%d,%d",
+			log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
 				x.RadioMeasReportPerUE.Ecgi.PlmnId,
 				x.RadioMeasReportPerUE.Ecgi.Ecid,
 				x.RadioMeasReportPerUE.Crnti,
 				x.RadioMeasReportPerUE.RadioReportServCells[0].CqiHist[0],
+				x.RadioMeasReportPerUE.RadioReportServCells[0].GetEcgi().GetEcid(),
 				x.RadioMeasReportPerUE.RadioReportServCells[1].CqiHist[0],
+				x.RadioMeasReportPerUE.RadioReportServCells[1].GetEcgi().GetEcid(),
 				x.RadioMeasReportPerUE.RadioReportServCells[2].CqiHist[0],
+				x.RadioMeasReportPerUE.RadioReportServCells[2].GetEcgi().GetEcid(),
 			)
 		default:
 			log.Fatalf("Telemetry update has unexpected type %T", x)
