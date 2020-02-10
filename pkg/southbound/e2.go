@@ -94,7 +94,9 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	go m.handleTelemetry(errors)
 
 	// Wait for the first error on the coordination channel.
-	<-errors
+	for i := 0; i < 2; i++ {
+		<-errors
+	}
 
 	// Clean-up the connection, forcing other consumers to terminate and clean-up.
 	_ = connection.Close()
