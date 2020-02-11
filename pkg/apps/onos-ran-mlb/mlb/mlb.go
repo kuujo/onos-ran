@@ -14,13 +14,130 @@
 
 package mlbapploadbalance
 
-import "github.com/onosproject/onos-ran/api/nb"
+import (
+	"github.com/onosproject/onos-ran/api/nb"
+)
+
+// StaUeJointLink is the joint list of StationInfo and UELinkInfo.
+type StaUeJointLink struct {
+	plmnid    string
+	ecid      string
+	maxNumUes uint32
+	numUes    int32
+	pa        int32
+}
 
 // MLBDecisionMaker decides stations to adjust transmission power.
-func MLBDecisionMaker(stations []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLinks []nb.UELinkInfo) []nb.RadioPowerRequest {
+func MLBDecisionMaker(stas []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLinks []nb.UELinkInfo, threshold *float64) *[]nb.RadioPowerRequest {
 	var mlbReqs []nb.RadioPowerRequest
 
-	// To-Do: Implement MLB decision maker
+	// 1. Decide whose tx power should be reduced
+	// init staUeJointLinkList
+	var staUeJointLinkList []StaUeJointLink
+	for _, s := range stas {
+		tmpStaUeJointLink := &StaUeJointLink{
+			plmnid:    s.GetEcgi().GetPlmnid(),
+			ecid:      s.GetEcgi().GetEcid(),
+			maxNumUes: s.GetMaxNumConnectedUes(),
+			numUes:    0,
+			pa:        0,
+		}
+		staUeJointLinkList = append(staUeJointLinkList, *tmpStaUeJointLink)
+	}
 
-	return mlbReqs
+	// fill ueLinks in each staUeJointLinkList
+	setUeLinks(&staUeJointLinkList, &ueLinks)
+
+	overloadedStas := getOverloadedStationList(&staUeJointLinkList, threshold)
+	stasToBeShrunk := getStasToBeShrunk(&staUeJointLinkList, overloadedStas, &staLinks)
+
+	// 2. Decide how much tx power should be reduced? (static, or dynamic according to CQI values?)
+	// - For static, just + or - 3 dB
+	for _, os := range *overloadedStas {
+		tmpMlbReq := &nb.RadioPowerRequest{
+			Ecgi: &nb.ECGI{
+				Plmnid: os.plmnid,
+				Ecid:   os.ecid,
+			},
+			Offset: nb.StationPowerOffset_PA_DB_MINUS3,
+		}
+		mlbReqs = append(mlbReqs, *tmpMlbReq)
+	}
+
+	for _, ss := range *stasToBeShrunk {
+		tmpMlbReq := &nb.RadioPowerRequest{
+			Ecgi: &nb.ECGI{
+				Plmnid: ss.plmnid,
+				Ecid:   ss.ecid,
+			},
+			Offset: nb.StationPowerOffset_PA_DB_3,
+		}
+		mlbReqs = append(mlbReqs, *tmpMlbReq)
+	}
+
+	// To-Do: For dynamic, sort UE's CQI values and pick UEs should be handed over:
+	// if max CQI < 10; - 1 dB, otherwise, -3 dB
+
+	// 3. Return values
+	return &mlbReqs
+}
+
+// setUeLinks sets UELink info into StaUeJointLink struct.
+func setUeLinks(staJointList *[]StaUeJointLink, ueLinks *[]nb.UELinkInfo) {
+	for _, l := range *ueLinks {
+		tmpSta := getStaUeJointLink(l.GetEcgi().GetPlmnid(), l.GetEcgi().GetEcid(), staJointList)
+		tmpSta.numUes++
+	}
+}
+
+// getOverloadedStationList gets the list of overloaded stations.
+func getOverloadedStationList(staUeLinkList *[]StaUeJointLink, threshold *float64) *[]StaUeJointLink {
+	var resultOverloadedStations []StaUeJointLink
+
+	for i := 0; i < len(*staUeLinkList); i++ {
+		if float64((*staUeLinkList)[i].numUes) > (*threshold)*float64((*staUeLinkList)[i].maxNumUes) {
+			(*staUeLinkList)[i].pa = -3
+			resultOverloadedStations = append(resultOverloadedStations, (*staUeLinkList)[i])
+		}
+	}
+
+	return &resultOverloadedStations
+}
+
+// getStasToBeShrunk gets the list of stations which have the coverage to be shrunk.
+func getStasToBeShrunk(staUeLinkList *[]StaUeJointLink, overloadedStas *[]StaUeJointLink, staLinks *[]nb.StationLinkInfo) *[]StaUeJointLink {
+	var resultStasToBeShrunk []StaUeJointLink
+
+	for _, os := range *overloadedStas {
+		nEcgis := getNeighborStaEcgi(os.plmnid, os.ecid, staLinks)
+		for _, n := range nEcgis {
+			tmpStaUeJointLink := getStaUeJointLink(n.GetPlmnid(), n.GetEcid(), staUeLinkList)
+			if (*tmpStaUeJointLink).pa == 0 {
+				(*tmpStaUeJointLink).pa = 3
+				resultStasToBeShrunk = append(resultStasToBeShrunk, *tmpStaUeJointLink)
+			}
+		}
+	}
+
+	return &resultStasToBeShrunk
+}
+
+// getNeighborStaEcgi gets neighbor ECGI list for the STA having given plmnid and ecid.
+func getNeighborStaEcgi(plmnid string, ecid string, staLinks *[]nb.StationLinkInfo) []*nb.ECGI {
+	for _, s := range *staLinks {
+		if s.GetEcgi().GetPlmnid() == plmnid && s.GetEcgi().GetEcid() == ecid {
+			return s.GetNeighborECGI()
+		}
+	}
+	return nil
+}
+
+// getStaUeJointLink gets the StaUeJointLink having given plmnid and ecid.
+func getStaUeJointLink(plmnid string, ecid string, staUeLinkList *[]StaUeJointLink) *StaUeJointLink {
+	for i := 0; i < len(*staUeLinkList); i++ {
+		if (*staUeLinkList)[i].plmnid == plmnid && (*staUeLinkList)[i].ecid == ecid {
+			return &(*staUeLinkList)[i]
+		}
+	}
+	return nil
 }

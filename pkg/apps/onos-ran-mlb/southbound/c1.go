@@ -107,8 +107,8 @@ func (m *MLBSessions) manageConnection(conn *grpc.ClientConn) {
 		log.Infof("UE: plmnid:%s,ecid:%s,crnti:%s", u.GetEcgi().GetPlmnid(), u.GetEcgi().GetEcid(), u.GetCrnti())
 	}
 
-	mlbReqs := mlbapploadbalance.MLBDecisionMaker(stationInfoList, stationLinkInfoList, ueLinkInfoList)
-	for _, req := range mlbReqs {
+	mlbReqs := mlbapploadbalance.MLBDecisionMaker(stationInfoList, stationLinkInfoList, ueLinkInfoList, m.LoadThresh)
+	for _, req := range *mlbReqs {
 		m.sendRadioPowerOffset(req)
 	}
 }
