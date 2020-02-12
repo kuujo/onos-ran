@@ -16,40 +16,45 @@ package hoapphandover
 
 import (
 	"github.com/onosproject/onos-ran/api/nb"
+	log "k8s.io/klog"
 )
 
 // HODecisionMaker decide whether the UE in UELinkInfo should do handover or not
-func HODecisionMaker(ueinfo *nb.UELinkInfo) nb.HandOverRequest {
-	servStationID := ueinfo.GetEcgi()
+func HODecisionMaker(ueinfo *[]nb.UELinkInfo) *[]nb.HandOverRequest {
 
-	numNeighborCells := len(ueinfo.GetChannelQualities())
-	bestStationID := ueinfo.GetChannelQualities()[0].GetTargetEcgi()
-	bestCQI := ueinfo.GetChannelQualities()[0].GetCqiHist()
+	var resultHoReqs []nb.HandOverRequest
 
-	// start loop
-	for i := 1; i < numNeighborCells; i++ {
-		tmpCQI := ueinfo.GetChannelQualities()[i].GetCqiHist()
-		if bestCQI < tmpCQI {
-			bestStationID = ueinfo.GetChannelQualities()[i].GetTargetEcgi()
-			bestCQI = tmpCQI
+	for _, l := range *ueinfo {
+		servStationID := l.GetEcgi()
+		numNeighborCells := len(l.GetChannelQualities())
+		bestStationID := l.GetChannelQualities()[0].GetTargetEcgi()
+		bestCQI := l.GetChannelQualities()[0].GetCqiHist()
+
+		for i := 1; i < numNeighborCells; i++ {
+			tmpCQI := l.GetChannelQualities()[i].GetCqiHist()
+			if bestCQI < tmpCQI {
+				bestStationID = l.GetChannelQualities()[i].GetTargetEcgi()
+				bestCQI = tmpCQI
+			}
 		}
-	}
 
-	// no need to trigger handover, since best stations is the serving station
-	if servStationID.GetEcid() == bestStationID.GetEcid() && servStationID.GetPlmnid() == bestStationID.GetPlmnid() {
-		return nb.HandOverRequest{}
-	}
+		if servStationID.GetEcid() == bestStationID.GetEcid() && servStationID.GetPlmnid() == bestStationID.GetPlmnid() {
+			log.Info("No need to trigger HO")
+			continue
+		}
 
-	return nb.HandOverRequest{
-		Crnti: ueinfo.GetCrnti(),
-		SrcStation: &nb.ECGI{
-			Plmnid: servStationID.GetPlmnid(),
-			Ecid:   servStationID.GetEcid(),
-		},
-		DstStation: &nb.ECGI{
-			Plmnid: bestStationID.GetPlmnid(),
-			Ecid:   bestStationID.GetEcid(),
-		},
+		hoReq := nb.HandOverRequest{
+			Crnti: l.GetCrnti(),
+			SrcStation: &nb.ECGI{
+				Plmnid: servStationID.GetPlmnid(),
+				Ecid:   servStationID.GetEcid(),
+			},
+			DstStation: &nb.ECGI{
+				Plmnid: bestStationID.GetPlmnid(),
+				Ecid:   bestStationID.GetEcid(),
+			},
+		}
+		resultHoReqs = append(resultHoReqs, hoReq)
 	}
-
+	return &resultHoReqs
 }

@@ -18,6 +18,7 @@ package hoappsouthbound
 import (
 	"context"
 	"io"
+	"reflect"
 	"time"
 
 	"github.com/onosproject/onos-ran/api/nb"
@@ -31,6 +32,7 @@ import (
 type HOSessions struct {
 	ONOSRANAddr *string
 	client      nb.C1InterfaceServiceClient
+	prevRNIB    []nb.UELinkInfo
 }
 
 // NewSession creates a new southbound session of HO application.
@@ -66,41 +68,99 @@ func (m *HOSessions) manageConnections() {
 			// no longer valid and all related resources have been properly cleaned-up.
 			m.manageConnection(conn)
 		}
-		time.Sleep(1000 * time.Millisecond) // need to be in 10ms - 100ms
+		time.Sleep(100 * time.Millisecond) // need to be in 10ms - 100ms
 	}
 }
 
 // manageConnection is responsible for managing a single connection between HO App and ONOS RAN subsystem.
 func (m *HOSessions) manageConnection(conn *grpc.ClientConn) {
 	m.client = nb.NewC1InterfaceServiceClient(conn)
-
 	if m.client == nil {
 		return
 	}
-	// for Handover
-	m.getListUELinks()
+	// run Handover procedure
+	m.runHandoverProcedure()
 
 	conn.Close()
 }
 
+// runHandoverProcedure runs entire handover procedure - getting UELinkInfo, making decision, and sending trigger messages.
+func (m *HOSessions) runHandoverProcedure() {
+	// HO procedure 1. get Received UELinkInfo
+	ueLinkList := m.getListUELinks()
+
+	// if R-NIB (UELink) is not old one, start HO procedure
+	// otherwise, skip this timeslot, because HODecisionMaker was already run before
+	if m.prevRNIB == nil || !m.isEqualUeLinkLists(&m.prevRNIB, ueLinkList) {
+		log.Infof("prev:%s\n", m.prevRNIB)
+		log.Infof("cur:%s\n", *ueLinkList)
+		// compare previous and current UELinkList and pick new or different UELinks
+		newUeLinks := m.getNewUeLinks(&m.prevRNIB, ueLinkList)
+		log.Infof("diff:%s\n", *newUeLinks)
+		// HO procedure 2. get requirement messages
+		hoReqs := hoapphandover.HODecisionMaker(newUeLinks)
+		// HO procedure 3. send trigger message
+		m.sendHandoverTrigger(hoReqs)
+		// Update RNIB in HO App.
+		m.prevRNIB = *ueLinkList
+	}
+}
+
+// getNewUeLinks gets new or modified UELinks in the recently received UELinkInfoList compared with the previously received UELinkInfoList.
+func (m *HOSessions) getNewUeLinks(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInfo) *[]nb.UELinkInfo {
+	var newUeLinks []nb.UELinkInfo
+	for i := 0; i < len(*cList); i++ {
+		for j := 0; j < len(*pList); j++ {
+			if reflect.DeepEqual((*cList)[i], (*pList)[j]) {
+				break
+			}
+			if j == len(*pList)-1 {
+				newUeLinks = append(newUeLinks, (*cList)[i])
+			}
+		}
+	}
+	return &newUeLinks
+}
+
+// isEqualUeLinkList checks whether the recently received UELinkInfoList and the previously received UELinkInfoList are equivalent.
+func (m *HOSessions) isEqualUeLinkLists(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInfo) bool {
+	if len(*pList) == len(*cList) && m.containUeLinkLists(pList, cList) {
+		return true
+	}
+	return false
+}
+
+// containUeLinkLists checks whether the recently received UELinkInfoList is the subset of the previously received UELinkInfoList.
+func (m *HOSessions) containUeLinkLists(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInfo) bool {
+	for i := 0; i < len(*cList); i++ {
+		for j := 0; j < len(*pList); j++ {
+			if reflect.DeepEqual((*cList)[i], (*pList)[j]) {
+				break
+			}
+			if j == len(*pList)-1 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // getListUELinks gets the list of link between each UE and serving/neighbor stations, and call sendHandoverTrigger if HO is necessary.
-func (m *HOSessions) getListUELinks() {
+func (m *HOSessions) getListUELinks() *[]nb.UELinkInfo {
 	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{})
 
 	if err != nil {
-		return
+		return nil
 	}
 
-	numRoutines := 0
-	joinChan := make(chan int32)
+	var rxUeLinkInfoList []nb.UELinkInfo
+
 	for {
 		ueInfo, err := stream.Recv()
 
 		if err == io.EOF {
 			break
-		}
-
-		if err != nil {
+		} else if err != nil {
 			log.Error(err)
 			break
 		}
@@ -111,30 +171,22 @@ func (m *HOSessions) getListUELinks() {
 			ueInfo.GetChannelQualities()[0].GetTargetEcgi().GetEcid(), ueInfo.GetChannelQualities()[0].GetCqiHist(),
 			ueInfo.GetChannelQualities()[1].GetTargetEcgi().GetEcid(), ueInfo.GetChannelQualities()[1].GetCqiHist(),
 			ueInfo.GetChannelQualities()[2].GetTargetEcgi().GetEcid(), ueInfo.GetChannelQualities()[2].GetCqiHist())
-		go m.sendHandoverTrigger(hoapphandover.HODecisionMaker(ueInfo), joinChan)
-		numRoutines++
+
+		rxUeLinkInfoList = append(rxUeLinkInfoList, *ueInfo)
 	}
 
-	for i := 0; i < numRoutines; i++ {
-		<-joinChan
-	}
+	return &rxUeLinkInfoList
 }
 
 // sendHanmdoverTrigger sends handover trigger to appropriate stations.
-func (m *HOSessions) sendHandoverTrigger(hoReq nb.HandOverRequest, joinChan chan int32) {
-
-	// HODecisionMaker function returns nb.HandOverRequest{} when serving stations is the best one
-	// No need to trigger handover because serving station is the best one
-	if hoReq.GetDstStation() == nil && hoReq.GetSrcStation() == nil {
-		log.Info("No need to trigger HO")
-		joinChan <- 0
-		return
+func (m *HOSessions) sendHandoverTrigger(hoReqs *[]nb.HandOverRequest) {
+	for i := 0; i < len(*hoReqs); i++ {
+		log.Infof("HO %s(%s,%s) from %s,%s to %s,%s", (*hoReqs)[i].GetCrnti(), (*hoReqs)[i].GetSrcStation().GetPlmnid(), (*hoReqs)[i].GetSrcStation().GetEcid(),
+			(*hoReqs)[i].GetSrcStation().GetPlmnid(), (*hoReqs)[i].GetSrcStation().GetEcid(),
+			(*hoReqs)[i].GetDstStation().GetPlmnid(), (*hoReqs)[i].GetDstStation().GetEcid())
+		_, err := m.client.TriggerHandOver(context.Background(), &(*hoReqs)[i])
+		if err != nil {
+			log.Error(err)
+		}
 	}
-	log.Infof("HO %s from %s to %s", hoReq.GetCrnti(), hoReq.GetSrcStation().GetEcid(), hoReq.GetDstStation().GetEcid())
-	_, err := m.client.TriggerHandOver(context.Background(), &hoReq)
-
-	if err != nil {
-		log.Error(err)
-	}
-	joinChan <- 1
 }

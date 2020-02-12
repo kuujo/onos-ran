@@ -23,7 +23,7 @@ import (
 
 // The main entry point.
 func main() {
-	onosranaddr := flag.String("onosranaddr", "", "address:port of the ONOS RAN subsystem")
+	onosranaddr := flag.String("onosranaddr", "localhost:5150", "address:port of the ONOS RAN subsystem")
 
 	//lines 93-109 are implemented according to
 	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
