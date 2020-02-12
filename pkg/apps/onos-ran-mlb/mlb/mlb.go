@@ -49,7 +49,7 @@ func MLBDecisionMaker(stas []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLi
 	setUeLinks(&staUeJointLinkList, &ueLinks)
 
 	overloadedStas := getOverloadedStationList(&staUeJointLinkList, threshold)
-	stasToBeShrunk := getStasToBeShrunk(&staUeJointLinkList, overloadedStas, &staLinks)
+	stasToBeExpanded := getStasToBeExpanded(&staUeJointLinkList, overloadedStas, &staLinks)
 
 	// 2. Decide how much tx power should be reduced? (static, or dynamic according to CQI values?)
 	// - For static, just + or - 3 dB
@@ -64,7 +64,7 @@ func MLBDecisionMaker(stas []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLi
 		mlbReqs = append(mlbReqs, *tmpMlbReq)
 	}
 
-	for _, ss := range *stasToBeShrunk {
+	for _, ss := range *stasToBeExpanded {
 		tmpMlbReq := &nb.RadioPowerRequest{
 			Ecgi: &nb.ECGI{
 				Plmnid: ss.plmnid,
@@ -104,9 +104,9 @@ func getOverloadedStationList(staUeLinkList *[]StaUeJointLink, threshold *float6
 	return &resultOverloadedStations
 }
 
-// getStasToBeShrunk gets the list of stations which have the coverage to be shrunk.
-func getStasToBeShrunk(staUeLinkList *[]StaUeJointLink, overloadedStas *[]StaUeJointLink, staLinks *[]nb.StationLinkInfo) *[]StaUeJointLink {
-	var resultStasToBeShrunk []StaUeJointLink
+// getStasToBeExpanded gets the list of stations which have the coverage to be Expanded.
+func getStasToBeExpanded(staUeLinkList *[]StaUeJointLink, overloadedStas *[]StaUeJointLink, staLinks *[]nb.StationLinkInfo) *[]StaUeJointLink {
+	var resultStasToBeExpanded []StaUeJointLink
 
 	for _, os := range *overloadedStas {
 		nEcgis := getNeighborStaEcgi(os.plmnid, os.ecid, staLinks)
@@ -114,12 +114,12 @@ func getStasToBeShrunk(staUeLinkList *[]StaUeJointLink, overloadedStas *[]StaUeJ
 			tmpStaUeJointLink := getStaUeJointLink(n.GetPlmnid(), n.GetEcid(), staUeLinkList)
 			if (*tmpStaUeJointLink).pa == 0 {
 				(*tmpStaUeJointLink).pa = 3
-				resultStasToBeShrunk = append(resultStasToBeShrunk, *tmpStaUeJointLink)
+				resultStasToBeExpanded = append(resultStasToBeExpanded, *tmpStaUeJointLink)
 			}
 		}
 	}
 
-	return &resultStasToBeShrunk
+	return &resultStasToBeExpanded
 }
 
 // getNeighborStaEcgi gets neighbor ECGI list for the STA having given plmnid and ecid.
