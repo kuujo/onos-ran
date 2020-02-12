@@ -18,39 +18,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-ran/api/nb"
-	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
 	"time"
 )
 
-// TestNBStationsAPI tests the NB stations API
-func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
-
-	const (
-		expectedStationInfoCount          = 9
-		expectedPLMNID                    = "001001"
-		expectedMaxNumConnectedUes uint32 = 5
-	)
-
-	//  Create a RAN simulator
-	simulator := env.Simulators().
-		New().
-		SetImage("onosproject/ran-simulator:latest").
-		SetPort(5150).
-		SetName("ran-simulator").
-		SetAddDevice(false).
-		AddOrDie()
-	assert.NotNil(t, simulator)
-
-	// Wait for simulator to respond
-	assert.NoError(t, waitForSimulator())
+func readStations(t *testing.T) map[string]*nb.StationInfo {
+	ids := make(map[string]*nb.StationInfo)
 
 	// Make a client to connect to the onos-ran northbound API
-	client, clientErr := env.RAN().NewRANC1ServiceClient()
-	assert.NoError(t, clientErr)
-	assert.NotNil(t, client)
+	client := makeNBClientOrFail(t)
 
 	// Create a list stations request
 	request := &nb.StationListRequest{
@@ -62,8 +40,6 @@ func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
 	assert.NoError(t, stationsErr)
 	assert.NotNil(t, stations)
 
-	// Save the station infos into a map indexed by the station's ECID
-	ids := make(map[string]*nb.StationInfo)
 	for {
 		stationInfo, err := stations.Recv()
 		if err == io.EOF {
@@ -73,9 +49,27 @@ func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
 		ids[stationInfo.GetEcgi().Ecid] = stationInfo
 	}
 
+	return ids
+}
+
+// TestNBStationsAPI tests the NB stations API
+func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
+
+	const (
+		expectedStationInfoCount          = 9
+		expectedPLMNID                    = "001001"
+		expectedMaxNumConnectedUes uint32 = 5
+	)
+
+	// Wait for simulator to respond
+	assert.NoError(t, waitForSimulator())
+
+	// Save the station infos into a map indexed by the station's ECID
+	ids := readStations(t)
+
 	// Make sure the data returned are correct
 	assert.Equal(t, expectedStationInfoCount, len(ids))
-	for stationIndex := 1; stationIndex <= 9; stationIndex++ {
+	for stationIndex := 1; stationIndex <= expectedStationInfoCount; stationIndex++ {
 		id := fmt.Sprintf("000000%d", stationIndex)
 		station, stationFound := ids[id]
 		assert.True(t, stationFound)

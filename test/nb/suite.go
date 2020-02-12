@@ -15,6 +15,7 @@
 package nb
 
 import (
+	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-test/pkg/onit/setup"
 	"github.com/onosproject/onos-test/pkg/test"
 )
@@ -30,4 +31,12 @@ func (s *TestSuite) SetupTestSuite() {
 	setup.Database().Raft()
 	setup.RAN().SetReplicas(1)
 	setup.SetupOrDie()
+
+	env.Simulators().
+		New().
+		SetImage("onosproject/ran-simulator:latest").
+		SetPort(5150).
+		SetName("ran-simulator").
+		SetAddDevice(false).
+		AddOrDie()
 }
