@@ -26,7 +26,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Enumberated Power offset - It is defined in E2 interface
+// Enumerated Power offset - It is defined in E2 interface
 type StationPowerOffset int32
 
 const (

@@ -45,7 +45,7 @@ message ECGI {
     string ecid = 2; // one of ECGI value
 }
 
-// Enumberated Power offset - It is defined in E2 interface
+// Enumerated Power offset - It is defined in E2 interface
 enum StationPowerOffset {
     PA_DB_MINUS6 = 0; // TX power of the station - 6 dB
     PA_DB_MINUX4DOT77 = 1; // TX power of the station - 4.77 dB
