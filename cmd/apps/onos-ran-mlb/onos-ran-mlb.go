@@ -23,8 +23,9 @@ import (
 
 // The main entry point.
 func main() {
-	onosranaddr := flag.String("onosranaddr", "", "address:port of the ONOS RAN subsystem")
+	onosranaddr := flag.String("onosranaddr", "localhost:5150", "address:port of the ONOS RAN subsystem")
 	loadthresh := flag.Float64("threshold", 1, "Threshold for MLB [0, 1] (e.g., 0.5 means 50%)")
+	period := flag.Int64("period", 10000, "Period to run MLB procedure [ms]")
 
 	//lines 93-109 are implemented according to
 	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
@@ -57,6 +58,7 @@ func main() {
 	} else {
 		appMgr.SB.ONOSRANAddr = onosranaddr
 		appMgr.SB.LoadThresh = loadthresh
+		appMgr.SB.Period = period
 		appMgr.Run()
 	}
 

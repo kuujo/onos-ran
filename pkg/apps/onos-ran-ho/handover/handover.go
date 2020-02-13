@@ -39,7 +39,7 @@ func HODecisionMaker(ueinfo *[]nb.UELinkInfo) *[]nb.HandOverRequest {
 		}
 
 		if servStationID.GetEcid() == bestStationID.GetEcid() && servStationID.GetPlmnid() == bestStationID.GetPlmnid() {
-			log.Info("No need to trigger HO")
+			log.Infof("No need to trigger HO - UE: %s (p:%s,e:%s)", l.GetCrnti(), l.GetEcgi().GetPlmnid(), l.GetEcgi().GetEcid())
 			continue
 		}
 

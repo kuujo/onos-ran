@@ -217,7 +217,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
 	if req != nil {
 		offset := req.GetOffset()
-		pa := make([]sb.XICICPA, 1)
+		var pa []sb.XICICPA
 		switch offset {
 		case nb.StationPowerOffset_PA_DB_0:
 			pa = append(pa, sb.XICICPA_XICIC_PA_DB_0)

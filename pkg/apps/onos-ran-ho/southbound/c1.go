@@ -92,11 +92,8 @@ func (m *HOSessions) runHandoverProcedure() {
 	// if R-NIB (UELink) is not old one, start HO procedure
 	// otherwise, skip this timeslot, because HODecisionMaker was already run before
 	if m.prevRNIB == nil || !m.isEqualUeLinkLists(&m.prevRNIB, ueLinkList) {
-		log.Infof("prev:%s\n", m.prevRNIB)
-		log.Infof("cur:%s\n", *ueLinkList)
 		// compare previous and current UELinkList and pick new or different UELinks
 		newUeLinks := m.getNewUeLinks(&m.prevRNIB, ueLinkList)
-		log.Infof("diff:%s\n", *newUeLinks)
 		// HO procedure 2. get requirement messages
 		hoReqs := hoapphandover.HODecisionMaker(newUeLinks)
 		// HO procedure 3. send trigger message
@@ -116,6 +113,12 @@ func (m *HOSessions) getNewUeLinks(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInf
 			}
 			if j == len(*pList)-1 {
 				newUeLinks = append(newUeLinks, (*cList)[i])
+				// analyze UEInfo and call sendHandoverTrigger if handover is necessary.
+				log.Infof("UE Link(plmnid:%s,ecid:%s,crnti:%s): STA1(ecid:%s,cqi:%d), STA2(ecid:%s,cqi:%d), STA3(ecid:%s,cqi:%d)",
+					(*cList)[i].GetEcgi().GetPlmnid(), (*cList)[i].GetEcgi().GetEcid(), (*cList)[i].GetCrnti(),
+					(*cList)[i].GetChannelQualities()[0].GetTargetEcgi().GetEcid(), (*cList)[i].GetChannelQualities()[0].GetCqiHist(),
+					(*cList)[i].GetChannelQualities()[1].GetTargetEcgi().GetEcid(), (*cList)[i].GetChannelQualities()[1].GetCqiHist(),
+					(*cList)[i].GetChannelQualities()[2].GetTargetEcgi().GetEcid(), (*cList)[i].GetChannelQualities()[2].GetCqiHist())
 			}
 		}
 	}
@@ -164,13 +167,6 @@ func (m *HOSessions) getListUELinks() *[]nb.UELinkInfo {
 			log.Error(err)
 			break
 		}
-
-		// analyze UEInfo and call sendHandoverTrigger if handover is necessary.
-		log.Infof("UE Link(plmnid:%s,ecid:%s,crnti:%s): STA1(ecid:%s,cqi:%d), STA2(ecid:%s,cqi:%d), STA3(ecid:%s,cqi:%d)",
-			ueInfo.GetEcgi().GetPlmnid(), ueInfo.GetEcgi().GetEcid(), ueInfo.GetCrnti(),
-			ueInfo.GetChannelQualities()[0].GetTargetEcgi().GetEcid(), ueInfo.GetChannelQualities()[0].GetCqiHist(),
-			ueInfo.GetChannelQualities()[1].GetTargetEcgi().GetEcid(), ueInfo.GetChannelQualities()[1].GetCqiHist(),
-			ueInfo.GetChannelQualities()[2].GetTargetEcgi().GetEcid(), ueInfo.GetChannelQualities()[2].GetCqiHist())
 
 		rxUeLinkInfoList = append(rxUeLinkInfoList, *ueInfo)
 	}

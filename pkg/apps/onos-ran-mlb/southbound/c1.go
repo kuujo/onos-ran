@@ -16,8 +16,9 @@ package mlbappsouthbound
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"reflect"
+	"sync"
 	"time"
 
 	"github.com/onosproject/onos-ran/api/nb"
@@ -31,7 +32,9 @@ import (
 type MLBSessions struct {
 	ONOSRANAddr *string
 	LoadThresh  *float64
+	Period      *int64
 	client      nb.C1InterfaceServiceClient
+	prevRNIB    []nb.UELinkInfo
 }
 
 // NewSession creates a new southbound session of MLB application.
@@ -63,7 +66,7 @@ func (m *MLBSessions) manageConnections() {
 			// no longer valid and all related resources have been properly cleaned-up.
 			m.manageConnection(conn)
 		}
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(time.Duration(*m.Period) * time.Millisecond)
 	}
 }
 
@@ -75,51 +78,69 @@ func (m *MLBSessions) manageConnection(conn *grpc.ClientConn) {
 		return
 	}
 
-	joinChan := make(chan int32)
+	// run MLB procedure
+	m.runMLBProcedure()
+}
+
+func (m *MLBSessions) runMLBProcedure() {
+
+	// get all R-NIB information
+	var wg sync.WaitGroup
 
 	var stationInfoList []nb.StationInfo
 	var stationLinkInfoList []nb.StationLinkInfo
 	var ueLinkInfoList []nb.UELinkInfo
 
-	go m.getListStations(&stationInfoList, joinChan)
-	go m.getListStationLinks(&stationLinkInfoList, joinChan)
-	go m.getListUELinks(&ueLinkInfoList, joinChan)
+	// Fork three go-routines.
+	wg.Add(3)
+	go m.getListStations(&stationInfoList, &wg)
+	go m.getListStationLinks(&stationLinkInfoList, &wg)
+	go m.getListUELinks(&ueLinkInfoList, &wg)
 
-	// wait until above three go-routine is terminated
-	for i := 0; i < 3; i++ {
-		<-joinChan
-	}
+	// Wait until all go-routines join.
+	wg.Wait()
 
-	for _, s := range stationInfoList {
-		log.Infof("STA: plmnid:%s,ecid:%s,maxUEs:%d", s.GetEcgi().GetPlmnid(), s.GetEcgi().GetEcid(), s.GetMaxNumConnectedUes())
-	}
-
-	for _, sl := range stationLinkInfoList {
-		tmpStaInfo := fmt.Sprintf("STA: plmnid:%s,ecid:%s", sl.GetEcgi().GetPlmnid(), sl.GetEcgi().GetEcid())
-		tmpNStaInfo := ""
-		for _, e := range sl.GetNeighborECGI() {
-			tmpNStaInfo = fmt.Sprintf("%s\tNSTA: plmnid:%s,ecid:%s", tmpNStaInfo, e.GetPlmnid(), e.GetEcid())
+	// if R-NIB (UELink) is not old one, start MLB procedure
+	// otherwise, skip this timeslot, because MLBDecisionMaker was already run before
+	if m.prevRNIB == nil || !m.isEqualUeLinkLists(&m.prevRNIB, &ueLinkInfoList) {
+		mlbReqs := mlbapploadbalance.MLBDecisionMaker(stationInfoList, stationLinkInfoList, ueLinkInfoList, m.LoadThresh)
+		for _, req := range *mlbReqs {
+			m.sendRadioPowerOffset(req)
 		}
-		log.Info(tmpStaInfo)
-	}
-
-	for _, u := range ueLinkInfoList {
-		log.Infof("UE: plmnid:%s,ecid:%s,crnti:%s", u.GetEcgi().GetPlmnid(), u.GetEcgi().GetEcid(), u.GetCrnti())
-	}
-
-	mlbReqs := mlbapploadbalance.MLBDecisionMaker(stationInfoList, stationLinkInfoList, ueLinkInfoList, m.LoadThresh)
-	for _, req := range *mlbReqs {
-		m.sendRadioPowerOffset(req)
+		m.prevRNIB = ueLinkInfoList
 	}
 }
 
+// isEqualUeLinkList checks whether the recently received UELinkInfoList and the previously received UELinkInfoList are equivalent.
+func (m *MLBSessions) isEqualUeLinkLists(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInfo) bool {
+	if len(*pList) == len(*cList) && m.containUeLinkLists(pList, cList) {
+		return true
+	}
+	return false
+}
+
+// containUeLinkLists checks whether the recently received UELinkInfoList is the subset of the previously received UELinkInfoList.
+func (m *MLBSessions) containUeLinkLists(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInfo) bool {
+	for i := 0; i < len(*cList); i++ {
+		for j := 0; j < len(*pList); j++ {
+			if reflect.DeepEqual((*cList)[i], (*pList)[j]) {
+				break
+			}
+			if j == len(*pList)-1 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // getListStations gets list of stations from ONOS RAN subsystem.
-func (m *MLBSessions) getListStations(stationInfoList *[]nb.StationInfo, joinChan chan int32) {
+func (m *MLBSessions) getListStations(stationInfoList *[]nb.StationInfo, wg *sync.WaitGroup) {
 	stream, err := m.client.ListStations(context.Background(), &nb.StationListRequest{})
 
 	if err != nil {
 		log.Error(err)
-		joinChan <- 0
+		defer wg.Done()
 		return
 	}
 	for {
@@ -133,16 +154,16 @@ func (m *MLBSessions) getListStations(stationInfoList *[]nb.StationInfo, joinCha
 		// For debugging
 		*stationInfoList = append(*stationInfoList, *stationInfo)
 	}
-	joinChan <- 1
+	defer wg.Done()
 }
 
 // getListStationLinks gets list of the relationship among stations from ONOS RAN subsystem.
-func (m *MLBSessions) getListStationLinks(stationLinkInfoList *[]nb.StationLinkInfo, joinChan chan int32) {
+func (m *MLBSessions) getListStationLinks(stationLinkInfoList *[]nb.StationLinkInfo, wg *sync.WaitGroup) {
 	stream, err := m.client.ListStationLinks(context.Background(), &nb.StationLinkListRequest{})
 
 	if err != nil {
 		log.Error(err)
-		joinChan <- 0
+		defer wg.Done()
 		return
 	}
 	for {
@@ -154,22 +175,18 @@ func (m *MLBSessions) getListStationLinks(stationLinkInfoList *[]nb.StationLinkI
 			break
 		}
 		// For debugging
-		printNeighbors := ""
-		for _, n := range stationLinkInfo.GetNeighborECGI() {
-			printNeighbors = printNeighbors + " PLMNID: " + n.GetPlmnid() + ",ECID: " + n.GetEcid() + "\t"
-		}
 		*stationLinkInfoList = append(*stationLinkInfoList, *stationLinkInfo)
 	}
-	joinChan <- 1
+	defer wg.Done()
 }
 
 // getListUELinks gets the list of link between each UE and serving/neighbor stations.
-func (m *MLBSessions) getListUELinks(ueLinkInfoList *[]nb.UELinkInfo, joinChan chan int32) {
+func (m *MLBSessions) getListUELinks(ueLinkInfoList *[]nb.UELinkInfo, wg *sync.WaitGroup) {
 	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{})
 
 	if err != nil {
 		log.Error(err)
-		joinChan <- 0
+		defer wg.Done()
 		return
 	}
 	for {
@@ -183,7 +200,7 @@ func (m *MLBSessions) getListUELinks(ueLinkInfoList *[]nb.UELinkInfo, joinChan c
 		}
 		*ueLinkInfoList = append(*ueLinkInfoList, *ueInfo)
 	}
-	joinChan <- 1
+	defer wg.Done()
 }
 
 // sendRadioPowerOffset sends power offset to appropriate stations.
