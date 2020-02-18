@@ -16,6 +16,7 @@ package mlbapploadbalance
 
 import (
 	"github.com/onosproject/onos-ran/api/nb"
+	log "k8s.io/klog"
 )
 
 // StaUeJointLink is the joint list of StationInfo and UELinkInfo.
@@ -74,6 +75,14 @@ func MLBDecisionMaker(stas []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLi
 		}
 		mlbReqs = append(mlbReqs, *tmpMlbReq)
 	}
+
+	// for debug -- should be removed
+	var numTotalUes int32
+	for _, e := range staUeJointLinkList {
+		log.Infof("STA(p:%s,e:%s) - numUEs:%d (threshold:%d * %f)\n", e.plmnid, e.ecid, e.numUes, e.maxNumUes, *threshold)
+		numTotalUes += e.numUes
+	}
+	log.Infof("Total num of reported UEs: %d", numTotalUes)
 
 	// To-Do: For dynamic, sort UE's CQI values and pick UEs should be handed over:
 	// if max CQI < 10; - 1 dB, otherwise, -3 dB

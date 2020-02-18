@@ -128,6 +128,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 		if err != nil {
 			return err
 		}
+
 		for _, msg := range telemetry {
 			switch msg.GetMessageType() {
 			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
@@ -154,6 +155,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 					}
 
 				}
+
 				ueLinkInfo := nb.UELinkInfo{
 					Ecgi:             &ecgi,
 					Crnti:            radioReportUe.GetCrnti(),
@@ -207,6 +209,9 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 		if err != nil {
 			return nil, err
 		}
+
+		manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
+
 	} else {
 		return nil, fmt.Errorf("HandOverRequest is nil")
 	}

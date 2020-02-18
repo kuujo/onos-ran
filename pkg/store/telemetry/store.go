@@ -40,6 +40,9 @@ type Store interface {
 
 	// List all of the last up to date telemetry messages
 	List() []sb.TelemetryMessage
+
+	// Delete a telemetry message based on a given ID
+	Delete(ID) error
 }
 
 // Get gets a telemetry message based on a given ID
@@ -93,6 +96,13 @@ func (s *telemetryStore) List() []sb.TelemetryMessage {
 	}
 	s.mu.RUnlock()
 	return telemetryMessages
+}
+
+func (s *telemetryStore) Delete(id ID) error {
+	s.mu.Lock()
+	delete(s.telemetry, id)
+	s.mu.Unlock()
+	return nil
 }
 
 // telemetryStore is responsible for tracking the RAN telemetry data

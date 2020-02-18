@@ -135,3 +135,17 @@ func (m *Manager) recvTelemetryUpdates() {
 		}
 	}
 }
+
+// DeleteTelemetry deletes telemetry when a handover happens
+func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) {
+	id := telemetry.ID{
+		PlmnID:      plmnid,
+		Ecid:        ecid,
+		Crnti:       crnti,
+		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
+	}
+	err := m.telemetryStore.Delete(id)
+	if err != nil {
+		log.Error(err)
+	}
+}
