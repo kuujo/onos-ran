@@ -17,10 +17,8 @@ package c1
 import (
 	"context"
 	"fmt"
-
-	"github.com/onosproject/onos-ran/api/sb"
-
 	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ran/api/sb"
 
 	"github.com/onosproject/onos-ran/pkg/manager"
 	"github.com/onosproject/onos-ran/pkg/service"
@@ -264,5 +262,5 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 	} else {
 		return nil, fmt.Errorf("SetRadioPower request cannot be nil")
 	}
-	return &nb.RadioPowerResponse{}, nil
+	return &nb.RadioPowerResponse{Success: true}, nil
 }
