@@ -90,6 +90,8 @@ kind: # @HELP build Docker images and add them to the currently configured kind 
 kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
 	kind load docker-image onosproject/onos-ran:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ran-ho:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ran-mlb:${ONOS_RAN_VERSION}
 	kind load docker-image onosproject/onos-ran-tests:${ONOS_RAN_VERSION}
 
 
