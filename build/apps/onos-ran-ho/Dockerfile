@@ -7,6 +7,6 @@ RUN apk add libc6-compat
 
 USER nobody
 
-COPY --from=base /go/src/github.com/onosproject/onos-ran/build/_output/onos-ran /usr/local/bin/onos-ran
+COPY --from=base /go/src/github.com/onosproject/onos-ran/build/_output/apps/onos-ran-ho /usr/local/bin/onos-ran-ho
 
-ENTRYPOINT ["onos-ran"]
+ENTRYPOINT ["onos-ran-ho"]

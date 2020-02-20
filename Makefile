@@ -4,6 +4,8 @@ export GO111MODULE=on
 .PHONY: build
 
 ONOS_RAN_VERSION := latest
+ONOS_RAN_HO_VERSION := latest
+ONOS_RAN_MLB_VERSION := latest
 ONOS_RAN_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
@@ -66,13 +68,23 @@ onos-ran-docker: onos-ran-base-docker # @HELP build onos-ran Docker image
 		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_VERSION} \
 		-t onosproject/onos-ran:${ONOS_RAN_VERSION}
 
+onos-ran-ho-docker: onos-ran-base-docker # @HELP build onos-ran-ho Docker image
+	docker build . -f build/apps/onos-ran-ho/Dockerfile \
+		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_HO_VERSION} \
+		-t onosproject/onos-ran-ho:${ONOS_RAN_HO_VERSION}
+
+onos-ran-mlb-docker: onos-ran-base-docker # @HELP build onos-ran-mlb Docker image
+	docker build . -f build/apps/onos-ran-mlb/Dockerfile \
+		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_MLB_VERSION} \
+		-t onosproject/onos-ran-mlb:${ONOS_RAN_MLB_VERSION}
+
 onos-ran-tests-docker: # @HELP build onos-ran tests Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ran-tests/_output/bin/onos-ran-tests ./cmd/onos-ran-tests
 	docker build . -f build/onos-ran-tests/Dockerfile -t onosproject/onos-ran-tests:${ONOS_RAN_VERSION}
 
 
 images: # @HELP build all Docker images
-images: build onos-ran-docker onos-ran-tests-docker
+images: build onos-ran-docker onos-ran-ho-docker onos-ran-mlb-docker onos-ran-tests-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
