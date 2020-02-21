@@ -56,7 +56,7 @@ func NewLocalStore() (Store, error) {
 	return newLocalStore(address)
 }
 
-// newLocalStore creates a new local device change store
+// newLocalStore creates a new local telemetry store
 func newLocalStore(address net.Address) (Store, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

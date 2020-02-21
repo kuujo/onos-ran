@@ -30,7 +30,7 @@ var mgr Manager
 func NewManager() (*Manager, error) {
 	log.Info("Creating Manager")
 
-	updatesStore, err := updates.NewStore()
+	updatesStore, err := updates.NewDistributedStore()
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ type Manager struct {
 
 func (m *Manager) recvUpdates() {
 	for update := range mgr.controlUpdates {
-		_ = m.updatesStore.Put(update)
+		_ = m.updatesStore.Put(&update)
 		log.Infof("Got messageType %d", update.MessageType)
 		switch x := update.S.(type) {
 		case *sb.ControlUpdate_CellConfigReport:
@@ -86,9 +86,22 @@ func (m *Manager) recvUpdates() {
 	}
 }
 
-// GetControlUpdates gets a control update based on a given ID
+// GetControlUpdates gets control updates
 func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
-	return m.updatesStore.List(), nil
+	ch := make(chan sb.ControlUpdate)
+	if err := m.ListControlUpdates(ch); err != nil {
+		return nil, err
+	}
+	messages := make([]sb.ControlUpdate, 0)
+	for update := range ch {
+		messages = append(messages, update)
+	}
+	return messages, nil
+}
+
+// ListControlUpdates lists control updates
+func (m *Manager) ListControlUpdates(ch chan<- sb.ControlUpdate) error {
+	return m.updatesStore.List(ch)
 }
 
 // SubscribeControlUpdates subscribes the given channel to control updates
@@ -97,7 +110,20 @@ func (m *Manager) SubscribeControlUpdates(ch chan<- sb.ControlUpdate) error {
 }
 
 // GetTelemetry gets telemeter messages
-func (m *Manager) GetTelemetry(ch chan<- sb.TelemetryMessage) error {
+func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
+	ch := make(chan sb.TelemetryMessage)
+	if err := m.ListTelemetry(ch); err != nil {
+		return nil, err
+	}
+	messages := make([]sb.TelemetryMessage, 0)
+	for telemetry := range ch {
+		messages = append(messages, telemetry)
+	}
+	return messages, nil
+}
+
+// ListTelemetry lists telemeter messages
+func (m *Manager) ListTelemetry(ch chan<- sb.TelemetryMessage) error {
 	return m.telemetryStore.List(ch)
 }
 

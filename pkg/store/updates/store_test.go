@@ -22,15 +22,16 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	testStore, err := NewStore()
+	testStore, err := NewLocalStore()
 	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
+	defer testStore.Close()
 
 	watchCh1 := make(chan sb.ControlUpdate)
 	err = testStore.Watch(watchCh1)
 	assert.NoError(t, err)
 
-	controlUpdate1 := sb.ControlUpdate{
+	controlUpdate1 := &sb.ControlUpdate{
 		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
 		S: &sb.ControlUpdate_CellConfigReport{
 			CellConfigReport: &sb.CellConfigReport{
@@ -68,7 +69,7 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid", event.GetCellConfigReport().Ecgi.PlmnId)
 
-	controlUpdate2 := sb.ControlUpdate{
+	controlUpdate2 := &sb.ControlUpdate{
 		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
 		S: &sb.ControlUpdate_CellConfigReport{
 			CellConfigReport: &sb.CellConfigReport{
@@ -103,7 +104,7 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid-2", event.GetCellConfigReport().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-2", event.GetCellConfigReport().Ecgi.PlmnId)
 
-	controlUpdate3 := sb.ControlUpdate{
+	controlUpdate3 := &sb.ControlUpdate{
 		MessageType: sb.MessageType_UE_ADMISSION_STATUS,
 		S: &sb.ControlUpdate_UEAdmissionStatus{
 			UEAdmissionStatus: &sb.UEAdmissionStatus{

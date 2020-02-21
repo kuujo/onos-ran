@@ -52,23 +52,30 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	}
 
 	if req.Ecgi == nil {
+		ch := make(chan sb.ControlUpdate)
 		if req.Subscribe {
-			ch := make(chan sb.ControlUpdate)
 			if err := manager.GetManager().SubscribeControlUpdates(ch); err != nil {
 				return err
 			}
-			for update := range ch {
-				if err := s.sendStation(update, stream); err != nil {
-					return err
-				}
-			}
 		} else {
-			controlUpdates, err := manager.GetManager().GetControlUpdates()
-			if err != nil {
+			if err := manager.GetManager().ListControlUpdates(ch); err != nil {
 				return err
 			}
-			for _, update := range controlUpdates {
-				if err := s.sendStation(update, stream); err != nil {
+		}
+
+		for update := range ch {
+			switch update.GetMessageType() {
+			case sb.MessageType_CELL_CONFIG_REPORT:
+				cellConfigReport := update.GetCellConfigReport()
+				ecgi := nb.ECGI{
+					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+				}
+				baseStationInfo := nb.StationInfo{
+					Ecgi: &ecgi,
+				}
+				baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
+				if err := stream.Send(&baseStationInfo); err != nil {
 					return err
 				}
 			}
@@ -79,80 +86,47 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	return nil
 }
 
-// sendStation sends a station record on the given stream
-func (s Server) sendStation(update sb.ControlUpdate, stream nb.C1InterfaceService_ListStationsServer) error {
-	switch update.GetMessageType() {
-	case sb.MessageType_CELL_CONFIG_REPORT:
-		cellConfigReport := update.GetCellConfigReport()
-		ecgi := nb.ECGI{
-			Ecid:   cellConfigReport.GetEcgi().GetEcid(),
-			Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
-		}
-		baseStationInfo := nb.StationInfo{
-			Ecgi: &ecgi,
-		}
-		baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
-		if err := stream.Send(&baseStationInfo); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
 	if req.Ecgi == nil {
+		ch := make(chan sb.ControlUpdate)
 		if req.Subscribe {
-			ch := make(chan sb.ControlUpdate)
 			if err := manager.GetManager().SubscribeControlUpdates(ch); err != nil {
 				return err
 			}
-			for update := range ch {
-				if err := s.sendStationLink(update, stream); err != nil {
-					return err
-				}
-			}
 		} else {
-			controlUpdates, err := manager.GetManager().GetControlUpdates()
-			if err != nil {
+			if err := manager.GetManager().ListControlUpdates(ch); err != nil {
 				return err
 			}
-			for _, update := range controlUpdates {
-				if err := s.sendStationLink(update, stream); err != nil {
+		}
+
+		for update := range ch {
+			switch update.GetMessageType() {
+			case sb.MessageType_CELL_CONFIG_REPORT:
+				cellConfigReport := update.GetCellConfigReport()
+				ecgi := nb.ECGI{
+					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+				}
+				stationLinkInfo := nb.StationLinkInfo{
+					Ecgi: &ecgi,
+				}
+				candScells := cellConfigReport.GetCandScells()
+				for _, candScell := range candScells {
+					candCellEcgi := candScell.GetEcgi()
+					nbEcgi := nb.ECGI{
+						Ecid:   candCellEcgi.GetEcid(),
+						Plmnid: candCellEcgi.GetPlmnId(),
+					}
+					stationLinkInfo.NeighborECGI = append(stationLinkInfo.NeighborECGI, &nbEcgi)
+				}
+				if err := stream.Send(&stationLinkInfo); err != nil {
 					return err
 				}
 			}
 		}
 	} else {
 		return fmt.Errorf("req ecgi is not nil")
-	}
-	return nil
-}
-
-// sendStationLink sends a link response on the given stream
-func (s *Server) sendStationLink(update sb.ControlUpdate, stream nb.C1InterfaceService_ListStationLinksServer) error {
-	switch update.GetMessageType() {
-	case sb.MessageType_CELL_CONFIG_REPORT:
-		cellConfigReport := update.GetCellConfigReport()
-		ecgi := nb.ECGI{
-			Ecid:   cellConfigReport.GetEcgi().GetEcid(),
-			Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
-		}
-		stationLinkInfo := nb.StationLinkInfo{
-			Ecgi: &ecgi,
-		}
-		candScells := cellConfigReport.GetCandScells()
-		for _, candScell := range candScells {
-			candCellEcgi := candScell.GetEcgi()
-			nbEcgi := nb.ECGI{
-				Ecid:   candCellEcgi.GetEcid(),
-				Plmnid: candCellEcgi.GetPlmnId(),
-			}
-			stationLinkInfo.NeighborECGI = append(stationLinkInfo.NeighborECGI, &nbEcgi)
-		}
-		if err := stream.Send(&stationLinkInfo); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -166,7 +140,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 				return err
 			}
 		} else {
-			if err := manager.GetManager().GetTelemetry(ch); err != nil {
+			if err := manager.GetManager().ListTelemetry(ch); err != nil {
 				return err
 			}
 		}

@@ -15,19 +15,83 @@
 package updates
 
 import (
+	"context"
 	"fmt"
-	"sync"
+	"github.com/atomix/go-client/pkg/client/map"
+	"github.com/atomix/go-client/pkg/client/primitive"
+	"github.com/atomix/go-client/pkg/client/util/net"
+	"github.com/gogo/protobuf/proto"
+	"github.com/onosproject/onos-ran/pkg/store/utils"
+	"io"
+	"time"
 
 	"github.com/onosproject/onos-ran/api/sb"
 	log "k8s.io/klog"
 )
 
-// ID store id
-type ID struct {
-	MessageType sb.MessageType
-	PlmnID      string
-	Ecid        string
-	Crnti       string
+const timeout = 15 * time.Second
+const primitiveName = "control-updates"
+
+// NewDistributedStore creates a new distributed control updates store
+func NewDistributedStore() (Store, error) {
+	log.Info("Creating distributed control updates store")
+	database, err := utils.GetAtomixDatabase()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	updates, err := database.GetMap(ctx, primitiveName)
+	if err != nil {
+		return nil, err
+	}
+	return &atomixStore{
+		updates: updates,
+	}, nil
+}
+
+// NewLocalStore returns a new local control updates store
+func NewLocalStore() (Store, error) {
+	_, address := utils.StartLocalNode()
+	return newLocalStore(address)
+}
+
+// newLocalStore creates a new local control updates store
+func newLocalStore(address net.Address) (Store, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+	if err != nil {
+		return nil, err
+	}
+	updatesName := primitive.Name{
+		Namespace: "local",
+		Name:      primitiveName,
+	}
+	updates, err := _map.New(context.Background(), updatesName, []*primitive.Session{session})
+	if err != nil {
+		return nil, err
+	}
+	return &atomixStore{
+		updates: updates,
+	}, nil
+}
+
+// Store is ran store
+type Store interface {
+	io.Closer
+
+	// Gets a control update message based on a given ID
+	Get(ID) (*sb.ControlUpdate, error)
+
+	// Puts a control update message to the store
+	Put(*sb.ControlUpdate) error
+
+	// List all of the last up to date control update messages
+	List(ch chan<- sb.ControlUpdate) error
+
+	// Watch watches the store for control update messages
+	Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error
 }
 
 // WatchOption is a RAN store watch option
@@ -56,49 +120,91 @@ func (o *watchReplayOption) apply(options *watchOptions) {
 	options.replay = o.replay
 }
 
-// Store is ran store
-type Store interface {
-	// Gets a control update message based on a given ID
-	Get(ID) (sb.ControlUpdate, error)
-
-	// Puts a control update message to the store
-	Put(sb.ControlUpdate) error
-
-	// List all of the last up to date control update messages
-	List() []sb.ControlUpdate
-
-	// Watch watches the store for control update messages
-	Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error
+// atomixStore is an Atomix based store
+type atomixStore struct {
+	updates _map.Map
 }
 
-// processEvents processes update events in order
-func (s *updatesStore) processEvents() {
-	for event := range s.events {
-		s.mu.RLock()
-		for _, watcher := range s.watchers {
-			watcher <- event
+func (s *atomixStore) Get(id ID) (*sb.ControlUpdate, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	entry, err := s.updates.Get(ctx, id.String())
+	if err != nil {
+		return nil, err
+	} else if entry.Value == nil {
+		return nil, nil
+	}
+	update := &sb.ControlUpdate{}
+	if err := proto.Unmarshal(entry.Value, update); err != nil {
+		return nil, err
+	}
+	return update, nil
+}
+
+func (s *atomixStore) Put(update *sb.ControlUpdate) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	bytes, err := proto.Marshal(update)
+	if err != nil {
+		return err
+	}
+	_, err = s.updates.Put(ctx, getKey(update).String(), bytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *atomixStore) List(ch chan<- sb.ControlUpdate) error {
+	entryCh := make(chan *_map.Entry)
+	if err := s.updates.Entries(context.Background(), entryCh); err != nil {
+		return err
+	}
+	go func() {
+		for entry := range entryCh {
+			update := &sb.ControlUpdate{}
+			if err := proto.Unmarshal(entry.Value, update); err == nil {
+				ch <- *update
+			}
 		}
-		s.mu.RUnlock()
+	}()
+	return nil
+}
+
+func (s *atomixStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error {
+	options := &watchOptions{}
+	for _, opt := range opts {
+		opt.apply(options)
 	}
-}
-
-// enqueueEvent enqueues the given event to be propagated to watchers
-func (s *updatesStore) enqueueEvent(update sb.ControlUpdate) {
-	s.events <- update
-}
-
-// Get gets a control update message based on a given ID
-func (s *updatesStore) Get(id ID) (sb.ControlUpdate, error) {
-	s.mu.RLock()
-	if controlUpdate, ok := s.controlUpdates[id]; ok {
-		s.mu.RUnlock()
-		return controlUpdate, nil
+	watchOptions := []_map.WatchOption{}
+	if options.replay {
+		watchOptions = append(watchOptions, _map.WithReplay())
 	}
-	s.mu.RUnlock()
-	return sb.ControlUpdate{}, fmt.Errorf("not found")
+
+	watchCh := make(chan *_map.Event)
+	if err := s.updates.Watch(context.Background(), watchCh, watchOptions...); err != nil {
+		return err
+	}
+	go func() {
+		for event := range watchCh {
+			if event.Type != _map.EventRemoved {
+				update := &sb.ControlUpdate{}
+				if err := proto.Unmarshal(event.Entry.Value, update); err == nil {
+					ch <- *update
+				}
+			}
+		}
+	}()
+	return nil
 }
 
-func getKey(update sb.ControlUpdate) ID {
+func (s *atomixStore) Close() error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return s.updates.Close(ctx)
+}
+
+func getKey(update *sb.ControlUpdate) ID {
 	var ecgi sb.ECGI
 	var crnti string
 	switch update.MessageType {
@@ -131,66 +237,14 @@ func getKey(update sb.ControlUpdate) ID {
 	return id
 }
 
-// Put puts a control update message in the store
-func (s *updatesStore) Put(update sb.ControlUpdate) error {
-	id := getKey(update)
-	s.mu.Lock()
-	s.controlUpdates[id] = update
-	s.enqueueEvent(update)
-	s.mu.Unlock()
-	return nil
+// ID store id
+type ID struct {
+	MessageType sb.MessageType
+	PlmnID      string
+	Ecid        string
+	Crnti       string
 }
 
-// List gets all of the control update messages in the store
-func (s *updatesStore) List() []sb.ControlUpdate {
-	var controlUpdates []sb.ControlUpdate
-	s.mu.RLock()
-	for _, value := range s.controlUpdates {
-		controlUpdates = append(controlUpdates, value)
-	}
-	s.mu.RUnlock()
-	return controlUpdates
-}
-
-// Watch watches the store for control update messages
-func (s *updatesStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error {
-	options := &watchOptions{}
-	for _, opt := range opts {
-		opt.apply(options)
-	}
-
-	done := make(chan struct{})
-	go func() {
-		s.mu.Lock()
-		close(done)
-		if options.replay {
-			for _, update := range s.controlUpdates {
-				ch <- update
-			}
-		}
-		s.watchers = append(s.watchers, ch)
-		s.mu.Unlock()
-	}()
-	<-done
-	return nil
-}
-
-// RanStore is responsible for tracking the RAN data.
-type updatesStore struct {
-	controlUpdates map[ID]sb.ControlUpdate
-	events         chan sb.ControlUpdate
-	watchers       []chan<- sb.ControlUpdate
-	mu             sync.RWMutex
-}
-
-// NewStore creates a new Control updates store
-func NewStore() (Store, error) {
-	log.Info("Creating Control Updates Store")
-	store := &updatesStore{
-		controlUpdates: make(map[ID]sb.ControlUpdate),
-		events:         make(chan sb.ControlUpdate),
-		watchers:       make([]chan<- sb.ControlUpdate, 0),
-	}
-	go store.processEvents()
-	return store, nil
+func (i ID) String() string {
+	return fmt.Sprintf("%d:%s:%s:%s", i.MessageType, i.PlmnID, i.Ecid, i.Crnti)
 }
