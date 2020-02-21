@@ -22,10 +22,16 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	testStore, err := NewStore()
-	assert.Nil(t, err)
+	testStore, err := NewLocalStore()
+	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
-	controlUpdate1 := sb.ControlUpdate{
+	defer testStore.Close()
+
+	watchCh1 := make(chan sb.ControlUpdate)
+	err = testStore.Watch(watchCh1)
+	assert.NoError(t, err)
+
+	controlUpdate1 := &sb.ControlUpdate{
 		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
 		S: &sb.ControlUpdate_CellConfigReport{
 			CellConfigReport: &sb.CellConfigReport{
@@ -51,7 +57,19 @@ func TestStore(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, value1.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
 
-	controlUpdate2 := sb.ControlUpdate{
+	event := <-watchCh1
+	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.GetCellConfigReport().Ecgi.PlmnId)
+
+	watchCh2 := make(chan sb.ControlUpdate)
+	err = testStore.Watch(watchCh2, WithReplay())
+	assert.NoError(t, err)
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.GetCellConfigReport().Ecgi.PlmnId)
+
+	controlUpdate2 := &sb.ControlUpdate{
 		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
 		S: &sb.ControlUpdate_CellConfigReport{
 			CellConfigReport: &sb.CellConfigReport{
@@ -78,7 +96,15 @@ func TestStore(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, value2.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
 
-	controlUpdate3 := sb.ControlUpdate{
+	event = <-watchCh1
+	assert.Equal(t, "test-ecid-2", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.GetCellConfigReport().Ecgi.PlmnId)
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid-2", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.GetCellConfigReport().Ecgi.PlmnId)
+
+	controlUpdate3 := &sb.ControlUpdate{
 		MessageType: sb.MessageType_UE_ADMISSION_STATUS,
 		S: &sb.ControlUpdate_UEAdmissionStatus{
 			UEAdmissionStatus: &sb.UEAdmissionStatus{
@@ -106,5 +132,13 @@ func TestStore(t *testing.T) {
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
 	assert.Equal(t, value3.MessageType.String(), sb.MessageType_UE_ADMISSION_STATUS.String())
+
+	event = <-watchCh1
+	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
 
 }

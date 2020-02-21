@@ -30,12 +30,12 @@ var mgr Manager
 func NewManager() (*Manager, error) {
 	log.Info("Creating Manager")
 
-	updatesStore, err := updates.NewStore()
+	updatesStore, err := updates.NewDistributedStore()
 	if err != nil {
 		return nil, err
 	}
 
-	telemetryStore, err := telemetry.NewStore()
+	telemetryStore, err := telemetry.NewDistributedStore()
 	if err != nil {
 		return nil, err
 	}
@@ -73,27 +73,67 @@ type Manager struct {
 
 func (m *Manager) recvUpdates() {
 	for update := range mgr.controlUpdates {
-		_ = m.updatesStore.Put(update)
-		log.Infof("Got messageType %d", update.MessageType)
-		switch x := update.S.(type) {
-		case *sb.ControlUpdate_CellConfigReport:
-			log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
-		case *sb.ControlUpdate_UEAdmissionRequest:
-			log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
-		default:
-			log.Fatalf("ControlReport has unexpected type %T", x)
-		}
+		m.storeControlUpdate(update)
 	}
 }
 
-// GetControlUpdates gets a control update based on a given ID
+func (m *Manager) storeControlUpdate(update sb.ControlUpdate) {
+	_ = m.updatesStore.Put(&update)
+	log.Infof("Got messageType %d", update.MessageType)
+	switch x := update.S.(type) {
+	case *sb.ControlUpdate_CellConfigReport:
+		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
+	case *sb.ControlUpdate_UEAdmissionRequest:
+		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
+	default:
+		log.Fatalf("ControlReport has unexpected type %T", x)
+	}
+}
+
+// GetControlUpdates gets control updates
 func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
-	return m.updatesStore.List(), nil
+	ch := make(chan sb.ControlUpdate)
+	if err := m.ListControlUpdates(ch); err != nil {
+		return nil, err
+	}
+	messages := make([]sb.ControlUpdate, 0)
+	for update := range ch {
+		messages = append(messages, update)
+	}
+	return messages, nil
+}
+
+// ListControlUpdates lists control updates
+func (m *Manager) ListControlUpdates(ch chan<- sb.ControlUpdate) error {
+	return m.updatesStore.List(ch)
+}
+
+// SubscribeControlUpdates subscribes the given channel to control updates
+func (m *Manager) SubscribeControlUpdates(ch chan<- sb.ControlUpdate) error {
+	return m.updatesStore.Watch(ch, updates.WithReplay())
 }
 
 // GetTelemetry gets telemeter messages
 func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
-	return m.telemetryStore.List(), nil
+	ch := make(chan sb.TelemetryMessage)
+	if err := m.ListTelemetry(ch); err != nil {
+		return nil, err
+	}
+	messages := make([]sb.TelemetryMessage, 0)
+	for telemetry := range ch {
+		messages = append(messages, telemetry)
+	}
+	return messages, nil
+}
+
+// ListTelemetry lists telemeter messages
+func (m *Manager) ListTelemetry(ch chan<- sb.TelemetryMessage) error {
+	return m.telemetryStore.List(ch)
+}
+
+// SubscribeTelemetry subscribes the given channel to telemetry events
+func (m *Manager) SubscribeTelemetry(ch chan<- sb.TelemetryMessage) error {
+	return m.telemetryStore.Watch(ch, telemetry.WithReplay())
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -115,24 +155,28 @@ func GetManager() *Manager {
 
 func (m *Manager) recvTelemetryUpdates() {
 	for update := range mgr.telemetryUpdates {
-		_ = m.telemetryStore.Put(update)
-		switch x := update.S.(type) {
-		case *sb.TelemetryMessage_RadioMeasReportPerUE:
-			log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
-				x.RadioMeasReportPerUE.Ecgi.PlmnId,
-				x.RadioMeasReportPerUE.Ecgi.Ecid,
-				x.RadioMeasReportPerUE.Crnti,
-				x.RadioMeasReportPerUE.RadioReportServCells[0].CqiHist[0],
-				x.RadioMeasReportPerUE.RadioReportServCells[0].GetEcgi().GetEcid(),
-				x.RadioMeasReportPerUE.RadioReportServCells[1].CqiHist[0],
-				x.RadioMeasReportPerUE.RadioReportServCells[1].GetEcgi().GetEcid(),
-				x.RadioMeasReportPerUE.RadioReportServCells[2].CqiHist[0],
-				x.RadioMeasReportPerUE.RadioReportServCells[2].GetEcgi().GetEcid(),
-			)
-		default:
-			log.Fatalf("Telemetry update has unexpected type %T", x)
-			log.Infof("Got telemetry messageType %d", update.MessageType)
-		}
+		m.storeTelemetry(update)
+	}
+}
+
+func (m *Manager) storeTelemetry(update sb.TelemetryMessage) {
+	_ = m.telemetryStore.Put(&update)
+	switch x := update.S.(type) {
+	case *sb.TelemetryMessage_RadioMeasReportPerUE:
+		log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
+			x.RadioMeasReportPerUE.Ecgi.PlmnId,
+			x.RadioMeasReportPerUE.Ecgi.Ecid,
+			x.RadioMeasReportPerUE.Crnti,
+			x.RadioMeasReportPerUE.RadioReportServCells[0].CqiHist[0],
+			x.RadioMeasReportPerUE.RadioReportServCells[0].GetEcgi().GetEcid(),
+			x.RadioMeasReportPerUE.RadioReportServCells[1].CqiHist[0],
+			x.RadioMeasReportPerUE.RadioReportServCells[1].GetEcgi().GetEcid(),
+			x.RadioMeasReportPerUE.RadioReportServCells[2].CqiHist[0],
+			x.RadioMeasReportPerUE.RadioReportServCells[2].GetEcgi().GetEcid(),
+		)
+	default:
+		log.Fatalf("Telemetry update has unexpected type %T", x)
+		log.Infof("Got telemetry messageType %d", update.MessageType)
 	}
 }
 
