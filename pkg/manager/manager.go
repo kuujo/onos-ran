@@ -91,9 +91,19 @@ func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
 	return m.updatesStore.List(), nil
 }
 
+// SubscribeControlUpdates subscribes the given channel to control updates
+func (m *Manager) SubscribeControlUpdates(ch chan<- sb.ControlUpdate) error {
+	return m.updatesStore.Watch(ch, updates.WithReplay())
+}
+
 // GetTelemetry gets telemeter messages
 func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
 	return m.telemetryStore.List(), nil
+}
+
+// SubscribeTelemetry subscribes the given channel to telemetry events
+func (m *Manager) SubscribeTelemetry(ch chan<- sb.TelemetryMessage) error {
+	return m.telemetryStore.Watch(ch, telemetry.WithReplay())
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.

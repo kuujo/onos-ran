@@ -20,11 +20,11 @@ import (
 )
 
 // HODecisionMaker decide whether the UE in UELinkInfo should do handover or not
-func HODecisionMaker(ueinfo *[]nb.UELinkInfo) *[]nb.HandOverRequest {
+func HODecisionMaker(ueinfo []*nb.UELinkInfo) []*nb.HandOverRequest {
 
-	var resultHoReqs []nb.HandOverRequest
+	var resultHoReqs []*nb.HandOverRequest
 
-	for _, l := range *ueinfo {
+	for _, l := range ueinfo {
 		servStationID := l.GetEcgi()
 		numNeighborCells := len(l.GetChannelQualities())
 		bestStationID := l.GetChannelQualities()[0].GetTargetEcgi()
@@ -43,7 +43,7 @@ func HODecisionMaker(ueinfo *[]nb.UELinkInfo) *[]nb.HandOverRequest {
 			continue
 		}
 
-		hoReq := nb.HandOverRequest{
+		hoReq := &nb.HandOverRequest{
 			Crnti: l.GetCrnti(),
 			SrcStation: &nb.ECGI{
 				Plmnid: servStationID.GetPlmnid(),
@@ -56,5 +56,5 @@ func HODecisionMaker(ueinfo *[]nb.UELinkInfo) *[]nb.HandOverRequest {
 		}
 		resultHoReqs = append(resultHoReqs, hoReq)
 	}
-	return &resultHoReqs
+	return resultHoReqs
 }

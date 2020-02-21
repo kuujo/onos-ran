@@ -30,6 +30,32 @@ type ID struct {
 	Crnti       string
 }
 
+// WatchOption is a RAN store watch option
+type WatchOption interface {
+	apply(options *watchOptions)
+}
+
+// watchOptions is a struct of RAN store watch options
+type watchOptions struct {
+	replay bool
+}
+
+// WithReplay returns a watch option that replays existing updates
+func WithReplay() WatchOption {
+	return &watchReplayOption{
+		replay: true,
+	}
+}
+
+// watchReplayOption is an option for configuring whether to replay updates on watch calls
+type watchReplayOption struct {
+	replay bool
+}
+
+func (o *watchReplayOption) apply(options *watchOptions) {
+	options.replay = o.replay
+}
+
 // Store is ran store
 type Store interface {
 	// Gets a control update message based on a given ID
@@ -40,6 +66,25 @@ type Store interface {
 
 	// List all of the last up to date control update messages
 	List() []sb.ControlUpdate
+
+	// Watch watches the store for control update messages
+	Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error
+}
+
+// processEvents processes update events in order
+func (s *updatesStore) processEvents() {
+	for event := range s.events {
+		s.mu.RLock()
+		for _, watcher := range s.watchers {
+			watcher <- event
+		}
+		s.mu.RUnlock()
+	}
+}
+
+// enqueueEvent enqueues the given event to be propagated to watchers
+func (s *updatesStore) enqueueEvent(update sb.ControlUpdate) {
+	s.events <- update
 }
 
 // Get gets a control update message based on a given ID
@@ -92,6 +137,7 @@ func (s *updatesStore) Put(update sb.ControlUpdate) error {
 	s.mu.Lock()
 	s.controlUpdates[id] = update
 	s.mu.Unlock()
+	s.enqueueEvent(update)
 	return nil
 }
 
@@ -106,16 +152,45 @@ func (s *updatesStore) List() []sb.ControlUpdate {
 	return controlUpdates
 }
 
+// Watch watches the store for control update messages
+func (s *updatesStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error {
+	options := &watchOptions{}
+	for _, opt := range opts {
+		opt.apply(options)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		s.mu.Lock()
+		if options.replay {
+			for _, update := range s.controlUpdates {
+				ch <- update
+			}
+		}
+		s.watchers = append(s.watchers, ch)
+		s.mu.Unlock()
+		close(done)
+	}()
+	<-done
+	return nil
+}
+
 // RanStore is responsible for tracking the RAN data.
 type updatesStore struct {
 	controlUpdates map[ID]sb.ControlUpdate
+	events         chan sb.ControlUpdate
+	watchers       []chan<- sb.ControlUpdate
 	mu             sync.RWMutex
 }
 
 // NewStore creates a new Control updates store
 func NewStore() (Store, error) {
 	log.Info("Creating Control Updates Store")
-	return &updatesStore{
+	store := &updatesStore{
 		controlUpdates: make(map[ID]sb.ControlUpdate),
-	}, nil
+		events:         make(chan sb.ControlUpdate),
+		watchers:       make([]chan<- sb.ControlUpdate, 0),
+	}
+	go store.processEvents()
+	return store, nil
 }

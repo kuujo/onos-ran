@@ -41,8 +41,53 @@ type Store interface {
 	// List all of the last up to date telemetry messages
 	List() []sb.TelemetryMessage
 
+	// Watch watches telemetry updates
+	Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error
+
 	// Delete a telemetry message based on a given ID
 	Delete(ID) error
+}
+
+// WatchOption is a telemetry store watch option
+type WatchOption interface {
+	apply(options *watchOptions)
+}
+
+// watchOptions is a struct of telemetry store watch options
+type watchOptions struct {
+	replay bool
+}
+
+// WithReplay returns a watch option that replays existing telemetry
+func WithReplay() WatchOption {
+	return &watchReplayOption{
+		replay: true,
+	}
+}
+
+// watchReplayOption is an option for configuring whether to replay telemetry on watch calls
+type watchReplayOption struct {
+	replay bool
+}
+
+func (o *watchReplayOption) apply(options *watchOptions) {
+	options.replay = o.replay
+}
+
+// processEvents processes update events in order
+func (s *telemetryStore) processEvents() {
+	for event := range s.events {
+		s.mu.RLock()
+		for _, watcher := range s.watchers {
+			watcher <- event
+		}
+		s.mu.RUnlock()
+	}
+}
+
+// enqueueEvent enqueues the given event to be propagated to watchers
+func (s *telemetryStore) enqueueEvent(event sb.TelemetryMessage) {
+	s.events <- event
 }
 
 // Get gets a telemetry message based on a given ID
@@ -84,6 +129,7 @@ func (s *telemetryStore) Put(telemetry sb.TelemetryMessage) error {
 	s.mu.Lock()
 	s.telemetry[id] = telemetry
 	s.mu.Unlock()
+	s.enqueueEvent(telemetry)
 	return nil
 }
 
@@ -98,6 +144,29 @@ func (s *telemetryStore) List() []sb.TelemetryMessage {
 	return telemetryMessages
 }
 
+// Watch watches the store for telemetry messages
+func (s *telemetryStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error {
+	options := &watchOptions{}
+	for _, opt := range opts {
+		opt.apply(options)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		s.mu.Lock()
+		if options.replay {
+			for _, telemetry := range s.telemetry {
+				ch <- telemetry
+			}
+		}
+		s.watchers = append(s.watchers, ch)
+		s.mu.Unlock()
+		close(done)
+	}()
+	<-done
+	return nil
+}
+
 func (s *telemetryStore) Delete(id ID) error {
 	s.mu.Lock()
 	delete(s.telemetry, id)
@@ -108,13 +177,19 @@ func (s *telemetryStore) Delete(id ID) error {
 // telemetryStore is responsible for tracking the RAN telemetry data
 type telemetryStore struct {
 	telemetry map[ID]sb.TelemetryMessage
+	events    chan sb.TelemetryMessage
+	watchers  []chan<- sb.TelemetryMessage
 	mu        sync.RWMutex
 }
 
 // NewStore creates a new RAN store controller.
 func NewStore() (Store, error) {
 	log.Info("Creating Telemetry Store")
-	return &telemetryStore{
+	store := &telemetryStore{
 		telemetry: make(map[ID]sb.TelemetryMessage),
-	}, nil
+		events:    make(chan sb.TelemetryMessage),
+		watchers:  make([]chan<- sb.TelemetryMessage, 0),
+	}
+	go store.processEvents()
+	return store, nil
 }

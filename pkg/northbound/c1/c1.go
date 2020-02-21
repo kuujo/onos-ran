@@ -52,24 +52,23 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	}
 
 	if req.Ecgi == nil {
-		controlUpdates, err := manager.GetManager().GetControlUpdates()
-		if err != nil {
-			return err
-		}
-		for _, update := range controlUpdates {
-			switch update.GetMessageType() {
-			case sb.MessageType_CELL_CONFIG_REPORT:
-				cellConfigReport := update.GetCellConfigReport()
-				ecgi := nb.ECGI{
-					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
-					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+		if req.Subscribe {
+			ch := make(chan sb.ControlUpdate)
+			if err := manager.GetManager().SubscribeControlUpdates(ch); err != nil {
+				return err
+			}
+			for update := range ch {
+				if err := s.sendStation(update, stream); err != nil {
+					return err
 				}
-				baseStationInfo := nb.StationInfo{
-					Ecgi: &ecgi,
-				}
-				baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
-				err = stream.Send(&baseStationInfo)
-				if err != nil {
+			}
+		} else {
+			controlUpdates, err := manager.GetManager().GetControlUpdates()
+			if err != nil {
+				return err
+			}
+			for _, update := range controlUpdates {
+				if err := s.sendStation(update, stream); err != nil {
 					return err
 				}
 			}
@@ -80,35 +79,46 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	return nil
 }
 
+// sendStation sends a station record on the given stream
+func (s Server) sendStation(update sb.ControlUpdate, stream nb.C1InterfaceService_ListStationsServer) error {
+	switch update.GetMessageType() {
+	case sb.MessageType_CELL_CONFIG_REPORT:
+		cellConfigReport := update.GetCellConfigReport()
+		ecgi := nb.ECGI{
+			Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+			Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+		}
+		baseStationInfo := nb.StationInfo{
+			Ecgi: &ecgi,
+		}
+		baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
+		if err := stream.Send(&baseStationInfo); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
 	if req.Ecgi == nil {
-		controlUpdates, err := manager.GetManager().GetControlUpdates()
-		if err != nil {
-			return err
-		}
-		for _, update := range controlUpdates {
-			switch update.GetMessageType() {
-			case sb.MessageType_CELL_CONFIG_REPORT:
-				cellConfigReport := update.GetCellConfigReport()
-				ecgi := nb.ECGI{
-					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
-					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+		if req.Subscribe {
+			ch := make(chan sb.ControlUpdate)
+			if err := manager.GetManager().SubscribeControlUpdates(ch); err != nil {
+				return err
+			}
+			for update := range ch {
+				if err := s.sendStationLink(update, stream); err != nil {
+					return err
 				}
-				stationLinkInfo := nb.StationLinkInfo{
-					Ecgi: &ecgi,
-				}
-				candScells := cellConfigReport.GetCandScells()
-				for _, candScell := range candScells {
-					candCellEcgi := candScell.GetEcgi()
-					nbEcgi := nb.ECGI{
-						Ecid:   candCellEcgi.GetEcid(),
-						Plmnid: candCellEcgi.GetPlmnId(),
-					}
-					stationLinkInfo.NeighborECGI = append(stationLinkInfo.NeighborECGI, &nbEcgi)
-				}
-				err = stream.Send(&stationLinkInfo)
-				if err != nil {
+			}
+		} else {
+			controlUpdates, err := manager.GetManager().GetControlUpdates()
+			if err != nil {
+				return err
+			}
+			for _, update := range controlUpdates {
+				if err := s.sendStationLink(update, stream); err != nil {
 					return err
 				}
 			}
@@ -119,58 +129,101 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 	return nil
 }
 
+// sendStationLink sends a link response on the given stream
+func (s *Server) sendStationLink(update sb.ControlUpdate, stream nb.C1InterfaceService_ListStationLinksServer) error {
+	switch update.GetMessageType() {
+	case sb.MessageType_CELL_CONFIG_REPORT:
+		cellConfigReport := update.GetCellConfigReport()
+		ecgi := nb.ECGI{
+			Ecid:   cellConfigReport.GetEcgi().GetEcid(),
+			Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
+		}
+		stationLinkInfo := nb.StationLinkInfo{
+			Ecgi: &ecgi,
+		}
+		candScells := cellConfigReport.GetCandScells()
+		for _, candScell := range candScells {
+			candCellEcgi := candScell.GetEcgi()
+			nbEcgi := nb.ECGI{
+				Ecid:   candCellEcgi.GetEcid(),
+				Plmnid: candCellEcgi.GetPlmnId(),
+			}
+			stationLinkInfo.NeighborECGI = append(stationLinkInfo.NeighborECGI, &nbEcgi)
+		}
+		if err := stream.Send(&stationLinkInfo); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
 	if req.Ecgi == nil {
-		telemetry, err := manager.GetManager().GetTelemetry()
-		if err != nil {
-			return err
-		}
-
-		for _, msg := range telemetry {
-			switch msg.GetMessageType() {
-			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
-				radioReportUe := msg.GetRadioMeasReportPerUE()
-				ecgi := nb.ECGI{
-					Ecid:   radioReportUe.GetEcgi().GetEcid(),
-					Plmnid: radioReportUe.GetEcgi().GetPlmnId(),
-				}
-				radioReportServCells := radioReportUe.GetRadioReportServCells()
-				var cqis []*nb.ChannelQuality
-				for _, radioReportServCell := range radioReportServCells {
-					servCellEcgi := radioReportServCell.GetEcgi()
-					ecgi := nb.ECGI{
-						Ecid:   servCellEcgi.GetEcid(),
-						Plmnid: servCellEcgi.GetPlmnId(),
-					}
-					cqiHist := radioReportServCell.GetCqiHist()
-					for _, cqi := range cqiHist {
-						nbCqi := nb.ChannelQuality{
-							TargetEcgi: &ecgi,
-							CqiHist:    cqi,
-						}
-						cqis = append(cqis, &nbCqi)
-					}
-
-				}
-
-				ueLinkInfo := nb.UELinkInfo{
-					Ecgi:             &ecgi,
-					Crnti:            radioReportUe.GetCrnti(),
-					ChannelQualities: cqis,
-				}
-
-				err = stream.Send(&ueLinkInfo)
-				if err != nil {
+		if req.Subscribe {
+			ch := make(chan sb.TelemetryMessage)
+			if err := manager.GetManager().SubscribeTelemetry(ch); err != nil {
+				return err
+			}
+			for msg := range ch {
+				if err := s.sendUELink(msg, stream); err != nil {
 					return err
 				}
+			}
+		} else {
+			telemetry, err := manager.GetManager().GetTelemetry()
+			if err != nil {
+				return err
+			}
 
+			for _, msg := range telemetry {
+				if err := s.sendUELink(msg, stream); err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		return fmt.Errorf("UELinkListRequest is not empty")
+	}
+	return nil
+}
+
+func (s Server) sendUELink(telemetry sb.TelemetryMessage, stream nb.C1InterfaceService_ListUELinksServer) error {
+	switch telemetry.GetMessageType() {
+	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+		radioReportUe := telemetry.GetRadioMeasReportPerUE()
+		ecgi := nb.ECGI{
+			Ecid:   radioReportUe.GetEcgi().GetEcid(),
+			Plmnid: radioReportUe.GetEcgi().GetPlmnId(),
+		}
+		radioReportServCells := radioReportUe.GetRadioReportServCells()
+		var cqis []*nb.ChannelQuality
+		for _, radioReportServCell := range radioReportServCells {
+			servCellEcgi := radioReportServCell.GetEcgi()
+			ecgi := nb.ECGI{
+				Ecid:   servCellEcgi.GetEcid(),
+				Plmnid: servCellEcgi.GetPlmnId(),
+			}
+			cqiHist := radioReportServCell.GetCqiHist()
+			for _, cqi := range cqiHist {
+				nbCqi := nb.ChannelQuality{
+					TargetEcgi: &ecgi,
+					CqiHist:    cqi,
+				}
+				cqis = append(cqis, &nbCqi)
 			}
 		}
 
-	} else {
+		ueLinkInfo := nb.UELinkInfo{
+			Ecgi:             &ecgi,
+			Crnti:            radioReportUe.GetCrnti(),
+			ChannelQualities: cqis,
+		}
 
-		return fmt.Errorf("UELinkListRequest is not empty")
+		if err := stream.Send(&ueLinkInfo); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
