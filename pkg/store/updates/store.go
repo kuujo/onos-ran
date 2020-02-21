@@ -136,8 +136,8 @@ func (s *updatesStore) Put(update sb.ControlUpdate) error {
 	id := getKey(update)
 	s.mu.Lock()
 	s.controlUpdates[id] = update
-	s.mu.Unlock()
 	s.enqueueEvent(update)
+	s.mu.Unlock()
 	return nil
 }
 
@@ -162,6 +162,7 @@ func (s *updatesStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) er
 	done := make(chan struct{})
 	go func() {
 		s.mu.Lock()
+		close(done)
 		if options.replay {
 			for _, update := range s.controlUpdates {
 				ch <- update
@@ -169,7 +170,6 @@ func (s *updatesStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) er
 		}
 		s.watchers = append(s.watchers, ch)
 		s.mu.Unlock()
-		close(done)
 	}()
 	<-done
 	return nil

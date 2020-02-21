@@ -128,8 +128,8 @@ func (s *telemetryStore) Put(telemetry sb.TelemetryMessage) error {
 	id := getKey(telemetry)
 	s.mu.Lock()
 	s.telemetry[id] = telemetry
-	s.mu.Unlock()
 	s.enqueueEvent(telemetry)
+	s.mu.Unlock()
 	return nil
 }
 
@@ -154,6 +154,7 @@ func (s *telemetryStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOptio
 	done := make(chan struct{})
 	go func() {
 		s.mu.Lock()
+		close(done)
 		if options.replay {
 			for _, telemetry := range s.telemetry {
 				ch <- telemetry
@@ -161,7 +162,6 @@ func (s *telemetryStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOptio
 		}
 		s.watchers = append(s.watchers, ch)
 		s.mu.Unlock()
-		close(done)
 	}()
 	<-done
 	return nil

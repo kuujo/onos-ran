@@ -23,6 +23,11 @@ import (
 
 func TestStore(t *testing.T) {
 	testStore, err := NewStore()
+
+	watchCh1 := make(chan sb.ControlUpdate)
+	err = testStore.Watch(watchCh1)
+	assert.NoError(t, err)
+
 	assert.Nil(t, err)
 	assert.NotNil(t, testStore)
 	controlUpdate1 := sb.ControlUpdate{
@@ -51,6 +56,17 @@ func TestStore(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, value1.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
 
+	event := <-watchCh1
+	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.GetCellConfigReport().Ecgi.PlmnId)
+
+	watchCh2 := make(chan sb.ControlUpdate)
+	err = testStore.Watch(watchCh2, WithReplay())
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.GetCellConfigReport().Ecgi.PlmnId)
+
 	controlUpdate2 := sb.ControlUpdate{
 		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
 		S: &sb.ControlUpdate_CellConfigReport{
@@ -77,6 +93,14 @@ func TestStore(t *testing.T) {
 	value2, err := testStore.Get(id2)
 	assert.Nil(t, err)
 	assert.Equal(t, value2.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
+
+	event = <-watchCh1
+	assert.Equal(t, "test-ecid-2", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.GetCellConfigReport().Ecgi.PlmnId)
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid-2", event.GetCellConfigReport().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.GetCellConfigReport().Ecgi.PlmnId)
 
 	controlUpdate3 := sb.ControlUpdate{
 		MessageType: sb.MessageType_UE_ADMISSION_STATUS,
@@ -106,5 +130,13 @@ func TestStore(t *testing.T) {
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
 	assert.Equal(t, value3.MessageType.String(), sb.MessageType_UE_ADMISSION_STATUS.String())
+
+	event = <-watchCh1
+	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
 
 }

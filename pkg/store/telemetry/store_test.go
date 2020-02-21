@@ -23,6 +23,11 @@ import (
 
 func TestStore(t *testing.T) {
 	testStore, err := NewStore()
+
+	watchCh1 := make(chan sb.TelemetryMessage)
+	err = testStore.Watch(watchCh1)
+	assert.NoError(t, err)
+
 	assert.Nil(t, err)
 	assert.NotNil(t, testStore)
 	telemetry1 := sb.TelemetryMessage{
@@ -51,6 +56,17 @@ func TestStore(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, value1.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
 
+	event := <-watchCh1
+	assert.Equal(t, "test-ecid", event.GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.GetRadioMeasReportPerCell().Ecgi.PlmnId)
+
+	watchCh2 := make(chan sb.TelemetryMessage)
+	err = testStore.Watch(watchCh2, WithReplay())
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid", event.GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.GetRadioMeasReportPerCell().Ecgi.PlmnId)
+
 	telemetry2 := sb.TelemetryMessage{
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_CELL,
 		S: &sb.TelemetryMessage_RadioMeasReportPerCell{
@@ -77,6 +93,14 @@ func TestStore(t *testing.T) {
 	value2, err := testStore.Get(id2)
 	assert.Nil(t, err)
 	assert.Equal(t, value2.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
+
+	event = <-watchCh1
+	assert.Equal(t, "test-ecid-2", event.GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.GetRadioMeasReportPerCell().Ecgi.PlmnId)
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid-2", event.GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.GetRadioMeasReportPerCell().Ecgi.PlmnId)
 
 	telemetry3 := sb.TelemetryMessage{
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
@@ -106,5 +130,13 @@ func TestStore(t *testing.T) {
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
 	assert.Equal(t, value3.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_UE.String())
+
+	event = <-watchCh1
+	assert.Equal(t, "test-ecid-3", event.GetRadioMeasReportPerUE().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.GetRadioMeasReportPerUE().Ecgi.PlmnId)
+
+	event = <-watchCh2
+	assert.Equal(t, "test-ecid-3", event.GetRadioMeasReportPerUE().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.GetRadioMeasReportPerUE().Ecgi.PlmnId)
 
 }
