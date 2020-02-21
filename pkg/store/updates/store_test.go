@@ -23,13 +23,13 @@ import (
 
 func TestStore(t *testing.T) {
 	testStore, err := NewStore()
+	assert.NoError(t, err)
+	assert.NotNil(t, testStore)
 
 	watchCh1 := make(chan sb.ControlUpdate)
 	err = testStore.Watch(watchCh1)
 	assert.NoError(t, err)
 
-	assert.Nil(t, err)
-	assert.NotNil(t, testStore)
 	controlUpdate1 := sb.ControlUpdate{
 		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
 		S: &sb.ControlUpdate_CellConfigReport{
@@ -62,6 +62,7 @@ func TestStore(t *testing.T) {
 
 	watchCh2 := make(chan sb.ControlUpdate)
 	err = testStore.Watch(watchCh2, WithReplay())
+	assert.NoError(t, err)
 
 	event = <-watchCh2
 	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)

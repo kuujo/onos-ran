@@ -23,13 +23,13 @@ import (
 
 func TestStore(t *testing.T) {
 	testStore, err := NewStore()
+	assert.NoError(t, err)
+	assert.NotNil(t, testStore)
 
 	watchCh1 := make(chan sb.TelemetryMessage)
 	err = testStore.Watch(watchCh1)
 	assert.NoError(t, err)
 
-	assert.Nil(t, err)
-	assert.NotNil(t, testStore)
 	telemetry1 := sb.TelemetryMessage{
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_CELL,
 		S: &sb.TelemetryMessage_RadioMeasReportPerCell{
@@ -62,6 +62,7 @@ func TestStore(t *testing.T) {
 
 	watchCh2 := make(chan sb.TelemetryMessage)
 	err = testStore.Watch(watchCh2, WithReplay())
+	assert.NoError(t, err)
 
 	event = <-watchCh2
 	assert.Equal(t, "test-ecid", event.GetRadioMeasReportPerCell().Ecgi.Ecid)
