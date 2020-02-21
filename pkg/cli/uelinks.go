@@ -16,15 +16,36 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"sort"
 	"text/tabwriter"
+	"text/template"
 	"time"
 
 	"github.com/onosproject/onos-ran/api/nb"
 	"github.com/spf13/cobra"
 	log "k8s.io/klog"
 )
+
+// QualSet - used for the Go template/text output
+type QualSet struct {
+	Ue     string
+	UeQual []uint32
+}
+
+const ueLinksCellsTemplate = "{{ printf \"UEs       \" }}" +
+	"{{range . }}" +
+	"{{ printf \"%-10s\" . }}" +
+	"{{end}}\n"
+
+const ueLinksTemplate = "{{printf \"%-10s\" .Ue}}" +
+	"{{ range $idx, $qual := .UeQual }}" +
+	"{{ if $qual}}" +
+	"{{printf \"%-10d\" $qual}}" +
+	"{{ else}}" +
+	"{{printf \"%-10s\" \"\"}}" +
+	"{{ end}}" +
+	"{{end}}\n"
 
 func getGetUeLinksCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -69,6 +90,8 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	}
 	defer conn.Close()
 	outputWriter := GetOutput()
+	tmplCellsList, _ := template.New("uelinkscells").Parse(ueLinksCellsTemplate)
+	tmplUesList, _ := template.New("uelinksues").Parse(ueLinksTemplate)
 
 	request := nb.UELinkListRequest{Subscribe: subscribe}
 	if subscribe {
@@ -100,10 +123,12 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	writer := new(tabwriter.Writer)
 	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
 
+	towers := make(map[string]interface{})
+	var towerKeys []string
+	qualityMap := make(map[string][]*nb.ChannelQuality)
 	if !noHeaders {
-		fmt.Fprintln(writer, "ECID\tCRNTI\tCQI\tTARGET ECID")
+		Output("          Cell sites\n")
 	}
-
 	for {
 		response, err := stream.Recv()
 		if err == io.EOF {
@@ -113,11 +138,36 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		for _, cqi := range response.ChannelQualities {
-			fmt.Fprintln(writer, fmt.Sprintf("%s\t%s\t%d\t%s", response.Ecgi.Ecid, response.Crnti, cqi.CqiHist, cqi.TargetEcgi.Ecid))
+		if _, ok := towers[response.Ecgi.Ecid]; !ok {
+			towers[response.Ecgi.Ecid] = struct{}{}
+			towerKeys = make([]string, len(towers))
+			var i = 0
+			for k := range towers {
+				towerKeys[i] = k
+				i++
+			}
+			sort.Slice(towerKeys, func(i, j int) bool {
+				return towerKeys[i] < towerKeys[j]
+			})
 		}
+		qualityMap[response.Crnti] = response.ChannelQualities
+		// TODO handle the streaming case
 	}
-	writer.Flush()
+	_ = tmplCellsList.Execute(GetOutput(), towerKeys)
+
+	for k, qualities := range qualityMap {
+		qualTable := make([]uint32, len(towerKeys))
+		for _, q := range qualities {
+			for i, t := range towerKeys {
+				if t == q.TargetEcgi.Ecid {
+					qualTable[i] = q.CqiHist
+					break
+				}
+			}
+		}
+		qualSet := QualSet{Ue: k, UeQual: qualTable}
+		_ = tmplUesList.Execute(GetOutput(), qualSet)
+	}
 
 	return nil
 }
