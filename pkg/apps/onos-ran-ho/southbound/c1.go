@@ -153,7 +153,7 @@ func (m *HOSessions) containUeLinkLists(pList []*nb.UELinkInfo, cList []*nb.UELi
 
 // getListUELinks gets the list of link between each UE and serving/neighbor stations, and call sendHandoverTrigger if HO is necessary.
 func (m *HOSessions) watchUELinks(ch chan<- []*nb.UELinkInfo) error {
-	ueLinks := make(map[UELinkID]*nb.UELinkInfo)
+	ueLinks := make(map[ueLinkID]*nb.UELinkInfo)
 
 	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{Subscribe: true})
 	if err != nil {
@@ -172,7 +172,7 @@ func (m *HOSessions) watchUELinks(ch chan<- []*nb.UELinkInfo) error {
 				break
 			}
 
-			id := UELinkID{
+			id := ueLinkID{
 				PlmnID: ueInfo.Ecgi.Plmnid,
 				Ecid:   ueInfo.Ecgi.Ecid,
 				Crnti:  ueInfo.Crnti,
@@ -189,7 +189,7 @@ func (m *HOSessions) watchUELinks(ch chan<- []*nb.UELinkInfo) error {
 	return nil
 }
 
-type UELinkID struct {
+type ueLinkID struct {
 	PlmnID string
 	Ecid   string
 	Crnti  string
