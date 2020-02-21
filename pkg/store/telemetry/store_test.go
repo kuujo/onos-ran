@@ -141,4 +141,17 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid-3", event.GetRadioMeasReportPerUE().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-3", event.GetRadioMeasReportPerUE().Ecgi.PlmnId)
 
+	listCh := make(chan sb.TelemetryMessage)
+	err = testStore.List(listCh)
+	assert.NoError(t, err)
+
+	telemetry := <-listCh
+	assert.Equal(t, "test-ecid", telemetry.GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", telemetry.GetRadioMeasReportPerCell().Ecgi.PlmnId)
+	telemetry = <-listCh
+	assert.Equal(t, "test-ecid-2", telemetry.GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", telemetry.GetRadioMeasReportPerCell().Ecgi.PlmnId)
+	telemetry = <-listCh
+	assert.Equal(t, "test-ecid-3", telemetry.GetRadioMeasReportPerUE().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", telemetry.GetRadioMeasReportPerUE().Ecgi.PlmnId)
 }

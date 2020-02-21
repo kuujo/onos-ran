@@ -164,6 +164,7 @@ func (s *atomixStore) List(ch chan<- sb.TelemetryMessage) error {
 		return err
 	}
 	go func() {
+		defer close(ch)
 		for entry := range entryCh {
 			telemetry := &sb.TelemetryMessage{}
 			if err := proto.Unmarshal(entry.Value, telemetry); err == nil {
@@ -189,6 +190,7 @@ func (s *atomixStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) 
 		return err
 	}
 	go func() {
+		defer close(ch)
 		for event := range watchCh {
 			if event.Type != _map.EventRemoved {
 				telemetry := &sb.TelemetryMessage{}

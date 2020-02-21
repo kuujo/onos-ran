@@ -64,6 +64,7 @@ func (m *HOSessions) manageConnections() {
 
 		conn, err := hoappservice.Connect(*m.ONOSRANAddr, opts...)
 		if err == nil {
+			log.Infof("Connected to %s", *m.ONOSRANAddr)
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.
 			m.manageConnection(conn)

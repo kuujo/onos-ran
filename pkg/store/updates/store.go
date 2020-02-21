@@ -161,6 +161,7 @@ func (s *atomixStore) List(ch chan<- sb.ControlUpdate) error {
 		return err
 	}
 	go func() {
+		defer close(ch)
 		for entry := range entryCh {
 			update := &sb.ControlUpdate{}
 			if err := proto.Unmarshal(entry.Value, update); err == nil {
@@ -186,6 +187,7 @@ func (s *atomixStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) err
 		return err
 	}
 	go func() {
+		defer close(ch)
 		for event := range watchCh {
 			if event.Type != _map.EventRemoved {
 				update := &sb.ControlUpdate{}
