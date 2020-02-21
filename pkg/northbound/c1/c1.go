@@ -160,70 +160,57 @@ func (s *Server) sendStationLink(update sb.ControlUpdate, stream nb.C1InterfaceS
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
 	if req.Ecgi == nil {
+		ch := make(chan sb.TelemetryMessage)
 		if req.Subscribe {
-			ch := make(chan sb.TelemetryMessage)
 			if err := manager.GetManager().SubscribeTelemetry(ch); err != nil {
 				return err
 			}
-			for msg := range ch {
-				if err := s.sendUELink(msg, stream); err != nil {
-					return err
-				}
-			}
 		} else {
-			telemetry, err := manager.GetManager().GetTelemetry()
-			if err != nil {
+			if err := manager.GetManager().GetTelemetry(ch); err != nil {
 				return err
 			}
+		}
 
-			for _, msg := range telemetry {
-				if err := s.sendUELink(msg, stream); err != nil {
+		for telemetry := range ch {
+			switch telemetry.GetMessageType() {
+			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+				radioReportUe := telemetry.GetRadioMeasReportPerUE()
+				ecgi := nb.ECGI{
+					Ecid:   radioReportUe.GetEcgi().GetEcid(),
+					Plmnid: radioReportUe.GetEcgi().GetPlmnId(),
+				}
+				radioReportServCells := radioReportUe.GetRadioReportServCells()
+				var cqis []*nb.ChannelQuality
+				for _, radioReportServCell := range radioReportServCells {
+					servCellEcgi := radioReportServCell.GetEcgi()
+					ecgi := nb.ECGI{
+						Ecid:   servCellEcgi.GetEcid(),
+						Plmnid: servCellEcgi.GetPlmnId(),
+					}
+					cqiHist := radioReportServCell.GetCqiHist()
+					for _, cqi := range cqiHist {
+						nbCqi := nb.ChannelQuality{
+							TargetEcgi: &ecgi,
+							CqiHist:    cqi,
+						}
+						cqis = append(cqis, &nbCqi)
+					}
+				}
+
+				ueLinkInfo := nb.UELinkInfo{
+					Ecgi:             &ecgi,
+					Crnti:            radioReportUe.GetCrnti(),
+					ChannelQualities: cqis,
+				}
+
+				if err := stream.Send(&ueLinkInfo); err != nil {
 					return err
 				}
+
 			}
 		}
 	} else {
 		return fmt.Errorf("UELinkListRequest is not empty")
-	}
-	return nil
-}
-
-func (s Server) sendUELink(telemetry sb.TelemetryMessage, stream nb.C1InterfaceService_ListUELinksServer) error {
-	switch telemetry.GetMessageType() {
-	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
-		radioReportUe := telemetry.GetRadioMeasReportPerUE()
-		ecgi := nb.ECGI{
-			Ecid:   radioReportUe.GetEcgi().GetEcid(),
-			Plmnid: radioReportUe.GetEcgi().GetPlmnId(),
-		}
-		radioReportServCells := radioReportUe.GetRadioReportServCells()
-		var cqis []*nb.ChannelQuality
-		for _, radioReportServCell := range radioReportServCells {
-			servCellEcgi := radioReportServCell.GetEcgi()
-			ecgi := nb.ECGI{
-				Ecid:   servCellEcgi.GetEcid(),
-				Plmnid: servCellEcgi.GetPlmnId(),
-			}
-			cqiHist := radioReportServCell.GetCqiHist()
-			for _, cqi := range cqiHist {
-				nbCqi := nb.ChannelQuality{
-					TargetEcgi: &ecgi,
-					CqiHist:    cqi,
-				}
-				cqis = append(cqis, &nbCqi)
-			}
-		}
-
-		ueLinkInfo := nb.UELinkInfo{
-			Ecgi:             &ecgi,
-			Crnti:            radioReportUe.GetCrnti(),
-			ChannelQualities: cqis,
-		}
-
-		if err := stream.Send(&ueLinkInfo); err != nil {
-			return err
-		}
-
 	}
 	return nil
 }

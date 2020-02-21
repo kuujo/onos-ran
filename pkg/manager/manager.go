@@ -35,7 +35,7 @@ func NewManager() (*Manager, error) {
 		return nil, err
 	}
 
-	telemetryStore, err := telemetry.NewStore()
+	telemetryStore, err := telemetry.NewDistributedStore()
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +97,8 @@ func (m *Manager) SubscribeControlUpdates(ch chan<- sb.ControlUpdate) error {
 }
 
 // GetTelemetry gets telemeter messages
-func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
-	return m.telemetryStore.List(), nil
+func (m *Manager) GetTelemetry(ch chan<- sb.TelemetryMessage) error {
+	return m.telemetryStore.List(ch)
 }
 
 // SubscribeTelemetry subscribes the given channel to telemetry events
@@ -125,7 +125,7 @@ func GetManager() *Manager {
 
 func (m *Manager) recvTelemetryUpdates() {
 	for update := range mgr.telemetryUpdates {
-		_ = m.telemetryStore.Put(update)
+		_ = m.telemetryStore.Put(&update)
 		switch x := update.S.(type) {
 		case *sb.TelemetryMessage_RadioMeasReportPerUE:
 			log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",

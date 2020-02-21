@@ -22,15 +22,16 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	testStore, err := NewStore()
+	testStore, err := NewLocalStore()
 	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
+	defer testStore.Close()
 
 	watchCh1 := make(chan sb.TelemetryMessage)
 	err = testStore.Watch(watchCh1)
 	assert.NoError(t, err)
 
-	telemetry1 := sb.TelemetryMessage{
+	telemetry1 := &sb.TelemetryMessage{
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_CELL,
 		S: &sb.TelemetryMessage_RadioMeasReportPerCell{
 			RadioMeasReportPerCell: &sb.RadioMeasReportPerCell{
@@ -68,7 +69,7 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid", event.GetRadioMeasReportPerCell().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid", event.GetRadioMeasReportPerCell().Ecgi.PlmnId)
 
-	telemetry2 := sb.TelemetryMessage{
+	telemetry2 := &sb.TelemetryMessage{
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_CELL,
 		S: &sb.TelemetryMessage_RadioMeasReportPerCell{
 			RadioMeasReportPerCell: &sb.RadioMeasReportPerCell{
@@ -103,7 +104,7 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid-2", event.GetRadioMeasReportPerCell().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-2", event.GetRadioMeasReportPerCell().Ecgi.PlmnId)
 
-	telemetry3 := sb.TelemetryMessage{
+	telemetry3 := &sb.TelemetryMessage{
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
 		S: &sb.TelemetryMessage_RadioMeasReportPerUE{
 			RadioMeasReportPerUE: &sb.RadioMeasReportPerUE{
