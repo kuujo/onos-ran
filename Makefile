@@ -82,6 +82,9 @@ onos-ran-tests-docker: # @HELP build onos-ran tests Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ran-tests/_output/bin/onos-ran-tests ./cmd/onos-ran-tests
 	docker build . -f build/onos-ran-tests/Dockerfile -t onosproject/onos-ran-tests:${ONOS_RAN_VERSION}
 
+onos-ran-benchmarks-docker: # @HELP build onos-ran benchmarks Docker image
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ran-benchmarks/_output/bin/onos-ran-benchmarks ./cmd/onos-ran-benchmarks
+	docker build . -f build/onos-ran-benchmarks/Dockerfile -t onosproject/onos-ran-benchmarks:${ONOS_RAN_VERSION}
 
 images: # @HELP build all Docker images
 images: build onos-ran-docker onos-ran-ho-docker onos-ran-mlb-docker onos-ran-tests-docker
@@ -93,6 +96,7 @@ kind: images
 	kind load docker-image onosproject/onos-ran-ho:${ONOS_RAN_VERSION}
 	kind load docker-image onosproject/onos-ran-mlb:${ONOS_RAN_VERSION}
 	kind load docker-image onosproject/onos-ran-tests:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ran-benchmarks:${ONOS_RAN_VERSION}
 
 
 all: build images

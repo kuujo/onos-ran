@@ -5,3 +5,4 @@ docker push onosproject/onos-ran:latest
 docker push onosproject/onos-ran-tests:latest
 docker push onosproject/onos-ran-ho:latest
 docker push onosproject/onos-ran-mlb:latest
+docker push onosproject/onos-ran-benchmarks:latest
