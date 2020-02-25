@@ -1,9 +1,9 @@
-# Deploying onos-ran
+# Deploying onos-ric
 
-This guide deploys `onos-ran` through it's [Helm] chart assumes you have a
+This guide deploys `onos-ric` through it's [Helm] chart assumes you have a
 [Kubernetes] cluster running deployed in a namespace.
 
-`onos-ran` Helm chart is based on Helm 3.0 version, with no need for the Tiller pod to be present. 
+`onos-ric` Helm chart is based on Helm 3.0 version, with no need for the Tiller pod to be present. 
 If you don't have a cluster running and want to try on your local machine please follow first 
 the [Kubernetes] setup steps outlined in [deploy with Helm](https://docs.onosproject.org/developers/deploy_with_helm/).
 The following steps assume you have the setup outlined in that page, including the `micro-onos` namespace configured. 
@@ -12,11 +12,11 @@ The following steps assume you have the setup outlined in that page, including t
 To install the chart in the `micro-onos` namespace run from the root directory of
 the `onos-helm-charts` repo the command:
 ```bash
-helm install -n micro-onos onos-ran onos-ran
+helm install -n micro-onos onos-ric onos-ric
 ```
 The output should be:
 ```bash
-NAME: onos-ran
+NAME: onos-ric
 LAST DEPLOYED: Tue Feb  4 08:02:57 2020
 NAMESPACE: default
 STATUS: deployed
@@ -31,12 +31,12 @@ created by it. To list the charts that are installed and view their statuses, ru
 > helm ls
 NAME         	NAMESPACE 	REVISION	UPDATED                                	STATUS  	CHART              	APP VERSION
 onos-cli     	micro-onos	1       	2020-02-04 08:01:54.860813386 +0000 UTC	deployed	onos-cli-0.0.1     	1          
-onos-ran     	micro-onos	1       	2020-02-04 08:02:17.663782372 +0000 UTC	deployed	onos-ran-0.0.1     	1          
+onos-ric     	micro-onos	1       	2020-02-04 08:02:17.663782372 +0000 UTC	deployed	onos-ric-0.0.1     	1          
 ran-simulator	micro-onos	1       	2020-02-04 09:32:21.533299519 +0000 UTC	deployed	ran-simulator-0.0.1	1          
 sd-ran-gui   	micro-onos	1       	2020-02-04 09:32:49.018099586 +0000 UTC	deployed	sd-ran-gui-0.0.1   	1  
 ```
 
-> Here the service is shown running alongside `onos-cli`, `onos-ran` and the `sd-ran-gui`
+> Here the service is shown running alongside `onos-cli`, `onos-ric` and the `sd-ran-gui`
 > as these are usually deployed together to give a demo scenario. See the individual
 > deployment instructions for these services.
 
@@ -45,7 +45,7 @@ To check whether the service is running correctly use `kubectl`
 > kubectl get pods -n micro-onos
 NAME                             READY   STATUS             RESTARTS   AGE
 onos-cli-68bbf4f674-ssjt4        1/1     Running            0          18m
-onos-ran-5fb8c6bdd7-xmcmq        1/1     Running            0          18m
+onos-ric-5fb8c6bdd7-xmcmq        1/1     Running            0          18m
 ran-simulator-6f577597d8-5lcv8   1/1     Running            0          82s
 sd-ran-gui-76ff54d85-fh72j       2/2     Running            0          54s
 ```
@@ -56,7 +56,7 @@ See Troubleshooting below if the `Status` is not `Running`
 
 Issue the `helm install` command substituting `micro-onos` with your namespace.
 ```bash
-helm install -n <your_name_space> onos-ran onos-ran
+helm install -n <your_name_space> onos-ric onos-ric
 ```
 
 ### Troubleshoot
@@ -67,14 +67,14 @@ debug your chart:
 * `--debug` prints out more information about your chart
 
 ```bash
-helm install -n micro-onos onos-ran --debug --dry-run onos-ran/
+helm install -n micro-onos onos-ric --debug --dry-run onos-ric/
 ```
 
 ## Uninstalling the chart.
 
-To remove the `onos-ran` pod issue
+To remove the `onos-ric` pod issue
 ```bash
- helm delete -n micro-onos onos-ran
+ helm delete -n micro-onos onos-ric
 ```
 
 ## Pod Information
