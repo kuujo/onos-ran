@@ -70,3 +70,28 @@ func makeNBClientOrFail(t *testing.T) nb.C1InterfaceServiceClient {
 	assert.NotNil(t, client)
 	return client
 }
+
+// readLinks queries the UE link info and returns it as a map,
+// mapping the station ID to its link info
+func readLinks(t *testing.T) map[string]*nb.UELinkInfo {
+	ids := make(map[string]*nb.UELinkInfo)
+	client := makeNBClientOrFail(t)
+
+	// Create a list links request
+	request := &nb.UELinkListRequest{
+		Subscribe: false,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	links, _ := client.ListUELinks(ctx, request)
+
+	for {
+		linkInfo, err := links.Recv()
+		if err == io.EOF {
+			break
+		}
+		assert.NoError(t, err)
+		ids[linkInfo.Crnti] = linkInfo
+	}
+	return ids
+}
