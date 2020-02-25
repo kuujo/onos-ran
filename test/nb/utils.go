@@ -21,6 +21,7 @@ import (
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/stretchr/testify/assert"
 	"io"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -63,6 +64,12 @@ func waitForSimulator() error {
 	return errors.New("simulator never responded properly")
 }
 
+// waitForSimulator polls until the simulator is responding properly.
+// the can take a while, allow a minute before giving up.
+func waitForSimulatorOrFail(t *testing.T) {
+	assert.NoError(t, waitForSimulator())
+}
+
 // makeNBClientOrFail makes a client to connect to the onos-ric northbound API
 func makeNBClientOrFail(t *testing.T) nb.C1InterfaceServiceClient {
 	client, clientErr := env.RAN().NewRANC1ServiceClient()
@@ -94,4 +101,21 @@ func readLinks(t *testing.T) map[string]*nb.UELinkInfo {
 		ids[linkInfo.Crnti] = linkInfo
 	}
 	return ids
+}
+
+// verifyUELinkInfo makes sure that a UE link info has
+// reasonable values in it
+func verifyUELinkInfo(t *testing.T, link *nb.UELinkInfo) {
+	const defaultPlmnid = "001001"
+	assert.Equal(t, defaultPlmnid, link.Ecgi.Plmnid)
+
+	re := regexp.MustCompile("00000[0-9][0-9]")
+
+	assert.True(t, re.MatchString(link.Ecgi.Ecid))
+
+	for _, cq := range link.ChannelQualities {
+		assert.Equal(t, defaultPlmnid, cq.TargetEcgi.Plmnid)
+		assert.True(t, re.MatchString(cq.TargetEcgi.Ecid))
+		assert.True(t, cq.CqiHist <= 15)
+	}
 }
