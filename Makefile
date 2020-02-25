@@ -87,7 +87,7 @@ onos-ran-benchmarks-docker: # @HELP build onos-ran benchmarks Docker image
 	docker build . -f build/onos-ran-benchmarks/Dockerfile -t onosproject/onos-ran-benchmarks:${ONOS_RAN_VERSION}
 
 images: # @HELP build all Docker images
-images: build onos-ran-docker onos-ran-ho-docker onos-ran-mlb-docker onos-ran-tests-docker
+images: build onos-ran-docker onos-ran-ho-docker onos-ran-mlb-docker onos-ran-tests-docker onos-ran-benchmarks-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
