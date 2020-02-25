@@ -3,10 +3,10 @@ export GO111MODULE=on
 
 .PHONY: build
 
-ONOS_RAN_VERSION := latest
-ONOS_RAN_HO_VERSION := latest
-ONOS_RAN_MLB_VERSION := latest
-ONOS_RAN_DEBUG_VERSION := debug
+ONOS_RIC_VERSION := latest
+ONOS_RIC_HO_VERSION := latest
+ONOS_RIC_MLB_VERSION := latest
+ONOS_RIC_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
@@ -60,31 +60,31 @@ onos-ric-base-docker: # @HELP build onos-ric base Docker image
 	docker build . -f build/base/Dockerfile \
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		--build-arg ONOS_MAKE_TARGET=build \
-		-t onosproject/onos-ric-base:${ONOS_RAN_VERSION}
+		-t onosproject/onos-ric-base:${ONOS_RIC_VERSION}
 	@rm -rf vendor
 
 onos-ric-docker: onos-ric-base-docker # @HELP build onos-ric Docker image
 	docker build . -f build/onos-ric/Dockerfile \
-		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_VERSION} \
-		-t onosproject/onos-ric:${ONOS_RAN_VERSION}
+		--build-arg ONOS_RIC_BASE_VERSION=${ONOS_RIC_VERSION} \
+		-t onosproject/onos-ric:${ONOS_RIC_VERSION}
 
 onos-ric-ho-docker: onos-ric-base-docker # @HELP build onos-ric-ho Docker image
 	docker build . -f build/apps/onos-ric-ho/Dockerfile \
-		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_HO_VERSION} \
-		-t onosproject/onos-ric-ho:${ONOS_RAN_HO_VERSION}
+		--build-arg ONOS_RIC_BASE_VERSION=${ONOS_RIC_HO_VERSION} \
+		-t onosproject/onos-ric-ho:${ONOS_RIC_HO_VERSION}
 
 onos-ric-mlb-docker: onos-ric-base-docker # @HELP build onos-ric-mlb Docker image
 	docker build . -f build/apps/onos-ric-mlb/Dockerfile \
-		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_MLB_VERSION} \
-		-t onosproject/onos-ric-mlb:${ONOS_RAN_MLB_VERSION}
+		--build-arg ONOS_RIC_BASE_VERSION=${ONOS_RIC_MLB_VERSION} \
+		-t onosproject/onos-ric-mlb:${ONOS_RIC_MLB_VERSION}
 
 onos-ric-tests-docker: # @HELP build onos-ric tests Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ric-tests/_output/bin/onos-ric-tests ./cmd/onos-ric-tests
-	docker build . -f build/onos-ric-tests/Dockerfile -t onosproject/onos-ric-tests:${ONOS_RAN_VERSION}
+	docker build . -f build/onos-ric-tests/Dockerfile -t onosproject/onos-ric-tests:${ONOS_RIC_VERSION}
 
 onos-ric-benchmarks-docker: # @HELP build onos-ric benchmarks Docker image
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ric-benchmarks/_output/bin/onos-ric-benchmarks ./cmd/onos-ric-benchmarks
-	docker build . -f build/onos-ric-benchmarks/Dockerfile -t onosproject/onos-ric-benchmarks:${ONOS_RAN_VERSION}
+	docker build . -f build/onos-ric-benchmarks/Dockerfile -t onosproject/onos-ric-benchmarks:${ONOS_RIC_VERSION}
 
 images: # @HELP build all Docker images
 images: build onos-ric-docker onos-ric-ho-docker onos-ric-mlb-docker onos-ric-tests-docker onos-ric-benchmarks-docker
@@ -92,11 +92,11 @@ images: build onos-ric-docker onos-ric-ho-docker onos-ric-mlb-docker onos-ric-te
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/onos-ric:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ric-ho:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ric-mlb:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ric-tests:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ric-benchmarks:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ric:${ONOS_RIC_VERSION}
+	kind load docker-image onosproject/onos-ric-ho:${ONOS_RIC_VERSION}
+	kind load docker-image onosproject/onos-ric-mlb:${ONOS_RIC_VERSION}
+	kind load docker-image onosproject/onos-ric-tests:${ONOS_RIC_VERSION}
+	kind load docker-image onosproject/onos-ric-benchmarks:${ONOS_RIC_VERSION}
 
 all: build images
 
