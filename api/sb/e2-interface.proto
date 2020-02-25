@@ -70,6 +70,8 @@ message ControlUpdate {
         HOComplete hOComplete = 9;
         HOFailure hOFailure = 10;
         HOCause hOCause = 11;
+
+        UEReleaseInd uEReleaseInd = 12;
     }
 }
 
