@@ -17,7 +17,7 @@ package nb
 import (
 	"context"
 	"errors"
-	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -63,7 +63,7 @@ func waitForSimulator() error {
 	return errors.New("simulator never responded properly")
 }
 
-// makeNBClientOrFail makes a client to connect to the onos-ran northbound API
+// makeNBClientOrFail makes a client to connect to the onos-ric northbound API
 func makeNBClientOrFail(t *testing.T) nb.C1InterfaceServiceClient {
 	client, clientErr := env.RAN().NewRANC1ServiceClient()
 	assert.NoError(t, clientErr)

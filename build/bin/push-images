@@ -1,8 +1,8 @@
 #!/bin/bash
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
 make images
-docker push onosproject/onos-ran:latest
-docker push onosproject/onos-ran-tests:latest
-docker push onosproject/onos-ran-ho:latest
-docker push onosproject/onos-ran-mlb:latest
-docker push onosproject/onos-ran-benchmarks:latest
+docker push onosproject/onos-ric:latest
+docker push onosproject/onos-ric-tests:latest
+docker push onosproject/onos-ric-ho:latest
+docker push onosproject/onos-ric-mlb:latest
+docker push onosproject/onos-ric-benchmarks:latest

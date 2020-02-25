@@ -16,7 +16,7 @@ package cli
 
 import (
 	"context"
-	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
 	log "k8s.io/klog"
 	"time"

@@ -12,35 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package c1
+package main
 
 import (
-	"context"
-	"io"
-	"time"
-
-	"github.com/onosproject/onos-ric/api/nb"
+	"github.com/onosproject/onos-ric/benchmark/c1"
 	"github.com/onosproject/onos-test/pkg/benchmark"
 )
 
-// BenchmarkGetStations tests get stations
-func (s *BenchmarkSuite) BenchmarkGetStations(b *benchmark.Benchmark) {
-	b.Run(func() error {
-		request := nb.StationListRequest{Subscribe: false}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		stream, err := s.client.ListStations(ctx, &request)
-		if err != nil {
-			return err
-		}
-		for {
-			_, err := stream.Recv()
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+func main() {
+	benchmark.Register("c1", &c1.BenchmarkSuite{})
+	benchmark.Main()
 }

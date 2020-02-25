@@ -21,11 +21,11 @@ import (
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
-	"github.com/onosproject/onos-ran/pkg/store/utils"
+	"github.com/onosproject/onos-ric/pkg/store/utils"
 	"io"
 	"time"
 
-	"github.com/onosproject/onos-ran/api/sb"
+	"github.com/onosproject/onos-ric/api/sb"
 	log "k8s.io/klog"
 )
 

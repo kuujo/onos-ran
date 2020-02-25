@@ -17,7 +17,7 @@ package updates
 import (
 	"testing"
 
-	"github.com/onosproject/onos-ran/api/sb"
+	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -17,11 +17,11 @@ package c1
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-ran/api/nb"
-	"github.com/onosproject/onos-ran/api/sb"
+	"github.com/onosproject/onos-ric/api/nb"
+	"github.com/onosproject/onos-ric/api/sb"
 
-	"github.com/onosproject/onos-ran/pkg/manager"
-	"github.com/onosproject/onos-ran/pkg/service"
+	"github.com/onosproject/onos-ric/pkg/manager"
+	"github.com/onosproject/onos-ric/pkg/service"
 	"google.golang.org/grpc"
 )
 

@@ -26,7 +26,7 @@ const (
 	configName = "ran"
 
 	addressKey     = "service-address"
-	defaultAddress = "onos-ran:5150"
+	defaultAddress = "onos-ric:5150"
 
 	tlsCertPathKey = "tls.certPath"
 	tlsKeyPathKey  = "tls.keyPath"
@@ -48,7 +48,7 @@ var configOptions = []string{
 func addConfigFlags(cmd *cobra.Command) {
 	viper.SetDefault(addressKey, defaultAddress)
 
-	cmd.PersistentFlags().String(addressFlag, viper.GetString(addressKey), "the onos-ran service address")
+	cmd.PersistentFlags().String(addressFlag, viper.GetString(addressKey), "the onos-ric service address")
 	cmd.PersistentFlags().String(tlsCertPathFlag, viper.GetString(tlsCertPathKey), "the path to the TLS certificate")
 	cmd.PersistentFlags().String(tlsKeyPathFlag, viper.GetString(tlsKeyPathKey), "the path to the TLS key")
 	cmd.PersistentFlags().Bool(noTLSFlag, viper.GetBool(noTLSKey), "if present, do not use TLS")

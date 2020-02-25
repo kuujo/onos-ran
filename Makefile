@@ -11,24 +11,24 @@ ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
-	CGO_ENABLED=1 go build -o build/_output/onos-ran ./cmd/onos-ran
-	CGO_ENABLED=1 go build -o build/_output/apps/onos-ran-ho ./cmd/apps/onos-ran-ho
-	CGO_ENABLED=1 go build -o build/_output/apps/onos-ran-mlb ./cmd/apps/onos-ran-mlb
+	CGO_ENABLED=1 go build -o build/_output/onos-ric ./cmd/onos-ric
+	CGO_ENABLED=1 go build -o build/_output/apps/onos-ric-ho ./cmd/apps/onos-ric-ho
+	CGO_ENABLED=1 go build -o build/_output/apps/onos-ric-mlb ./cmd/apps/onos-ric-mlb
 
 build-debug: # @HELP build the Go binaries and run all validations (default)
 build-debug:
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-ran-debug ./cmd/onos-ran
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/apps/onos-ran-ho-debug ./cmd/apps/onos-ran-ho
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/apps/onos-ran-mlb-debug ./cmd/apps/onos-ran-mlb
+	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-ric-debug ./cmd/onos-ric
+	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/apps/onos-ric-ho-debug ./cmd/apps/onos-ric-ho
+	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/apps/onos-ric-mlb-debug ./cmd/apps/onos-ric-mlb
 
 build-plugins: # @HELP build plugin binaries
 build-plugins: $(MODELPLUGINS)
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters license_check
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ran/pkg/...
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ran/cmd/...
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ran/api/...
+	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ric/pkg/...
+	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ric/cmd/...
+	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ric/api/...
 
 coverage: # @HELP generate unit test coverage data
 coverage: build deps linters license_check
@@ -50,60 +50,59 @@ gofmt: # @HELP run the Go format validation
 	bash -c "diff -u <(echo -n) <(gofmt -d pkg/ cmd/ tests/)"
 
 protos: # @HELP compile the protobuf files (using protoc-go Docker)
-	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-ran \
-		-w /go/src/github.com/onosproject/onos-ran \
+	docker run -it -v `pwd`:/go/src/github.com/onosproject/onos-ric \
+		-w /go/src/github.com/onosproject/onos-ric \
 		--entrypoint build/bin/compile-protos.sh \
 		onosproject/protoc-go:stable
 
-onos-ran-base-docker: # @HELP build onos-ran base Docker image
+onos-ric-base-docker: # @HELP build onos-ric base Docker image
 	@go mod vendor
 	docker build . -f build/base/Dockerfile \
 		--build-arg ONOS_BUILD_VERSION=${ONOS_BUILD_VERSION} \
 		--build-arg ONOS_MAKE_TARGET=build \
-		-t onosproject/onos-ran-base:${ONOS_RAN_VERSION}
+		-t onosproject/onos-ric-base:${ONOS_RAN_VERSION}
 	@rm -rf vendor
 
-onos-ran-docker: onos-ran-base-docker # @HELP build onos-ran Docker image
-	docker build . -f build/onos-ran/Dockerfile \
+onos-ric-docker: onos-ric-base-docker # @HELP build onos-ric Docker image
+	docker build . -f build/onos-ric/Dockerfile \
 		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_VERSION} \
-		-t onosproject/onos-ran:${ONOS_RAN_VERSION}
+		-t onosproject/onos-ric:${ONOS_RAN_VERSION}
 
-onos-ran-ho-docker: onos-ran-base-docker # @HELP build onos-ran-ho Docker image
-	docker build . -f build/apps/onos-ran-ho/Dockerfile \
+onos-ric-ho-docker: onos-ric-base-docker # @HELP build onos-ric-ho Docker image
+	docker build . -f build/apps/onos-ric-ho/Dockerfile \
 		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_HO_VERSION} \
-		-t onosproject/onos-ran-ho:${ONOS_RAN_HO_VERSION}
+		-t onosproject/onos-ric-ho:${ONOS_RAN_HO_VERSION}
 
-onos-ran-mlb-docker: onos-ran-base-docker # @HELP build onos-ran-mlb Docker image
-	docker build . -f build/apps/onos-ran-mlb/Dockerfile \
+onos-ric-mlb-docker: onos-ric-base-docker # @HELP build onos-ric-mlb Docker image
+	docker build . -f build/apps/onos-ric-mlb/Dockerfile \
 		--build-arg ONOS_RAN_BASE_VERSION=${ONOS_RAN_MLB_VERSION} \
-		-t onosproject/onos-ran-mlb:${ONOS_RAN_MLB_VERSION}
+		-t onosproject/onos-ric-mlb:${ONOS_RAN_MLB_VERSION}
 
-onos-ran-tests-docker: # @HELP build onos-ran tests Docker image
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ran-tests/_output/bin/onos-ran-tests ./cmd/onos-ran-tests
-	docker build . -f build/onos-ran-tests/Dockerfile -t onosproject/onos-ran-tests:${ONOS_RAN_VERSION}
+onos-ric-tests-docker: # @HELP build onos-ric tests Docker image
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ric-tests/_output/bin/onos-ric-tests ./cmd/onos-ric-tests
+	docker build . -f build/onos-ric-tests/Dockerfile -t onosproject/onos-ric-tests:${ONOS_RAN_VERSION}
 
-onos-ran-benchmarks-docker: # @HELP build onos-ran benchmarks Docker image
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ran-benchmarks/_output/bin/onos-ran-benchmarks ./cmd/onos-ran-benchmarks
-	docker build . -f build/onos-ran-benchmarks/Dockerfile -t onosproject/onos-ran-benchmarks:${ONOS_RAN_VERSION}
+onos-ric-benchmarks-docker: # @HELP build onos-ric benchmarks Docker image
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ric-benchmarks/_output/bin/onos-ric-benchmarks ./cmd/onos-ric-benchmarks
+	docker build . -f build/onos-ric-benchmarks/Dockerfile -t onosproject/onos-ric-benchmarks:${ONOS_RAN_VERSION}
 
 images: # @HELP build all Docker images
-images: build onos-ran-docker onos-ran-ho-docker onos-ran-mlb-docker onos-ran-tests-docker onos-ran-benchmarks-docker
+images: build onos-ric-docker onos-ric-ho-docker onos-ric-mlb-docker onos-ric-tests-docker onos-ric-benchmarks-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
 	@if [ "`kind get clusters`" = '' ]; then echo "no kind cluster found" && exit 1; fi
-	kind load docker-image onosproject/onos-ran:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ran-ho:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ran-mlb:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ran-tests:${ONOS_RAN_VERSION}
-	kind load docker-image onosproject/onos-ran-benchmarks:${ONOS_RAN_VERSION}
-
+	kind load docker-image onosproject/onos-ric:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ric-ho:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ric-mlb:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ric-tests:${ONOS_RAN_VERSION}
+	kind load docker-image onosproject/onos-ric-benchmarks:${ONOS_RAN_VERSION}
 
 all: build images
 
 clean: # @HELP remove all the build artifacts
-	rm -rf ./build/_output ./vendor ./cmd/onos-ran/onos-ran ./cmd/onos/onos
-	go clean -testcache github.com/onosproject/onos-ran/...
+	rm -rf ./build/_output ./vendor ./cmd/onos-ric/onos-ric ./cmd/onos/onos
+	go clean -testcache github.com/onosproject/onos-ric/...
 
 help:
 	@grep -E '^.*: *# *@HELP' $(MAKEFILE_LIST) \

@@ -15,7 +15,7 @@
 package nb
 
 import (
-	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"testing"

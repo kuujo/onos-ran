@@ -22,7 +22,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
 	log "k8s.io/klog"
 )

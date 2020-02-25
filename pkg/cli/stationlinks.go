@@ -17,7 +17,7 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
 	"io"
 	log "k8s.io/klog"

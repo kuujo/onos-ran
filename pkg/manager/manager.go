@@ -16,10 +16,10 @@
 package manager
 
 import (
-	"github.com/onosproject/onos-ran/api/sb"
-	"github.com/onosproject/onos-ran/pkg/southbound"
-	"github.com/onosproject/onos-ran/pkg/store/telemetry"
-	"github.com/onosproject/onos-ran/pkg/store/updates"
+	"github.com/onosproject/onos-ric/api/sb"
+	"github.com/onosproject/onos-ric/pkg/southbound"
+	"github.com/onosproject/onos-ric/pkg/store/telemetry"
+	"github.com/onosproject/onos-ric/pkg/store/updates"
 
 	log "k8s.io/klog"
 )

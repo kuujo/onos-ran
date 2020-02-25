@@ -15,13 +15,13 @@
 package c1
 
 import (
-	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-test/pkg/benchmark"
 	"github.com/onosproject/onos-test/pkg/onit/env"
 	"github.com/onosproject/onos-test/pkg/onit/setup"
 )
 
-// BenchmarkSuite is an onos-ran gNMI benchmark suite
+// BenchmarkSuite is an onos-ric gNMI benchmark suite
 type BenchmarkSuite struct {
 	benchmark.Suite
 	simulator env.SimulatorEnv
@@ -40,7 +40,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) {
 func (s *BenchmarkSuite) SetupBenchmark(c *benchmark.Context) {
 	ranSim := env.Simulators().
 		New().
-		SetImage("onosproject/ran-simulator:latest").
+		SetImage("onosproject/ric-simulator:latest").
 		SetPort(5150).
 		SetName("ran-simulator").
 		SetAddDevice(false).

@@ -12,31 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nb
+package main
 
 import (
-	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/onosproject/onos-test/pkg/onit/setup"
+	"github.com/onosproject/onos-ric/test/nb"
 	"github.com/onosproject/onos-test/pkg/test"
 )
 
-// TestSuite is the primary onos-ric test suite
-type TestSuite struct {
-	test.Suite
-}
+func main() {
+	test.Register("nb", &nb.TestSuite{})
 
-// SetupTestSuite sets up the onos-ric northbound test suite
-func (s *TestSuite) SetupTestSuite() {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.RAN().SetReplicas(1)
-	setup.SetupOrDie()
-
-	env.Simulators().
-		New().
-		SetImage("onosproject/ran-simulator:latest").
-		SetPort(5150).
-		SetName("ran-simulator").
-		SetAddDevice(false).
-		AddOrDie()
+	test.Main()
 }

@@ -17,7 +17,7 @@ package nb
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-ran/api/nb"
+	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"testing"
@@ -27,7 +27,7 @@ import (
 func readStations(t *testing.T) map[string]*nb.StationInfo {
 	ids := make(map[string]*nb.StationInfo)
 
-	// Make a client to connect to the onos-ran northbound API
+	// Make a client to connect to the onos-ric northbound API
 	client := makeNBClientOrFail(t)
 
 	// Create a list stations request

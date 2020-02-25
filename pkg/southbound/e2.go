@@ -18,8 +18,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/onosproject/onos-ran/api/sb"
-	"github.com/onosproject/onos-ran/pkg/service"
+	"github.com/onosproject/onos-ric/api/sb"
+	"github.com/onosproject/onos-ric/pkg/service"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 )
