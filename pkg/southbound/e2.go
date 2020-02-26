@@ -158,6 +158,8 @@ func (m *Sessions) processControlUpdate(update *sb.ControlUpdate) {
 		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
 	case *sb.ControlUpdate_UEAdmissionRequest:
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
+	case *sb.ControlUpdate_UEReleaseInd:
+		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
 	default:
 		log.Fatalf("Control update has unexpected type %T", x)
 	}

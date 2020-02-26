@@ -91,6 +91,9 @@ type Store interface {
 	// Deletes a control update message from the store
 	Delete(*sb.ControlUpdate) error
 
+	// Deletes a control update message from store using key
+	DeleteWithKey(key string) error
+
 	// List all of the last up to date control update messages
 	List(ch chan<- sb.ControlUpdate) error
 
@@ -164,6 +167,16 @@ func (s *atomixStore) Delete(update *sb.ControlUpdate) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	_, err := s.updates.Remove(ctx, getKey(update).String())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *atomixStore) DeleteWithKey(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	_, err := s.updates.Remove(ctx, key)
 	if err != nil {
 		return err
 	}

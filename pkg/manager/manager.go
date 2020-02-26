@@ -78,13 +78,36 @@ func (m *Manager) recvUpdates() {
 }
 
 func (m *Manager) storeControlUpdate(update sb.ControlUpdate) {
-	_ = m.updatesStore.Put(&update)
 	log.Infof("Got messageType %d", update.MessageType)
 	switch x := update.S.(type) {
 	case *sb.ControlUpdate_CellConfigReport:
 		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
+		_ = m.updatesStore.Put(&update)
 	case *sb.ControlUpdate_UEAdmissionRequest:
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
+		_ = m.updatesStore.Put(&update)
+	case *sb.ControlUpdate_UEReleaseInd:
+		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		// Delete UE's UEAdmissionRequest record from store
+		key := updates.ID{
+			PlmnID:      x.UEReleaseInd.Ecgi.PlmnId,
+			Ecid:        x.UEReleaseInd.Ecgi.Ecid,
+			Crnti:       x.UEReleaseInd.Crnti,
+			MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
+		}.String()
+		if err := m.updatesStore.DeleteWithKey(key); err != nil {
+			log.Infof("Error deleting UEAdmissionRequest, key=%s", key)
+		}
+		// Delete UE's RadioMeasReportPerUE record from store
+		key = updates.ID{
+			PlmnID:      x.UEReleaseInd.Ecgi.PlmnId,
+			Ecid:        x.UEReleaseInd.Ecgi.Ecid,
+			Crnti:       x.UEReleaseInd.Crnti,
+			MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
+		}.String()
+		if err := m.telemetryStore.DeleteWithKey(key); err != nil {
+			log.Infof("Error deleting UEAdmissionRequest, key=%s", key)
+		}
 	default:
 		log.Fatalf("ControlReport has unexpected type %T", x)
 	}

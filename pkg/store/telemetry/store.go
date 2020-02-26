@@ -91,6 +91,9 @@ type Store interface {
 	// Removes a telemetry message from the store
 	Delete(*sb.TelemetryMessage) error
 
+	// Removes a telemetry message from the store using key
+	DeleteWithKey(key string) error
+
 	// List all of the last up to date telemetry messages
 	List(ch chan<- sb.TelemetryMessage) error
 
@@ -166,6 +169,16 @@ func (s *atomixStore) Delete(telemetry *sb.TelemetryMessage) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	_, err := s.telemetry.Remove(ctx, getKey(telemetry).String())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *atomixStore) DeleteWithKey(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	_, err := s.telemetry.Remove(ctx, key)
 	if err != nil {
 		return err
 	}
