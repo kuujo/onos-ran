@@ -17,13 +17,14 @@ package updates
 import (
 	"context"
 	"fmt"
-	"github.com/atomix/go-client/pkg/client/map"
+	"io"
+	"time"
+
+	_map "github.com/atomix/go-client/pkg/client/map"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-ric/pkg/store/utils"
-	"io"
-	"time"
 
 	"github.com/onosproject/onos-ric/api/sb"
 	log "k8s.io/klog"
@@ -87,6 +88,9 @@ type Store interface {
 	// Puts a control update message to the store
 	Put(*sb.ControlUpdate) error
 
+	// Deletes a control update message from the store
+	Delete(*sb.ControlUpdate) error
+
 	// List all of the last up to date control update messages
 	List(ch chan<- sb.ControlUpdate) error
 
@@ -149,6 +153,17 @@ func (s *atomixStore) Put(update *sb.ControlUpdate) error {
 		return err
 	}
 	_, err = s.updates.Put(ctx, getKey(update).String(), bytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *atomixStore) Delete(update *sb.ControlUpdate) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	_, err := s.updates.Remove(ctx, getKey(update).String())
 	if err != nil {
 		return err
 	}

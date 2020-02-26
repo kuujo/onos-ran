@@ -17,6 +17,7 @@ package c1
 import (
 	"context"
 	"fmt"
+
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
 
@@ -222,7 +223,10 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 			return nil, err
 		}
 
-		manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
+		err = manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
+		if err != nil {
+			return nil, err
+		}
 
 	} else {
 		return nil, fmt.Errorf("HandOverRequest is nil")

@@ -161,4 +161,13 @@ func TestStore(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fail()
 	}
+
+	err = testStore.Delete(telemetry1)
+	assert.Nil(t, err)
+
+	err = testStore.Delete(telemetry2)
+	assert.Nil(t, err)
+
+	err = testStore.Delete(telemetry3)
+	assert.Nil(t, err)
 }

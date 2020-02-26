@@ -181,15 +181,22 @@ func (m *Manager) storeTelemetry(update sb.TelemetryMessage) {
 }
 
 // DeleteTelemetry deletes telemetry when a handover happens
-func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) {
+func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) error {
 	id := telemetry.ID{
 		PlmnID:      plmnid,
 		Ecid:        ecid,
 		Crnti:       crnti,
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
 	}
-	err := m.telemetryStore.Delete(id)
+	telemetryMsg, err := m.telemetryStore.Get(id)
 	if err != nil {
-		log.Error(err)
+		return err
 	}
+	err = m.telemetryStore.Delete(telemetryMsg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }

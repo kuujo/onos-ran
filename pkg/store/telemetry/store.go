@@ -17,13 +17,14 @@ package telemetry
 import (
 	"context"
 	"fmt"
-	"github.com/atomix/go-client/pkg/client/map"
+	"io"
+	"time"
+
+	_map "github.com/atomix/go-client/pkg/client/map"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-ric/pkg/store/utils"
-	"io"
-	"time"
 
 	"github.com/onosproject/onos-ric/api/sb"
 	log "k8s.io/klog"
@@ -87,6 +88,9 @@ type Store interface {
 	// Puts a telemetry message to the store
 	Put(*sb.TelemetryMessage) error
 
+	// Removes a telemetry message from the store
+	Delete(*sb.TelemetryMessage) error
+
 	// List all of the last up to date telemetry messages
 	List(ch chan<- sb.TelemetryMessage) error
 
@@ -94,7 +98,7 @@ type Store interface {
 	Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error
 
 	// Delete a telemetry message based on a given ID
-	Delete(ID) error
+
 }
 
 // WatchOption is a telemetry store watch option
@@ -158,6 +162,16 @@ func (s *atomixStore) Put(telemetry *sb.TelemetryMessage) error {
 	return nil
 }
 
+func (s *atomixStore) Delete(telemetry *sb.TelemetryMessage) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	_, err := s.telemetry.Remove(ctx, getKey(telemetry).String())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *atomixStore) List(ch chan<- sb.TelemetryMessage) error {
 	entryCh := make(chan *_map.Entry)
 	if err := s.telemetry.Entries(context.Background(), entryCh); err != nil {
@@ -201,13 +215,6 @@ func (s *atomixStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) 
 		}
 	}()
 	return nil
-}
-
-func (s *atomixStore) Delete(id ID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	_, err := s.telemetry.Remove(ctx, id.String())
-	return err
 }
 
 func (s *atomixStore) Close() error {

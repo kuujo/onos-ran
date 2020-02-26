@@ -141,4 +141,13 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
 
+	err = testStore.Delete(controlUpdate1)
+	assert.Nil(t, err)
+
+	err = testStore.Delete(controlUpdate2)
+	assert.Nil(t, err)
+
+	err = testStore.Delete(controlUpdate3)
+	assert.Nil(t, err)
+
 }
