@@ -62,7 +62,7 @@ func (s *TestSuite) TestNBStationLinksAPI(t *testing.T) {
 	)
 
 	// Wait for simulator to respond
-	assert.NoError(t, waitForSimulator())
+	waitForSimulatorOrFail(t)
 
 	// Save the station infos into a map indexed by the station's ECID
 	links := readStationLinks(t)

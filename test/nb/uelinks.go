@@ -27,7 +27,7 @@ func (s *TestSuite) TestNBUELinksAPI(t *testing.T) {
 	const expectedPLMNID = "001001"
 
 	// Wait for simulator to respond
-	assert.NoError(t, waitForSimulator())
+	waitForSimulatorOrFail(t)
 
 	var ids map[string]*nb.UELinkInfo
 

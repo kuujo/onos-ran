@@ -57,7 +57,7 @@ func linksHaveHighPowerCQI(links map[string]*nb.UELinkInfo) bool {
 func (s *TestSuite) TestNBPowerAPI(t *testing.T) {
 
 	// Wait for simulator to respond
-	assert.NoError(t, waitForSimulator())
+	waitForSimulatorOrFail(t)
 
 	//  turn the power down to 0 for all stations
 	setStationsPower(t, nb.StationPowerOffset_PA_DB_MINUS6, 2)
