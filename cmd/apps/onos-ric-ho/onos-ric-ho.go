@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 
+	hoappexporter "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/exporter"
 	hoappmanager "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/manager"
 	log "k8s.io/klog"
 )
@@ -51,6 +52,10 @@ func main() {
 	log.Info("Starting HO Application")
 
 	appMgr, err := hoappmanager.NewManager()
+
+	log.Info("Starting HO Exposer")
+	go hoappexporter.RunHOExposer(appMgr.SB)
+
 	if err != nil {
 		log.Fatal("Unable to load HO Application: ", err)
 	} else {

@@ -22,17 +22,20 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-ric/api/nb"
-	"github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/handover"
-	"github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/service"
+	hoapphandover "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/handover"
+	hoappservice "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/service"
 	"google.golang.org/grpc"
 	log "k8s.io/klog"
 )
+
+var ueLinks map[ueLinkID]*nb.UELinkInfo
 
 // HOSessions is responsible for mapping connections to and interactions with the Northbound of ONOS RAN subsystem.
 type HOSessions struct {
 	ONOSRICAddr *string
 	client      nb.C1InterfaceServiceClient
 	prevRNIB    []*nb.UELinkInfo
+	NumHOEvents uint64
 }
 
 // NewSession creates a new southbound session of HO application.
@@ -103,6 +106,14 @@ func (m *HOSessions) runHandoverProcedure() {
 			m.sendHandoverTrigger(hoReqs)
 			// Update RNIB in HO App.
 			m.prevRNIB = ueLinkList
+			for _, r := range hoReqs {
+				id := ueLinkID{
+					PlmnID: r.GetSrcStation().GetPlmnid(),
+					Ecid:   r.GetSrcStation().GetEcid(),
+					Crnti:  r.GetCrnti(),
+				}
+				delete(ueLinks, id)
+			}
 		}
 	}
 }
@@ -154,8 +165,7 @@ func (m *HOSessions) containUeLinkLists(pList []*nb.UELinkInfo, cList []*nb.UELi
 
 // getListUELinks gets the list of link between each UE and serving/neighbor stations, and call sendHandoverTrigger if HO is necessary.
 func (m *HOSessions) watchUELinks(ch chan<- []*nb.UELinkInfo) error {
-	ueLinks := make(map[ueLinkID]*nb.UELinkInfo)
-
+	ueLinks = make(map[ueLinkID]*nb.UELinkInfo)
 	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{Subscribe: true})
 	if err != nil {
 		return nil
@@ -203,8 +213,14 @@ func (m *HOSessions) sendHandoverTrigger(hoReqs []*nb.HandOverRequest) {
 			hoReqs[i].GetSrcStation().GetPlmnid(), hoReqs[i].GetSrcStation().GetEcid(),
 			hoReqs[i].GetDstStation().GetPlmnid(), hoReqs[i].GetDstStation().GetEcid())
 		_, err := m.client.TriggerHandOver(context.Background(), hoReqs[i])
+		m.NumHOEvents++
 		if err != nil {
 			log.Error(err)
 		}
 	}
+}
+
+// GetUELinkInfo gets a list of UELinkInfo
+func (m *HOSessions) GetUELinkInfo() []*nb.UELinkInfo {
+	return m.prevRNIB
 }

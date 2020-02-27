@@ -12,6 +12,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onosproject/onos-test v0.0.0-20200225182923-ec7134d073e6
 	github.com/onosproject/onos-topo v0.0.0-20200218171206-55029b503689
+	github.com/prometheus/client_golang v1.4.1
 	github.com/spf13/cobra v0.0.6
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.5.1
