@@ -159,7 +159,6 @@ func (s *atomixStore) Put(update *sb.ControlUpdate) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -244,7 +243,7 @@ func getKey(update *sb.ControlUpdate) ID {
 		ecgi = *update.GetRRMConfigStatus().GetEcgi()
 	case sb.MessageType_UE_ADMISSION_REQUEST:
 		ecgi = *update.GetUEAdmissionRequest().GetEcgi()
-		crnti = update.GetBearerAdmissionRequest().GetCrnti()
+		crnti = update.GetUEAdmissionRequest().GetCrnti()
 	case sb.MessageType_UE_ADMISSION_STATUS:
 		ecgi = *update.GetUEAdmissionStatus().GetEcgi()
 		crnti = update.GetUEAdmissionStatus().GetCrnti()

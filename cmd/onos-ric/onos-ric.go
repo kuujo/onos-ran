@@ -30,6 +30,8 @@ package main
 
 import (
 	"flag"
+
+	"github.com/onosproject/onos-ric/pkg/exporter"
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"github.com/onosproject/onos-ric/pkg/northbound/c1"
 	"github.com/onosproject/onos-ric/pkg/service"
@@ -68,6 +70,10 @@ func main() {
 	log.Info("Starting onos-ric")
 
 	mgr, err := manager.NewManager()
+
+	log.Info("Starting ONOS-RIC Exposer")
+	go exporter.RunRICExposer(mgr)
+
 	if err != nil {
 		log.Fatal("Unable to load onos-ric ", err)
 	} else {

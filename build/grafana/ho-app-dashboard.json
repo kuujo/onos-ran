@@ -84,7 +84,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "num_ho_events",
+          "expr": "hoapp_num_ho_events",
           "instant": true,
           "refId": "A"
         }
@@ -145,7 +145,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "num_ho_events",
+          "expr": "hoapp_num_ho_events",
           "refId": "A"
         }
       ],
@@ -232,7 +232,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "num_ue_link",
+          "expr": "hoapp_num_ue_link",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -344,7 +344,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "avg(ho_event_info)",
+          "expr": "avg(hoapp_ho_event_info)",
           "refId": "A"
         }
       ],
@@ -428,7 +428,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "num_ue_link",
+          "expr": "hoapp_num_ue_link",
           "instant": true,
           "refId": "A"
         }
@@ -495,7 +495,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "ho_event_info",
+          "expr": "hoapp_ho_event_info",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -588,7 +588,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(ho_event_info)",
+          "expr": "avg(hoapp_ho_event_info)",
           "format": "time_series",
           "refId": "A"
         }
@@ -842,7 +842,7 @@
       ],
       "targets": [
         {
-          "expr": "ho_event_info",
+          "expr": "hoapp_ho_event_info",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -988,7 +988,7 @@
       ],
       "targets": [
         {
-          "expr": "ue_link_info",
+          "expr": "hoapp_ue_link_info",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1003,7 +1003,7 @@
       "type": "table"
     }
   ],
-  "refresh": "",
+  "refresh": "1s",
   "schemaVersion": 20,
   "style": "dark",
   "tags": [
@@ -1024,5 +1024,5 @@
   "timezone": "",
   "title": "ONOS-RIC HO App",
   "uid": "4SjgDZ_Wk",
-  "version": 12
+  "version": 13
 }
