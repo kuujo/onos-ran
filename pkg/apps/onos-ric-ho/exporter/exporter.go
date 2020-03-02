@@ -42,12 +42,16 @@ func exposeHOInfo(sb *hoappsouthbound.HOSessions) {
 		for {
 			listRNIB := exposeUELinkInfo(sb)
 			numListRNIB := exposeNumUELinkInfo(sb)
+			hoEventList := exposeHOEventListInfo(sb)
 			numHOEventsCounter := exposeNumHOEvents(sb)
 
 			time.Sleep(1000 * time.Millisecond)
 			prometheus.Unregister(numListRNIB)
 			for i := 0; i < len(listRNIB); i++ {
 				prometheus.Unregister(listRNIB[i])
+			}
+			for i := 0; i < len(hoEventList); i++ {
+				prometheus.Unregister(hoEventList[i])
 			}
 			prometheus.Unregister(numHOEventsCounter)
 		}
@@ -76,10 +80,7 @@ func exposeUELinkInfo(sb *hoappsouthbound.HOSessions) []prometheus.Counter {
 				"n3_cqi":      fmt.Sprintf("%d", e.GetChannelQualities()[2].GetCqiHist()),
 			},
 		})
-		err := prometheus.Register(tmp)
-		if err != nil {
-			log.Error(err)
-		}
+
 		listRNIB = append(listRNIB, tmp)
 	}
 	return listRNIB
@@ -91,10 +92,7 @@ func exposeNumUELinkInfo(sb *hoappsouthbound.HOSessions) prometheus.Counter {
 		Name: "num_ue_link",
 	})
 	numListRNIB.Add(float64(len(sb.GetUELinkInfo())))
-	err := prometheus.Register(numListRNIB)
-	if err != nil {
-		log.Error(err)
-	}
+
 	return numListRNIB
 }
 
@@ -104,9 +102,26 @@ func exposeNumHOEvents(sb *hoappsouthbound.HOSessions) prometheus.Counter {
 		Name: "num_ho_events",
 	})
 	numHOEventsCounter.Add(float64(sb.NumHOEvents))
-	err := prometheus.Register(numHOEventsCounter)
-	if err != nil {
-		log.Error(err)
-	}
+
 	return numHOEventsCounter
+}
+
+func exposeHOEventListInfo(sb *hoappsouthbound.HOSessions) []prometheus.Counter {
+	var listHOEvents []prometheus.Counter
+	for _, e := range sb.HOEventStore {
+		tmp := promauto.NewCounter(prometheus.CounterOpts{
+			Name: "ho_event_info",
+			ConstLabels: prometheus.Labels{
+				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d", e.TimeStamp.Year(), e.TimeStamp.Month(), e.TimeStamp.Day(), e.TimeStamp.Hour(), e.TimeStamp.Minute(), e.TimeStamp.Second()),
+				"crnti":     e.CRNTI,
+				"srcplmnid": e.SrcPlmnID,
+				"srcecid":   e.SrcEcid,
+				"dstplmnid": e.DstPlmnID,
+				"dstecid":   e.DstEcid,
+			},
+		})
+		tmp.Add(float64(e.ElapsedTime))
+		listHOEvents = append(listHOEvents, tmp)
+	}
+	return listHOEvents
 }

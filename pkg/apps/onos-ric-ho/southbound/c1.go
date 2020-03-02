@@ -32,10 +32,11 @@ var ueLinks map[ueLinkID]*nb.UELinkInfo
 
 // HOSessions is responsible for mapping connections to and interactions with the Northbound of ONOS RAN subsystem.
 type HOSessions struct {
-	ONOSRICAddr *string
-	client      nb.C1InterfaceServiceClient
-	prevRNIB    []*nb.UELinkInfo
-	NumHOEvents uint64
+	ONOSRICAddr  *string
+	client       nb.C1InterfaceServiceClient
+	prevRNIB     []*nb.UELinkInfo
+	NumHOEvents  uint64
+	HOEventStore []*hoapphandover.HOEvent
 }
 
 // NewSession creates a new southbound session of HO application.
@@ -98,6 +99,10 @@ func (m *HOSessions) runHandoverProcedure() {
 		// if R-NIB (UELink) is not old one, start HO procedure
 		// otherwise, skip this timeslot, because HODecisionMaker was already run before
 		if m.prevRNIB == nil || !m.isEqualUeLinkLists(m.prevRNIB, ueLinkList) {
+
+			// check performance - get startTime
+			t := time.Now()
+
 			// compare previous and current UELinkList and pick new or different UELinks
 			newUeLinks := m.getNewUeLinks(m.prevRNIB, ueLinkList)
 			// HO procedure 2. get requirement messages
@@ -113,6 +118,18 @@ func (m *HOSessions) runHandoverProcedure() {
 					Crnti:  r.GetCrnti(),
 				}
 				delete(ueLinks, id)
+
+				tmpHOEvent := &hoapphandover.HOEvent{
+					TimeStamp:   t,
+					CRNTI:       r.GetCrnti(),
+					SrcPlmnID:   r.GetSrcStation().GetPlmnid(),
+					SrcEcid:     r.GetSrcStation().GetEcid(),
+					DstPlmnID:   r.GetDstStation().GetPlmnid(),
+					DstEcid:     r.GetDstStation().GetEcid(),
+					ElapsedTime: time.Since(t).Microseconds(),
+				}
+
+				m.HOEventStore = append(m.HOEventStore, tmpHOEvent)
 			}
 		}
 	}

@@ -15,9 +15,22 @@
 package hoapphandover
 
 import (
+	"time"
+
 	"github.com/onosproject/onos-ric/api/nb"
 	log "k8s.io/klog"
 )
+
+// HOEvent represents a single HO event
+type HOEvent struct {
+	TimeStamp   time.Time
+	CRNTI       string
+	SrcPlmnID   string
+	SrcEcid     string
+	DstPlmnID   string
+	DstEcid     string
+	ElapsedTime int64
+}
 
 // HODecisionMaker decide whether the UE in UELinkInfo should do handover or not
 func HODecisionMaker(ueinfo []*nb.UELinkInfo) []*nb.HandOverRequest {
