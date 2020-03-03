@@ -17,9 +17,10 @@ package main
 import (
 	"github.com/onosproject/onos-ric/benchmark/c1"
 	"github.com/onosproject/onos-test/pkg/benchmark"
+	"github.com/onosproject/onos-test/pkg/registry"
 )
 
 func main() {
-	benchmark.Register("c1", &c1.BenchmarkSuite{})
+	registry.RegisterBenchmarkSuite("c1", &c1.BenchmarkSuite{})
 	benchmark.Main()
 }

@@ -40,17 +40,22 @@ func setStationsPower(t *testing.T, offset nb.StationPowerOffset, attempts int) 
 	time.Sleep(15 * time.Second)
 }
 
-func linksHaveHighPowerCQI(links map[string]*nb.UELinkInfo) bool {
-	foundOne := false
-	for _, afterLink := range links {
-		for _, cqi := range afterLink.ChannelQualities {
-			if cqi.CqiHist > 10 {
-				foundOne = true
-				break
+func linksHaveHigherPowerCQI(baseLinks map[string]*nb.UELinkInfo, currentLinks map[string]*nb.UELinkInfo) bool {
+	found := 0
+	for key, baseLink := range baseLinks {
+		currentLink := currentLinks[key]
+		for _, baseCQI := range baseLink.ChannelQualities {
+			for _, currentCQI := range currentLink.ChannelQualities {
+				if baseCQI.TargetEcgi.Ecid == currentCQI.TargetEcgi.Ecid {
+					if currentCQI.CqiHist > baseCQI.CqiHist {
+						found++
+						break
+					}
+				}
 			}
 		}
 	}
-	return foundOne
+	return found == 0
 }
 
 // TestNBPowerAPI tests the NB stations API
@@ -59,22 +64,27 @@ func (s *TestSuite) TestNBPowerAPI(t *testing.T) {
 	// Wait for simulator to respond
 	waitForSimulatorOrFail(t)
 
+	// get the uelinks before any changes
+	uelinksBeforePowerDown := readLinks(t)
+
 	//  turn the power down to 0 for all stations
 	setStationsPower(t, nb.StationPowerOffset_PA_DB_MINUS6, 2)
 	setStationsPower(t, nb.StationPowerOffset_PA_DB_1, 2)
 
-	// get the uelinks
+	// get the uelinks after the power down change
 	uelinksAfterPowerDown := readLinks(t)
 
-	// Links should all have 0 CQI
-	assert.True(t, !linksHaveHighPowerCQI(uelinksAfterPowerDown), "Found a high CQI after power down setting")
+	//  make sure that power has been reduced
+	assert.True(t, linksHaveHigherPowerCQI(uelinksBeforePowerDown, uelinksAfterPowerDown),
+		"After power down, one or more links have higher CQI")
 
 	// turn the power back up for all stations
 	setStationsPower(t, nb.StationPowerOffset_PA_DB_3, 5)
 
-	// get the uelinks
+	// get the uelinks after the power up change
 	uelinksAfterPowerUp := readLinks(t)
 
-	// All links should have a high CGI
-	assert.True(t, linksHaveHighPowerCQI(uelinksAfterPowerUp), "Found a low CQI after power up setting")
+	// make sure that power has been increased
+	assert.True(t, !linksHaveHigherPowerCQI(uelinksAfterPowerDown, uelinksAfterPowerUp),
+		"After power up, one or more links have lower CQI")
 }
