@@ -16,9 +16,11 @@
 package hoappmanager
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	hoappsouthbound "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/southbound"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("ho", "manager")
 
 var appMgr AppManager
 

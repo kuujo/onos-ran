@@ -21,12 +21,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	"github.com/onosproject/onos-ric/api/nb"
 	mlbapploadbalance "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/mlb"
 	mlbappservice "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/service"
 	"google.golang.org/grpc"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("mlb", "southbound")
 
 // MLBSessions is responsible for mapping connnections to and interactions with the northbound of ONOS-RAN subsystem.
 type MLBSessions struct {

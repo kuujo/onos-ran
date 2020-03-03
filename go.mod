@@ -10,6 +10,7 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d
 	github.com/onosproject/onos-test v0.0.0-20200225182923-ec7134d073e6
 	github.com/onosproject/onos-topo v0.0.0-20200218171206-55029b503689
 	github.com/prometheus/client_golang v1.4.1
@@ -18,5 +19,4 @@ require (
 	github.com/stretchr/testify v1.5.1
 	google.golang.org/grpc v1.27.1
 	gotest.tools v2.2.0+incompatible
-	k8s.io/klog v1.0.0
 )

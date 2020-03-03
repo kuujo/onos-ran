@@ -18,11 +18,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/service"
 	"google.golang.org/grpc"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("southbound")
 
 // Sessions is responsible for managing connections to and interactions with the RAN southbound.
 type Sessions struct {

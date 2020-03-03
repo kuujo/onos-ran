@@ -17,12 +17,12 @@ package cli
 import (
 	"context"
 	"fmt"
-	"github.com/onosproject/onos-ric/api/nb"
-	"github.com/spf13/cobra"
 	"io"
-	log "k8s.io/klog"
 	"text/tabwriter"
 	"time"
+
+	"github.com/onosproject/onos-ric/api/nb"
+	"github.com/spf13/cobra"
 )
 
 func getGetStationLinksCommand() *cobra.Command {

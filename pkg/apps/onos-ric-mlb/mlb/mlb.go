@@ -15,9 +15,11 @@
 package mlbapploadbalance
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/nb"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("mlb")
 
 // StaUeJointLink is the joint list of StationInfo and UELinkInfo.
 type StaUeJointLink struct {

@@ -16,11 +16,11 @@ package main
 
 import (
 	"github.com/onosproject/onos-ric/test/nb"
+	"github.com/onosproject/onos-test/pkg/registry"
 	"github.com/onosproject/onos-test/pkg/test"
 )
 
 func main() {
-	test.Register("nb", &nb.TestSuite{})
-
+	registry.RegisterTestSuite("nb", &nb.TestSuite{})
 	test.Main()
 }

@@ -17,9 +17,12 @@ package hoapphandover
 import (
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	"github.com/onosproject/onos-ric/api/nb"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("ho", "handover")
 
 // HOEvent represents a single HO event
 type HOEvent struct {

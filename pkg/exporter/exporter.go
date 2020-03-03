@@ -20,13 +20,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("exporter")
 
 // RunRICExposer runs Prometheus exposer
 func RunRICExposer(mgr *manager.Manager) {

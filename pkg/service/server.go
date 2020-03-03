@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"net"
 
-	log "k8s.io/klog"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	"google.golang.org/grpc"
 )
+
+var log = logging.GetLogger("service")
 
 // Service provides service-specific registration for grpc services.
 type Service interface {

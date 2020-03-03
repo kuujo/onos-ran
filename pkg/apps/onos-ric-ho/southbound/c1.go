@@ -21,12 +21,15 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	"github.com/onosproject/onos-ric/api/nb"
 	hoapphandover "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/handover"
 	hoappservice "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/service"
 	"google.golang.org/grpc"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("ho", "southbound")
 
 var ueLinks map[ueLinkID]*nb.UELinkInfo
 

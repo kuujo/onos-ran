@@ -19,12 +19,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	hoappsouthbound "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/southbound"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("ho", "exporter")
 
 // RunHOExposer runs Prometheus exposer
 func RunHOExposer(sb *hoappsouthbound.HOSessions) {

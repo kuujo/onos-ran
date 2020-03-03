@@ -20,6 +20,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	_map "github.com/atomix/go-client/pkg/client/map"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
@@ -27,8 +29,9 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/utils"
 
 	"github.com/onosproject/onos-ric/api/sb"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("store", "telemetry")
 
 const timeout = 15 * time.Second
 const primitiveName = "telemetry"

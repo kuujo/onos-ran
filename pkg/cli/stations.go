@@ -23,7 +23,6 @@ import (
 
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
-	log "k8s.io/klog"
 )
 
 const _subscribe = "subscribe"

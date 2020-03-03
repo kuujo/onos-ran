@@ -15,6 +15,7 @@
 package cli
 
 import (
+	loglib "github.com/onosproject/onos-lib-go/pkg/logging/cli"
 	"github.com/spf13/cobra"
 	viperapi "github.com/spf13/viper"
 )
@@ -34,8 +35,8 @@ func Init() {
 // GetCommand returns the root command for the RAN service
 func GetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "ran {get|set|watch|handover} [args]",
-		Short: "ONOS Ran subsystem commands",
+		Use:   "ric {get|set|watch|handover|log} [args]",
+		Short: "ONOS ric subsystem commands",
 	}
 
 	addConfigFlags(cmd)
@@ -44,5 +45,6 @@ func GetCommand() *cobra.Command {
 	cmd.AddCommand(getWatchCommand())
 	cmd.AddCommand(getSetCommand())
 	cmd.AddCommand(getHandOverCommand())
+	cmd.AddCommand(loglib.GetCommand())
 	return cmd
 }

@@ -16,9 +16,10 @@ package cli
 
 import (
 	"bytes"
-	"gotest.tools/assert"
 	"strings"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 // Test_RootUsage tests the creation of the root command and checks that the ONOS usage messages are included
@@ -29,11 +30,11 @@ func Test_RootUsage(t *testing.T) {
 		description string
 		expected    string
 	}{
-		{description: "Get command", expected: `Get RAN resources`},
-		{description: "Set command", expected: `Set RAN resource parameters`},
-		{description: "Watch command", expected: `Watch for changes to a RAN resource type`},
+		{description: "Get command", expected: `Get RIC resources`},
+		{description: "Set command", expected: `Set RIC resource parameters`},
+		{description: "Watch command", expected: `Watch for changes to a RIC resource type`},
 		{description: "Usage header", expected: `Usage:`},
-		{description: "Usage config command", expected: `ran [command]`},
+		{description: "Usage config command", expected: `ric [command]`},
 	}
 
 	cmd := GetCommand()
@@ -61,10 +62,11 @@ func Test_SubCommands(t *testing.T) {
 		expectedShort string
 	}{
 		{commandName: "config", expectedShort: "Manage the CLI configuration"},
-		{commandName: "get", expectedShort: "Get RAN resources"},
-		{commandName: "watch", expectedShort: "Watch for changes to a RAN resource type"},
-		{commandName: "set", expectedShort: "Set RAN resource parameters"},
+		{commandName: "get", expectedShort: "Get RIC resources"},
+		{commandName: "watch", expectedShort: "Watch for changes to a RIC resource type"},
+		{commandName: "set", expectedShort: "Set RIC resource parameters"},
 		{commandName: "handover", expectedShort: "Trigger UE handover between two base stations"},
+		{commandName: "log", expectedShort: "logging api commands"},
 	}
 
 	var subCommandsFound = make(map[string]bool)

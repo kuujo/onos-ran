@@ -24,7 +24,6 @@ import (
 
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
-	log "k8s.io/klog"
 )
 
 // QualSet - used for the Go template/text output

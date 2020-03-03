@@ -17,9 +17,12 @@ package main
 import (
 	"flag"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	mlbappmanager "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/manager"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("main")
 
 // The main entry point.
 func main() {
@@ -37,18 +40,6 @@ func main() {
 		log.Error("Cant' avoid double Error logging ", err)
 	}
 	flag.Parse()
-
-	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-	log.InitFlags(klogFlags)
-
-	// Sync the glog and klog flags.
-	flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
-		f2 := klogFlags.Lookup(f1.Name)
-		if f2 != nil {
-			value := f1.Value.String()
-			_ = f2.Value.Set(value)
-		}
-	})
 
 	log.Info("Starting MLB Application")
 

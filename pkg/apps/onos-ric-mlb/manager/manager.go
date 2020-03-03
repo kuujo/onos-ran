@@ -16,9 +16,11 @@
 package mlbappmanager
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	mlbappsouthbound "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/southbound"
-	log "k8s.io/klog"
 )
+
+var log = logging.GetLogger("mlb", "manager")
 
 var appMgr AppManager
 

@@ -16,14 +16,14 @@
 package manager
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/southbound"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
 	"github.com/onosproject/onos-ric/pkg/store/updates"
-
-	log "k8s.io/klog"
 )
 
+var log = logging.GetLogger("manager")
 var mgr Manager
 
 // NewManager initializes the RAN subsystem.
