@@ -110,6 +110,7 @@ func (m *HOSessions) runHandoverProcedure() {
 			newUeLinks := m.getNewUeLinks(m.prevRNIB, ueLinkList)
 			// HO procedure 2. get requirement messages
 			hoReqs := hoapphandover.HODecisionMaker(newUeLinks)
+			elapsedTime := time.Since(t).Microseconds()
 			// HO procedure 3. send trigger message
 			m.sendHandoverTrigger(hoReqs)
 			// Update RNIB in HO App.
@@ -129,7 +130,7 @@ func (m *HOSessions) runHandoverProcedure() {
 					SrcEcid:     r.GetSrcStation().GetEcid(),
 					DstPlmnID:   r.GetDstStation().GetPlmnid(),
 					DstEcid:     r.GetDstStation().GetEcid(),
-					ElapsedTime: time.Since(t).Microseconds(),
+					ElapsedTime: elapsedTime,
 				}
 
 				m.HOEventStore = append(m.HOEventStore, tmpHOEvent)

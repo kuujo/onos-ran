@@ -1,0 +1,46 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 10,
+  "links": [],
+  "panels": [],
+  "schemaVersion": 20,
+  "style": "dark",
+  "tags": [
+    "ONOS-RIC"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "nowDelay": "5s",
+    "refresh_intervals": [
+      "1s",
+      "5s",
+      "10s",
+      "15s"
+    ]
+  },
+  "timezone": "",
+  "title": "ONOS-RIC MLB App Dashboard",
+  "uid": "mnIxAblZk",
+  "version": 4
+}

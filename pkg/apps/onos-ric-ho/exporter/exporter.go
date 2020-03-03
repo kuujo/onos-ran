@@ -29,7 +29,7 @@ import (
 
 var log = logging.GetLogger("ho", "exporter")
 
-// RunHOExposer runs Prometheus exposer
+// RunHOExposer runs Prometheus exporter
 func RunHOExposer(sb *hoappsouthbound.HOSessions) {
 	exposeHOInfo(sb)
 	http.Handle("/metrics", promhttp.Handler())
@@ -68,7 +68,6 @@ func exposeUELinkInfo(sb *hoappsouthbound.HOSessions) []prometheus.Counter {
 		tmp := promauto.NewCounter(prometheus.CounterOpts{
 			Name: "hoapp_ue_link_info",
 			ConstLabels: prometheus.Labels{
-				"time":        time.Now().String(),
 				"crnti":       e.GetCrnti(),
 				"serv_plmnid": e.GetEcgi().GetPlmnid(),
 				"serv_ecid":   e.GetEcgi().GetEcid(),

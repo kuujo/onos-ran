@@ -33,11 +33,13 @@ var log = logging.GetLogger("mlb", "southbound")
 
 // MLBSessions is responsible for mapping connnections to and interactions with the northbound of ONOS-RAN subsystem.
 type MLBSessions struct {
-	ONOSRICAddr *string
-	LoadThresh  *float64
-	Period      *int64
-	client      nb.C1InterfaceServiceClient
-	prevRNIB    []nb.UELinkInfo
+	ONOSRICAddr   *string
+	LoadThresh    *float64
+	Period        *int64
+	client        nb.C1InterfaceServiceClient
+	prevRNIB      []*nb.UELinkInfo
+	RNIBCellInfo  []*nb.StationInfo
+	MLBEventStore []*mlbapploadbalance.StaUeJointLink
 }
 
 // NewSession creates a new southbound session of MLB application.
@@ -87,49 +89,60 @@ func (m *MLBSessions) manageConnection(conn *grpc.ClientConn) {
 
 func (m *MLBSessions) runMLBProcedure() {
 
+	t := time.Now()
+
 	// get all R-NIB information
 	var wg sync.WaitGroup
 
-	var stationInfoList []nb.StationInfo
 	var stationLinkInfoList []nb.StationLinkInfo
-	var ueLinkInfoList []nb.UELinkInfo
+	var ueLinkInfoList []*nb.UELinkInfo
+	m.RNIBCellInfo = nil
 
 	// Fork three go-routines.
 	wg.Add(3)
-	go m.getListStations(&stationInfoList, &wg)
+	go m.getListStations(&m.RNIBCellInfo, &wg)
 	go m.getListStationLinks(&stationLinkInfoList, &wg)
-	go m.getListUELinks(&ueLinkInfoList, &wg)
+	go func() {
+		ueLinkInfoList = m.getListUELinks(ueLinkInfoList)
+		defer wg.Done()
+	}()
 
 	// Wait until all go-routines join.
 	wg.Wait()
 
 	// if R-NIB (UELink) is not old one, start MLB procedure
 	// otherwise, skip this timeslot, because MLBDecisionMaker was already run before
-	if m.prevRNIB == nil || !m.isEqualUeLinkLists(&m.prevRNIB, &ueLinkInfoList) {
-		mlbReqs := mlbapploadbalance.MLBDecisionMaker(stationInfoList, stationLinkInfoList, ueLinkInfoList, m.LoadThresh)
+	if m.prevRNIB == nil || !m.isEqualUeLinkLists(m.prevRNIB, ueLinkInfoList) {
+		mlbReqs, mlbEvents := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellInfo, stationLinkInfoList, ueLinkInfoList, m.LoadThresh)
+		elapsedTime := time.Since(t).Microseconds()
 		for _, req := range *mlbReqs {
 			m.sendRadioPowerOffset(req)
 		}
 		m.prevRNIB = ueLinkInfoList
+		for i := 0; i < len(mlbEvents); i++ {
+			mlbEvents[i].ElapsedTime = elapsedTime
+			mlbEvents[i].TimeStamp = t
+			m.MLBEventStore = append(m.MLBEventStore, &mlbEvents[i])
+		}
 	}
 }
 
 // isEqualUeLinkList checks whether the recently received UELinkInfoList and the previously received UELinkInfoList are equivalent.
-func (m *MLBSessions) isEqualUeLinkLists(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInfo) bool {
-	if len(*pList) == len(*cList) && m.containUeLinkLists(pList, cList) {
+func (m *MLBSessions) isEqualUeLinkLists(pList []*nb.UELinkInfo, cList []*nb.UELinkInfo) bool {
+	if len(pList) == len(cList) && m.containUeLinkLists(pList, cList) {
 		return true
 	}
 	return false
 }
 
 // containUeLinkLists checks whether the recently received UELinkInfoList is the subset of the previously received UELinkInfoList.
-func (m *MLBSessions) containUeLinkLists(pList *[]nb.UELinkInfo, cList *[]nb.UELinkInfo) bool {
-	for i := 0; i < len(*cList); i++ {
-		for j := 0; j < len(*pList); j++ {
-			if reflect.DeepEqual((*cList)[i], (*pList)[j]) {
+func (m *MLBSessions) containUeLinkLists(pList []*nb.UELinkInfo, cList []*nb.UELinkInfo) bool {
+	for i := 0; i < len(cList); i++ {
+		for j := 0; j < len(pList); j++ {
+			if reflect.DeepEqual(cList[i], pList[j]) {
 				break
 			}
-			if j == len(*pList)-1 {
+			if j == len(pList)-1 {
 				return false
 			}
 		}
@@ -138,7 +151,7 @@ func (m *MLBSessions) containUeLinkLists(pList *[]nb.UELinkInfo, cList *[]nb.UEL
 }
 
 // getListStations gets list of stations from ONOS RAN subsystem.
-func (m *MLBSessions) getListStations(stationInfoList *[]nb.StationInfo, wg *sync.WaitGroup) {
+func (m *MLBSessions) getListStations(stationInfoList *[]*nb.StationInfo, wg *sync.WaitGroup) {
 	stream, err := m.client.ListStations(context.Background(), &nb.StationListRequest{})
 
 	if err != nil {
@@ -155,7 +168,7 @@ func (m *MLBSessions) getListStations(stationInfoList *[]nb.StationInfo, wg *syn
 			break
 		}
 		// For debugging
-		*stationInfoList = append(*stationInfoList, *stationInfo)
+		*stationInfoList = append(*stationInfoList, stationInfo)
 	}
 	defer wg.Done()
 }
@@ -184,13 +197,12 @@ func (m *MLBSessions) getListStationLinks(stationLinkInfoList *[]nb.StationLinkI
 }
 
 // getListUELinks gets the list of link between each UE and serving/neighbor stations.
-func (m *MLBSessions) getListUELinks(ueLinkInfoList *[]nb.UELinkInfo, wg *sync.WaitGroup) {
+func (m *MLBSessions) getListUELinks(ueLinkInfoList []*nb.UELinkInfo) []*nb.UELinkInfo {
 	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{})
 
 	if err != nil {
 		log.Error(err)
-		defer wg.Done()
-		return
+		return nil
 	}
 	for {
 		ueInfo, err := stream.Recv()
@@ -201,9 +213,9 @@ func (m *MLBSessions) getListUELinks(ueLinkInfoList *[]nb.UELinkInfo, wg *sync.W
 			log.Error(err)
 			break
 		}
-		*ueLinkInfoList = append(*ueLinkInfoList, *ueInfo)
+		ueLinkInfoList = append(ueLinkInfoList, ueInfo)
 	}
-	defer wg.Done()
+	return ueLinkInfoList
 }
 
 // sendRadioPowerOffset sends power offset to appropriate stations.
@@ -216,4 +228,9 @@ func (m *MLBSessions) sendRadioPowerOffset(mlbReq nb.RadioPowerRequest) {
 	if err != nil {
 		log.Error(err)
 	}
+}
+
+// GetUELinkInfo gets a list of UELinkInfo
+func (m *MLBSessions) GetUELinkInfo() []*nb.UELinkInfo {
+	return m.prevRNIB
 }

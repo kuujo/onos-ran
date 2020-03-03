@@ -31,9 +31,9 @@ func TestMLBDecisionMaker1(t *testing.T) {
 	threshold := 0.5
 
 	// Define test cases
-	var tStas []nb.StationInfo
+	var tStas []*nb.StationInfo
 	var tStaLinks []nb.StationLinkInfo
-	var tUeLinks []nb.UELinkInfo
+	var tUeLinks []*nb.UELinkInfo
 
 	// StationInfo
 	for i := 1; i < 10; i++ {
@@ -46,7 +46,7 @@ func TestMLBDecisionMaker1(t *testing.T) {
 			MaxNumConnectedUes: maxUes,
 		}
 
-		tStas = append(tStas, *tmpSta)
+		tStas = append(tStas, tmpSta)
 	}
 	// StationLinkInfo
 	// Sta1: 2, 4
@@ -402,9 +402,9 @@ func TestMLBDecisionMaker1(t *testing.T) {
 			},
 		}
 	*/
-	tUeLinks = append(tUeLinks, *tUeLink1)
-	tUeLinks = append(tUeLinks, *tUeLink2)
-	tUeLinks = append(tUeLinks, *tUeLink3)
+	tUeLinks = append(tUeLinks, tUeLink1)
+	tUeLinks = append(tUeLinks, tUeLink2)
+	tUeLinks = append(tUeLinks, tUeLink3)
 	//tUeLinks = append(tUeLinks, *tUeLink4)
 	//tUeLinks = append(tUeLinks, *tUeLink5)
 	txPwrSta1 := nb.StationPowerOffset_PA_DB_0
@@ -417,7 +417,7 @@ func TestMLBDecisionMaker1(t *testing.T) {
 	txPwrSta8 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta9 := nb.StationPowerOffset_PA_DB_0
 
-	testResult := MLBDecisionMaker(tStas, tStaLinks, tUeLinks, &threshold)
+	testResult, _ := MLBDecisionMaker(tStas, tStaLinks, tUeLinks, &threshold)
 
 	assert.Equal(t, len(*testResult), 4)
 
@@ -463,9 +463,9 @@ func TestMLBDecisionMaker2(t *testing.T) {
 	threshold := 0.5
 
 	// Define test cases
-	var tStas []nb.StationInfo
+	var tStas []*nb.StationInfo
 	var tStaLinks []nb.StationLinkInfo
-	var tUeLinks []nb.UELinkInfo
+	var tUeLinks []*nb.UELinkInfo
 
 	// StationInfo
 	for i := 1; i < 10; i++ {
@@ -478,7 +478,7 @@ func TestMLBDecisionMaker2(t *testing.T) {
 			MaxNumConnectedUes: maxUes,
 		}
 
-		tStas = append(tStas, *tmpSta)
+		tStas = append(tStas, tmpSta)
 	}
 	// StationLinkInfo
 	// Sta1: 2, 4
@@ -865,12 +865,12 @@ func TestMLBDecisionMaker2(t *testing.T) {
 		},
 	}
 
-	tUeLinks = append(tUeLinks, *tUeLink1)
-	tUeLinks = append(tUeLinks, *tUeLink2)
-	tUeLinks = append(tUeLinks, *tUeLink3)
-	tUeLinks = append(tUeLinks, *tUeLink4)
-	tUeLinks = append(tUeLinks, *tUeLink5)
-	tUeLinks = append(tUeLinks, *tUeLink6)
+	tUeLinks = append(tUeLinks, tUeLink1)
+	tUeLinks = append(tUeLinks, tUeLink2)
+	tUeLinks = append(tUeLinks, tUeLink3)
+	tUeLinks = append(tUeLinks, tUeLink4)
+	tUeLinks = append(tUeLinks, tUeLink5)
+	tUeLinks = append(tUeLinks, tUeLink6)
 	txPwrSta1 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta2 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta3 := nb.StationPowerOffset_PA_DB_0
@@ -881,7 +881,7 @@ func TestMLBDecisionMaker2(t *testing.T) {
 	txPwrSta8 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta9 := nb.StationPowerOffset_PA_DB_0
 
-	testResult := MLBDecisionMaker(tStas, tStaLinks, tUeLinks, &threshold)
+	testResult, _ := MLBDecisionMaker(tStas, tStaLinks, tUeLinks, &threshold)
 
 	assert.Equal(t, len(*testResult), 7)
 

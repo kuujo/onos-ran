@@ -12,20 +12,19 @@
       }
     ]
   },
+  "description": "",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 7,
+  "id": 10,
   "links": [],
   "panels": [
     {
       "cacheTimeout": null,
       "colorBackground": false,
-      "colorPostfix": false,
-      "colorPrefix": false,
       "colorValue": true,
       "colors": [
-        "#73BF69",
+        "#299c46",
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
@@ -40,11 +39,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
+        "w": 3,
         "x": 0,
         "y": 0
       },
-      "id": 6,
+      "id": 8,
       "interval": null,
       "links": [],
       "mappingType": 1,
@@ -77,14 +76,14 @@
         "fillColor": "rgba(31, 118, 189, 0.18)",
         "full": false,
         "lineColor": "rgb(31, 120, 193)",
-        "show": true,
+        "show": false,
         "ymax": null,
         "ymin": null
       },
       "tableColumn": "",
       "targets": [
         {
-          "expr": "hoapp_num_ho_events",
+          "expr": "count(onosproject_ransimulator_hoevents)",
           "instant": true,
           "refId": "A"
         }
@@ -92,7 +91,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Num HO Events Until Now",
+      "title": "Num HO Events",
       "transparent": true,
       "type": "singlestat",
       "valueFontSize": "80%",
@@ -103,20 +102,20 @@
           "value": "null"
         }
       ],
-      "valueName": "current"
+      "valueName": "avg"
     },
     {
       "aliasColors": {},
-      "bars": false,
+      "bars": true,
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "fill": 7,
-      "fillGradient": 7,
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 9,
-        "w": 9,
-        "x": 5,
+        "h": 8,
+        "w": 10,
+        "x": 3,
         "y": 0
       },
       "id": 4,
@@ -129,9 +128,9 @@
         "total": false,
         "values": false
       },
-      "lines": true,
+      "lines": false,
       "linewidth": 1,
-      "nullPointMode": "null",
+      "nullPointMode": "null as zero",
       "options": {
         "dataLinks": []
       },
@@ -145,7 +144,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "hoapp_num_ho_events",
+          "expr": "onosproject_ransimulator_hoevents",
+          "format": "time_series",
+          "instant": true,
           "refId": "A"
         }
       ],
@@ -153,17 +154,19 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Num HO Events",
+      "title": "Frequency (from 0 to 100ms) - HO Delay [µs] ",
       "tooltip": {
-        "shared": true,
+        "shared": false,
         "sort": 0,
         "value_type": "individual"
       },
       "transparent": true,
       "type": "graph",
       "xaxis": {
-        "buckets": null,
-        "mode": "time",
+        "buckets": 100,
+        "max": 100000,
+        "min": 0,
+        "mode": "histogram",
         "name": null,
         "show": true,
         "values": []
@@ -171,7 +174,7 @@
       "yaxes": [
         {
           "format": "short",
-          "label": null,
+          "label": "Frequency",
           "logBase": 1,
           "max": null,
           "min": null,
@@ -183,7 +186,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -193,19 +196,19 @@
     },
     {
       "aliasColors": {},
-      "bars": false,
+      "bars": true,
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "fill": 3,
-      "fillGradient": 5,
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 9,
-        "w": 9,
-        "x": 14,
+        "h": 8,
+        "w": 10,
+        "x": 13,
         "y": 0
       },
-      "id": 18,
+      "id": 6,
       "legend": {
         "avg": false,
         "current": false,
@@ -215,9 +218,9 @@
         "total": false,
         "values": false
       },
-      "lines": true,
-      "linewidth": 3,
-      "nullPointMode": "null",
+      "lines": false,
+      "linewidth": 1,
+      "nullPointMode": "null as zero",
       "options": {
         "dataLinks": []
       },
@@ -231,8 +234,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(hoapp_ho_event_info)",
-          "format": "time_series",
+          "expr": "onosproject_ransimulator_hoevents",
+          "instant": true,
           "refId": "A"
         }
       ],
@@ -240,7 +243,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Average HO Delay",
+      "title": "Frequency (from 0 to Inf) - HO Delay [µs] ",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -249,16 +252,18 @@
       "transparent": true,
       "type": "graph",
       "xaxis": {
-        "buckets": null,
-        "mode": "time",
+        "buckets": 100,
+        "min": null,
+        "mode": "histogram",
         "name": null,
         "show": true,
         "values": []
       },
       "yaxes": [
         {
+          "decimals": null,
           "format": "short",
-          "label": "HO Delay [us]",
+          "label": "Frequency",
           "logBase": 1,
           "max": null,
           "min": null,
@@ -266,7 +271,7 @@
         },
         {
           "format": "short",
-          "label": "",
+          "label": null,
           "logBase": 1,
           "max": null,
           "min": null,
@@ -298,11 +303,11 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
+        "w": 3,
         "x": 0,
         "y": 4
       },
-      "id": 14,
+      "id": 10,
       "interval": null,
       "links": [],
       "mappingType": 1,
@@ -342,7 +347,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "avg(hoapp_ho_event_info)",
+          "expr": "avg(onosproject_ransimulator_hoevents)",
           "instant": true,
           "refId": "A"
         }
@@ -361,230 +366,32 @@
           "value": "null"
         }
       ],
-      "valueName": "current"
-    },
-    {
-      "aliasColors": {},
-      "bars": true,
-      "cacheTimeout": null,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 0,
-      "fillGradient": 2,
-      "gridPos": {
-        "h": 8,
-        "w": 11,
-        "x": 0,
-        "y": 9
-      },
-      "id": 16,
-      "legend": {
-        "alignAsTable": false,
-        "avg": false,
-        "current": false,
-        "hideEmpty": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": false,
-      "linewidth": 3,
-      "links": [],
-      "nullPointMode": "null as zero",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pluginVersion": "6.4.2",
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "repeat": null,
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "hoapp_ho_event_info",
-          "format": "time_series",
-          "instant": true,
-          "intervalFactor": 1,
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Frequency (0 to 100ms) - HO Delay [µs]",
-      "tooltip": {
-        "shared": false,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transparent": true,
-      "type": "graph",
-      "xaxis": {
-        "buckets": 100,
-        "max": 100000,
-        "min": 0,
-        "mode": "histogram",
-        "name": null,
-        "show": true,
-        "values": [
-          "total"
-        ]
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": "Frequency",
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": "HO Delay [us]",
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": 10
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": true,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 11,
-        "x": 12,
-        "y": 9
-      },
-      "id": 20,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": false,
-      "linewidth": 1,
-      "nullPointMode": "null as zero",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "hoapp_ho_event_info",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Frequency (from 0 to Inf) - HO Delay [µs]",
-      "tooltip": {
-        "shared": false,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transparent": true,
-      "type": "graph",
-      "xaxis": {
-        "buckets": 100,
-        "mode": "histogram",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": "Frequency",
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
+      "valueName": "avg"
     },
     {
       "columns": [],
       "datasource": null,
       "fontSize": "100%",
       "gridPos": {
-        "h": 10,
-        "w": 23,
+        "h": 8,
+        "w": 24,
         "x": 0,
-        "y": 17
+        "y": 8
       },
-      "id": 12,
+      "id": 2,
       "options": {},
       "pageSize": null,
       "showHeader": true,
       "sort": {
-        "col": 0,
-        "desc": true
+        "col": null,
+        "desc": false
       },
       "styles": [
         {
-          "alias": "",
-          "colorMode": null,
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
+          "alias": "Time",
           "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "link": false,
-          "mappingType": 1,
           "pattern": "Time",
-          "thresholds": [],
-          "type": "hidden",
-          "unit": "short"
+          "type": "hidden"
         },
         {
           "alias": "",
@@ -598,23 +405,6 @@
           "decimals": 2,
           "mappingType": 1,
           "pattern": "__name__",
-          "thresholds": [],
-          "type": "hidden",
-          "unit": "short"
-        },
-        {
-          "alias": "",
-          "colorMode": null,
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "link": false,
-          "mappingType": 1,
-          "pattern": "instance",
           "thresholds": [],
           "type": "hidden",
           "unit": "short"
@@ -636,7 +426,7 @@
           "unit": "short"
         },
         {
-          "alias": "Src ECID",
+          "alias": "",
           "colorMode": null,
           "colors": [
             "rgba(245, 54, 54, 0.9)",
@@ -646,41 +436,9 @@
           "dateFormat": "YYYY-MM-DD HH:mm:ss",
           "decimals": 2,
           "mappingType": 1,
-          "pattern": "srcecid",
+          "pattern": "instance",
           "thresholds": [],
-          "type": "string",
-          "unit": "short"
-        },
-        {
-          "alias": "Src PLMNID",
-          "colorMode": null,
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "srcplmnid",
-          "thresholds": [],
-          "type": "string",
-          "unit": "short"
-        },
-        {
-          "alias": "Dest ECID",
-          "colorMode": null,
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "dstecid",
-          "thresholds": [],
-          "type": "string",
+          "type": "hidden",
           "unit": "short"
         },
         {
@@ -700,7 +458,39 @@
           "unit": "short"
         },
         {
-          "alias": "Timestamp",
+          "alias": "Serving Tower",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "servingtower",
+          "thresholds": [],
+          "type": "string",
+          "unit": "short"
+        },
+        {
+          "alias": "HO Latency (µs)",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "Value",
+          "thresholds": [],
+          "type": "string",
+          "unit": "short"
+        },
+        {
+          "alias": "Reported Time",
           "colorMode": null,
           "colors": [
             "rgba(245, 54, 54, 0.9)",
@@ -714,50 +504,11 @@
           "thresholds": [],
           "type": "string",
           "unit": "short"
-        },
-        {
-          "alias": "Dest PLMNID",
-          "colorMode": null,
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "dstplmnid",
-          "thresholds": [],
-          "type": "string",
-          "unit": "short"
-        },
-        {
-          "alias": "Delay [us]",
-          "colorMode": null,
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 4,
-          "link": false,
-          "mappingType": 1,
-          "pattern": "Value",
-          "thresholds": [],
-          "type": "number",
-          "unit": "locale",
-          "valueMaps": [
-            {
-              "text": "",
-              "value": ""
-            }
-          ]
         }
       ],
       "targets": [
         {
-          "expr": "hoapp_ho_event_info",
+          "expr": "onosproject_ransimulator_hoevents",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -765,36 +516,36 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Handover Events",
+      "title": "HO Events",
       "transform": "table",
       "transparent": true,
       "type": "table"
     }
   ],
-  "refresh": "1s",
+  "refresh": " 5s",
   "schemaVersion": 20,
   "style": "dark",
   "tags": [
-    "ONOS-RIC"
+    "RAN-Simulator"
   ],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-5m",
-    "to": "now-5s"
+    "from": "now-6h",
+    "to": "now"
   },
   "timepicker": {
     "nowDelay": "5s",
     "refresh_intervals": [
       "1s",
-      "5s",
-      "10s",
-      "15s"
+      " 5s",
+      " 10s",
+      " 15s"
     ]
   },
   "timezone": "",
-  "title": "ONOS-RIC HO App Dashboard",
-  "uid": "4SjgDZ_Wk",
-  "version": 3
+  "title": "RAN Simulator Dashboard",
+  "uid": "pTt00x_Wz",
+  "version": 4
 }

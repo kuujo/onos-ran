@@ -19,6 +19,7 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
+	mlbappexporter "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/exporter"
 	mlbappmanager "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/manager"
 )
 
@@ -44,6 +45,10 @@ func main() {
 	log.Info("Starting MLB Application")
 
 	appMgr, err := mlbappmanager.NewManager()
+
+	log.Info("Starting MLB Exporter")
+	go mlbappexporter.RunMLBExposer(appMgr.SB)
+
 	if err != nil {
 		log.Fatal("Unable to load MLB Application: ", err)
 	} else {

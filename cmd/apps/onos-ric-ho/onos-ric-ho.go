@@ -44,7 +44,7 @@ func main() {
 
 	appMgr, err := hoappmanager.NewManager()
 
-	log.Info("Starting HO Exposer")
+	log.Info("Starting HO Exporter")
 	go hoappexporter.RunHOExposer(appMgr.SB)
 
 	if err != nil {

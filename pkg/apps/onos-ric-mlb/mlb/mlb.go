@@ -15,7 +15,10 @@
 package mlbapploadbalance
 
 import (
+	"time"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	"github.com/onosproject/onos-ric/api/nb"
 )
 
@@ -23,33 +26,38 @@ var log = logging.GetLogger("mlb")
 
 // StaUeJointLink is the joint list of StationInfo and UELinkInfo.
 type StaUeJointLink struct {
-	plmnid    string
-	ecid      string
-	maxNumUes uint32
-	numUes    int32
-	pa        int32
+	TimeStamp   time.Time
+	PlmnID      string
+	Ecid        string
+	MaxNumUes   uint32
+	NumUes      int32
+	Pa          int32
+	ElapsedTime int64
 }
 
 // MLBDecisionMaker decides stations to adjust transmission power.
-func MLBDecisionMaker(stas []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLinks []nb.UELinkInfo, threshold *float64) *[]nb.RadioPowerRequest {
+func MLBDecisionMaker(stas []*nb.StationInfo, staLinks []nb.StationLinkInfo, ueLinks []*nb.UELinkInfo, threshold *float64) (*[]nb.RadioPowerRequest, []StaUeJointLink) {
 	var mlbReqs []nb.RadioPowerRequest
+	var mlbEvents []StaUeJointLink
 
 	// 1. Decide whose tx power should be reduced
 	// init staUeJointLinkList
 	var staUeJointLinkList []StaUeJointLink
 	for _, s := range stas {
 		tmpStaUeJointLink := &StaUeJointLink{
-			plmnid:    s.GetEcgi().GetPlmnid(),
-			ecid:      s.GetEcgi().GetEcid(),
-			maxNumUes: s.GetMaxNumConnectedUes(),
-			numUes:    0,
-			pa:        0,
+			TimeStamp:   time.Now(),
+			PlmnID:      s.GetEcgi().GetPlmnid(),
+			Ecid:        s.GetEcgi().GetEcid(),
+			MaxNumUes:   s.GetMaxNumConnectedUes(),
+			NumUes:      0,
+			Pa:          0,
+			ElapsedTime: 0,
 		}
 		staUeJointLinkList = append(staUeJointLinkList, *tmpStaUeJointLink)
 	}
 
 	// fill ueLinks in each staUeJointLinkList
-	setUeLinks(&staUeJointLinkList, &ueLinks)
+	setUeLinks(&staUeJointLinkList, ueLinks)
 
 	overloadedStas := getOverloadedStationList(&staUeJointLinkList, threshold)
 	stasToBeExpanded := getStasToBeExpanded(&staUeJointLinkList, overloadedStas, &staLinks)
@@ -59,30 +67,32 @@ func MLBDecisionMaker(stas []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLi
 	for _, os := range *overloadedStas {
 		tmpMlbReq := &nb.RadioPowerRequest{
 			Ecgi: &nb.ECGI{
-				Plmnid: os.plmnid,
-				Ecid:   os.ecid,
+				Plmnid: os.PlmnID,
+				Ecid:   os.Ecid,
 			},
 			Offset: nb.StationPowerOffset_PA_DB_MINUS3,
 		}
 		mlbReqs = append(mlbReqs, *tmpMlbReq)
+		mlbEvents = append(mlbEvents, os)
 	}
 
 	for _, ss := range *stasToBeExpanded {
 		tmpMlbReq := &nb.RadioPowerRequest{
 			Ecgi: &nb.ECGI{
-				Plmnid: ss.plmnid,
-				Ecid:   ss.ecid,
+				Plmnid: ss.PlmnID,
+				Ecid:   ss.Ecid,
 			},
 			Offset: nb.StationPowerOffset_PA_DB_3,
 		}
 		mlbReqs = append(mlbReqs, *tmpMlbReq)
+		mlbEvents = append(mlbEvents, ss)
 	}
 
-	// for debug -- should be removed
 	var numTotalUes int32
 	for _, e := range staUeJointLinkList {
-		log.Infof("STA(p:%s,e:%s) - numUEs:%d (threshold:%d * %f)\n", e.plmnid, e.ecid, e.numUes, e.maxNumUes, *threshold)
-		numTotalUes += e.numUes
+		// for debug -- should be removed
+		log.Infof("STA(p:%s,e:%s) - numUEs:%d (threshold:%d * %f)\n", e.PlmnID, e.Ecid, e.NumUes, e.MaxNumUes, *threshold)
+		numTotalUes += e.NumUes
 	}
 	log.Infof("Total num of reported UEs: %d", numTotalUes)
 
@@ -90,14 +100,14 @@ func MLBDecisionMaker(stas []nb.StationInfo, staLinks []nb.StationLinkInfo, ueLi
 	// if max CQI < 10; - 1 dB, otherwise, -3 dB
 
 	// 3. Return values
-	return &mlbReqs
+	return &mlbReqs, mlbEvents
 }
 
 // setUeLinks sets UELink info into StaUeJointLink struct.
-func setUeLinks(staJointList *[]StaUeJointLink, ueLinks *[]nb.UELinkInfo) {
-	for _, l := range *ueLinks {
+func setUeLinks(staJointList *[]StaUeJointLink, ueLinks []*nb.UELinkInfo) {
+	for _, l := range ueLinks {
 		tmpSta := getStaUeJointLink(l.GetEcgi().GetPlmnid(), l.GetEcgi().GetEcid(), staJointList)
-		tmpSta.numUes++
+		tmpSta.NumUes++
 	}
 }
 
@@ -106,8 +116,8 @@ func getOverloadedStationList(staUeLinkList *[]StaUeJointLink, threshold *float6
 	var resultOverloadedStations []StaUeJointLink
 
 	for i := 0; i < len(*staUeLinkList); i++ {
-		if float64((*staUeLinkList)[i].numUes) > (*threshold)*float64((*staUeLinkList)[i].maxNumUes) {
-			(*staUeLinkList)[i].pa = -3
+		if float64((*staUeLinkList)[i].NumUes) > (*threshold)*float64((*staUeLinkList)[i].MaxNumUes) {
+			(*staUeLinkList)[i].Pa = -3
 			resultOverloadedStations = append(resultOverloadedStations, (*staUeLinkList)[i])
 		}
 	}
@@ -120,11 +130,11 @@ func getStasToBeExpanded(staUeLinkList *[]StaUeJointLink, overloadedStas *[]StaU
 	var resultStasToBeExpanded []StaUeJointLink
 
 	for _, os := range *overloadedStas {
-		nEcgis := getNeighborStaEcgi(os.plmnid, os.ecid, staLinks)
+		nEcgis := getNeighborStaEcgi(os.PlmnID, os.Ecid, staLinks)
 		for _, n := range nEcgis {
 			tmpStaUeJointLink := getStaUeJointLink(n.GetPlmnid(), n.GetEcid(), staUeLinkList)
-			if (*tmpStaUeJointLink).pa == 0 {
-				(*tmpStaUeJointLink).pa = 3
+			if (*tmpStaUeJointLink).Pa == 0 {
+				(*tmpStaUeJointLink).Pa = 3
 				resultStasToBeExpanded = append(resultStasToBeExpanded, *tmpStaUeJointLink)
 			}
 		}
@@ -146,7 +156,7 @@ func getNeighborStaEcgi(plmnid string, ecid string, staLinks *[]nb.StationLinkIn
 // getStaUeJointLink gets the StaUeJointLink having given plmnid and ecid.
 func getStaUeJointLink(plmnid string, ecid string, staUeLinkList *[]StaUeJointLink) *StaUeJointLink {
 	for i := 0; i < len(*staUeLinkList); i++ {
-		if (*staUeLinkList)[i].plmnid == plmnid && (*staUeLinkList)[i].ecid == ecid {
+		if (*staUeLinkList)[i].PlmnID == plmnid && (*staUeLinkList)[i].Ecid == ecid {
 			return &(*staUeLinkList)[i]
 		}
 	}
