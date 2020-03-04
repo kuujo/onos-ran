@@ -40,7 +40,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) {
 func (s *BenchmarkSuite) SetupBenchmark(c *benchmark.Context) {
 	ranSim := env.Simulators().
 		New().
-		SetImage("onosproject/ric-simulator:latest").
+		SetImage("onosproject/ran-simulator:latest").
 		SetPort(5150).
 		SetName("ran-simulator").
 		SetAddDevice(false).
