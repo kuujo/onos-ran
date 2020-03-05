@@ -24,6 +24,7 @@ import (
 
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/manager"
+	"github.com/onosproject/onos-ric/pkg/southbound"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -47,11 +48,12 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 	go func() {
 		for {
 			var wg sync.WaitGroup
-			wg.Add(3) // because there are three goroutines
+			wg.Add(4) // because there are four goroutines
 
 			var listRNIBCell []prometheus.Counter
 			var listRNIBUEAdmReq []prometheus.Counter
 			var listRNIBUERel []prometheus.Counter
+			var listHOEvents []prometheus.Counter
 
 			go func() {
 				listRNIBCell = exposeCellConfig(mgr)
@@ -65,6 +67,10 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 				listRNIBUERel = exposeUEReleaseInd(mgr)
 				defer wg.Done()
 			}()
+			go func() {
+				listHOEvents = exposeHOEventInfo()
+				defer wg.Done()
+			}()
 			wg.Wait()
 
 			time.Sleep(1000 * time.Millisecond)
@@ -76,6 +82,9 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 			}
 			for i := 0; i < len(listRNIBUERel); i++ {
 				prometheus.Unregister(listRNIBUERel[i])
+			}
+			for i := 0; i < len(listHOEvents); i++ {
+				prometheus.Unregister(listHOEvents[i])
 			}
 		}
 	}()
@@ -203,4 +212,25 @@ func exposeUELinkInfo(mgr *manager.Manager) []prometheus.Counter {
 		}
 	}
 	return listUELinkInfo
+}
+
+func exposeHOEventInfo() []prometheus.Counter {
+	var listHOEvents []prometheus.Counter
+	for _, e := range southbound.ListHOEventMeasuredRIC {
+		if e.ElapsedTime == 0 {
+			continue
+		}
+		tmp := promauto.NewCounter(prometheus.CounterOpts{
+			Name: "ho_events",
+			ConstLabels: prometheus.Labels{
+				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d", e.Timestamp.Year(), e.Timestamp.Month(), e.Timestamp.Day(), e.Timestamp.Hour(), e.Timestamp.Minute(), e.Timestamp.Second()),
+				"crnti":     e.Crnti,
+				"plmnid":    e.DestPlmnID,
+				"ecid":      e.DestECID,
+			},
+		})
+		tmp.Add(float64(e.ElapsedTime))
+		listHOEvents = append(listHOEvents, tmp)
+	}
+	return listHOEvents
 }
