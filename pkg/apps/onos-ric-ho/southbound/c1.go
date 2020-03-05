@@ -25,7 +25,6 @@ import (
 
 	"github.com/onosproject/onos-ric/api/nb"
 	hoapphandover "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/handover"
-	hoappservice "github.com/onosproject/onos-ric/pkg/apps/onos-ric-ho/service"
 	"google.golang.org/grpc"
 )
 
@@ -63,13 +62,8 @@ func (m *HOSessions) manageConnections() {
 	log.Infof("Connecting to ONOS RAN controller...%s", *m.ONOSRICAddr)
 
 	for {
-		// Attempt to create connection to the simulator
-		opts := []grpc.DialOption{
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		}
-
-		conn, err := hoappservice.Connect(*m.ONOSRICAddr, opts...)
+		// Attempt to create connection to the RIC
+		conn, err := getConnection(*m.ONOSRICAddr)
 		if err == nil {
 			log.Infof("Connected to %s", *m.ONOSRICAddr)
 			// If successful, manage this connection and don't return until it is

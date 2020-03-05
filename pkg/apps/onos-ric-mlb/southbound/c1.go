@@ -25,7 +25,6 @@ import (
 
 	"github.com/onosproject/onos-ric/api/nb"
 	mlbapploadbalance "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/mlb"
-	mlbappservice "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/service"
 	"google.golang.org/grpc"
 )
 
@@ -60,12 +59,8 @@ func (m *MLBSessions) manageConnections() {
 	log.Infof("Connecting to ONOS RAN controllers...%s", *m.ONOSRICAddr)
 
 	for {
-		// Attempt to create connection to the simulator
-		opts := []grpc.DialOption{
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		}
-		conn, err := mlbappservice.Connect(*m.ONOSRICAddr, opts...)
+		// Attempt to create connection to the RIC
+		conn, err := getConnection(*m.ONOSRICAddr)
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.
