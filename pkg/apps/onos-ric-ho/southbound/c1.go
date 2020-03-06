@@ -64,12 +64,14 @@ func (m *HOSessions) manageConnections() {
 	for {
 		// Attempt to create connection to the RIC
 		conn, err := getConnection(*m.ONOSRICAddr)
-		if err == nil {
-			log.Infof("Connected to %s", *m.ONOSRICAddr)
-			// If successful, manage this connection and don't return until it is
-			// no longer valid and all related resources have been properly cleaned-up.
-			m.manageConnection(conn)
+		if err != nil {
+			log.Errorf("Failed to connect: %s", err)
+			continue
 		}
+		log.Infof("Connected to %s", *m.ONOSRICAddr)
+		// If successful, manage this connection and don't return until it is
+		// no longer valid and all related resources have been properly cleaned-up.
+		m.manageConnection(conn)
 		time.Sleep(100 * time.Millisecond) // need to be in 10ms - 100ms
 	}
 }
@@ -90,6 +92,7 @@ func (m *HOSessions) manageConnection(conn *grpc.ClientConn) {
 func (m *HOSessions) runHandoverProcedure() {
 	ch := make(chan []*nb.UELinkInfo)
 	if err := m.watchUELinks(ch); err != nil {
+		log.Errorf("Failed to watch: %s", err)
 		return
 	}
 	for ueLinkList := range ch {
@@ -183,7 +186,8 @@ func (m *HOSessions) watchUELinks(ch chan<- []*nb.UELinkInfo) error {
 	ueLinks = make(map[ueLinkID]*nb.UELinkInfo)
 	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{Subscribe: true})
 	if err != nil {
-		return nil
+		log.Errorf("Failed to get stream: %s", err)
+		return err
 	}
 
 	go func() {

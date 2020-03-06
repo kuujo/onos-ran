@@ -61,11 +61,14 @@ func (m *MLBSessions) manageConnections() {
 	for {
 		// Attempt to create connection to the RIC
 		conn, err := getConnection(*m.ONOSRICAddr)
-		if err == nil {
-			// If successful, manage this connection and don't return until it is
-			// no longer valid and all related resources have been properly cleaned-up.
-			m.manageConnection(conn)
+		if err != nil {
+			log.Errorf("Failed to connect: %s", err)
+			continue
 		}
+		log.Infof("Connected to %s", *m.ONOSRICAddr)
+		// If successful, manage this connection and don't return until it is
+		// no longer valid and all related resources have been properly cleaned-up.
+		m.manageConnection(conn)
 		time.Sleep(time.Duration(*m.Period) * time.Millisecond)
 	}
 }
@@ -80,6 +83,8 @@ func (m *MLBSessions) manageConnection(conn *grpc.ClientConn) {
 
 	// run MLB procedure
 	m.runMLBProcedure()
+
+	conn.Close()
 }
 
 func (m *MLBSessions) runMLBProcedure() {
