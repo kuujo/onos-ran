@@ -30,6 +30,7 @@ func (s *TestSuite) SetupTestSuite() {
 	setup.Atomix()
 	setup.Database().Raft()
 	setup.RIC().SetReplicas(1)
+	setup.Topo().SetReplicas(1)
 	setup.SetupOrDie()
 
 	env.Simulators().
