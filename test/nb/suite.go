@@ -29,7 +29,7 @@ type TestSuite struct {
 func (s *TestSuite) SetupTestSuite() {
 	setup.Atomix()
 	setup.Database().Raft()
-	setup.RAN().SetReplicas(1)
+	setup.RIC().SetReplicas(1)
 	setup.SetupOrDie()
 
 	env.Simulators().

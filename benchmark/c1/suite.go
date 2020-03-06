@@ -32,7 +32,7 @@ type BenchmarkSuite struct {
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) {
 	setup.Atomix()
 	setup.Database().Raft()
-	setup.RAN().SetReplicas(1)
+	setup.RIC().SetReplicas(1)
 	setup.SetupOrDie()
 }
 
@@ -47,7 +47,7 @@ func (s *BenchmarkSuite) SetupBenchmark(c *benchmark.Context) {
 		AddOrDie()
 
 	s.simulator = ranSim
-	client, err := env.RAN().NewRANC1ServiceClient()
+	client, err := env.RIC().NewRICC1ServiceClient()
 	if err != nil {
 		panic(err)
 	}

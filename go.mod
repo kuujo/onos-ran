@@ -11,7 +11,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onosproject/onos-lib-go v0.0.0-20200302190914-1f7a2e625e9d
-	github.com/onosproject/onos-test v0.0.0-20200304231806-071d41e8d3c3
+	github.com/onosproject/onos-test v0.0.0-20200306000348-1f2c86fc76c6
 	github.com/onosproject/onos-topo v0.0.0-20200218171206-55029b503689
 	github.com/prometheus/client_golang v1.4.1
 	github.com/spf13/cobra v0.0.6

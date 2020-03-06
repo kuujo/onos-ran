@@ -33,7 +33,7 @@ func waitForSimulator() error {
 	const tries = 30
 
 	for i := 1; i <= tries; i++ {
-		client, clientErr := env.RAN().NewRANC1ServiceClient()
+		client, clientErr := env.RIC().NewRICC1ServiceClient()
 
 		if clientErr != nil {
 			return clientErr
@@ -72,7 +72,7 @@ func waitForSimulatorOrFail(t *testing.T) {
 
 // makeNBClientOrFail makes a client to connect to the onos-ric northbound API
 func makeNBClientOrFail(t *testing.T) nb.C1InterfaceServiceClient {
-	client, clientErr := env.RAN().NewRANC1ServiceClient()
+	client, clientErr := env.RIC().NewRICC1ServiceClient()
 	assert.NoError(t, clientErr)
 	assert.NotNil(t, client)
 	return client
