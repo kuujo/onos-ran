@@ -19,15 +19,18 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/southbound"
+	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
 	"github.com/onosproject/onos-ric/pkg/store/updates"
+	topodevice "github.com/onosproject/onos-topo/api/device"
+	"google.golang.org/grpc"
 )
 
 var log = logging.GetLogger("manager")
 var mgr Manager
 
 // NewManager initializes the RAN subsystem.
-func NewManager() (*Manager, error) {
+func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 	log.Info("Creating Manager")
 
 	updatesStore, err := updates.NewDistributedStore()
@@ -40,6 +43,12 @@ func NewManager() (*Manager, error) {
 		return nil, err
 	}
 
+	deviceChangeStore, err := device.NewTopoStore(topoEndPoint, opts...)
+	if err != nil {
+		log.Info("Error in device change store")
+		return nil, err
+	}
+
 	sbSession, err := southbound.NewSessions()
 	if err != nil {
 		return nil, err
@@ -48,27 +57,33 @@ func NewManager() (*Manager, error) {
 	mgr = Manager{
 		updatesStore,
 		telemetryStore,
+		deviceChangeStore,
 		sbSession,
 		make(chan sb.ControlUpdate),
 		make(chan sb.ControlResponse),
 		make(chan sb.TelemetryMessage),
+		make(chan *topodevice.ListResponse, 10),
 	}
 
 	go mgr.recvUpdates()
 
 	go mgr.recvTelemetryUpdates()
 
+	_ = mgr.deviceChangesStore.Watch(mgr.topoChannel)
+
 	return &mgr, nil
 }
 
 // Manager single point of entry for the RAN system.
 type Manager struct {
-	updatesStore     updates.Store
-	telemetryStore   telemetry.Store
-	SB               *southbound.Sessions
-	controlUpdates   chan sb.ControlUpdate
-	controlResponses chan sb.ControlResponse
-	telemetryUpdates chan sb.TelemetryMessage
+	updatesStore       updates.Store
+	telemetryStore     telemetry.Store
+	deviceChangesStore device.Store
+	SB                 *southbound.Sessions
+	controlUpdates     chan sb.ControlUpdate
+	controlResponses   chan sb.ControlResponse
+	telemetryUpdates   chan sb.TelemetryMessage
+	topoChannel        chan *topodevice.ListResponse
 }
 
 func (m *Manager) recvUpdates() {

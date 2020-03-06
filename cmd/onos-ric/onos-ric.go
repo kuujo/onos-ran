@@ -31,6 +31,8 @@ package main
 import (
 	"flag"
 
+	"github.com/onosproject/onos-ric/pkg/certs"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	"github.com/onosproject/onos-ric/pkg/exporter"
@@ -47,6 +49,7 @@ func main() {
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
 	simulator := flag.String("simulator", "", "address:port of the RAN simulator")
+	topoEndpoint := flag.String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
 
 	//lines 93-109 are implemented according to
 	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
@@ -60,7 +63,12 @@ func main() {
 	flag.Parse()
 	log.Info("Starting onos-ric")
 
-	mgr, err := manager.NewManager()
+	opts, err := certs.HandleCertArgs(keyPath, certPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mgr, err := manager.NewManager(*topoEndpoint, opts)
 
 	log.Info("Starting ONOS-RIC Exposer")
 	go exporter.RunRICExposer(mgr)
