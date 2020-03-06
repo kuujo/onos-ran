@@ -22,7 +22,6 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	"github.com/onosproject/onos-ric/api/sb"
-	"github.com/onosproject/onos-ric/pkg/service"
 	"google.golang.org/grpc"
 )
 
@@ -76,15 +75,9 @@ func (m *Sessions) SendResponse(response sb.ControlResponse) error {
 func (m *Sessions) manageConnections() {
 	for {
 		// Attempt to create connection to the simulator
-		opts := []grpc.DialOption{
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 		log.Infof("Connecting to simulator...%s with context", *m.Simulator)
-		connection, err := service.Connect(ctx, *m.Simulator, opts...)
-		cancel()
+		connection, err := getConnection(*m.Simulator)
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.
