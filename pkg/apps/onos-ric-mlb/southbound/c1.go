@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
 
 	"github.com/onosproject/onos-ric/api/nb"
 	mlbapploadbalance "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/mlb"
@@ -60,7 +61,7 @@ func (m *MLBSessions) manageConnections() {
 
 	for {
 		// Attempt to create connection to the RIC
-		conn, err := getConnection(*m.ONOSRICAddr)
+		conn, err := southbound.Connect(context.Background(), *m.ONOSRICAddr, "", "")
 		if err != nil {
 			log.Errorf("Failed to connect: %s", err)
 			continue

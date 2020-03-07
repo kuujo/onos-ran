@@ -34,11 +34,11 @@ import (
 	"github.com/onosproject/onos-ric/pkg/certs"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	service "github.com/onosproject/onos-lib-go/pkg/northbound"
 
 	"github.com/onosproject/onos-ric/pkg/exporter"
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"github.com/onosproject/onos-ric/pkg/northbound/c1"
-	"github.com/onosproject/onos-ric/pkg/service"
 )
 
 var log = logging.GetLogger("main")
@@ -87,7 +87,7 @@ func main() {
 
 // Creates gRPC server and registers various services; then serves.
 func startServer(caPath string, keyPath string, certPath string) error {
-	s := service.NewServer(service.NewServerConfig(caPath, keyPath, certPath))
+	s := service.NewServer(service.NewServerConfig(caPath, keyPath, certPath, 5150, true))
 	s.AddService(c1.Service{})
 	s.AddService(logging.Service{})
 

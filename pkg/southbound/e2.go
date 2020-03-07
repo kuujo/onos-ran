@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
 
 	"github.com/onosproject/onos-ric/api/sb"
 	"google.golang.org/grpc"
@@ -77,7 +78,7 @@ func (m *Sessions) manageConnections() {
 		// Attempt to create connection to the simulator
 
 		log.Infof("Connecting to simulator...%s with context", *m.Simulator)
-		connection, err := getConnection(*m.Simulator)
+		connection, err := southbound.Connect(context.Background(), *m.Simulator, "", "")
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.

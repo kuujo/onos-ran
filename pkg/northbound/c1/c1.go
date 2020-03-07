@@ -21,8 +21,8 @@ import (
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
 
+	service "github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/onosproject/onos-ric/pkg/manager"
-	"github.com/onosproject/onos-ric/pkg/service"
 	"google.golang.org/grpc"
 )
 
