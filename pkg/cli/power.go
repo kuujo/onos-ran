@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +34,7 @@ func getSetPowerCommand() *cobra.Command {
 }
 
 func runSetPowerCommand(cmd *cobra.Command, args []string) error {
-	conn, err := getConnection(cmd)
+	conn, err := cli.GetConnection(cmd)
 	if err != nil {
 		return err
 	}
