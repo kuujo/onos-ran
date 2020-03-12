@@ -31,9 +31,9 @@ package main
 import (
 	"flag"
 
-	"github.com/onosproject/onos-ric/pkg/certs"
-
+	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
+
 	service "github.com/onosproject/onos-lib-go/pkg/northbound"
 
 	"github.com/onosproject/onos-ric/pkg/exporter"
@@ -51,6 +51,8 @@ func main() {
 	simulator := flag.String("simulator", "", "address:port of the RAN simulator")
 	topoEndpoint := flag.String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
 
+	// TODO Have to remove from Helm chart and onit first
+	log.Infof("Argument 'simulator' is ignored %s", *simulator)
 	//lines 93-109 are implemented according to
 	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
 	// because of libraries importing glog. With glog import we can't call log.InitFlags(nil) as per klog readme
@@ -76,13 +78,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to load onos-ric ", err)
 	} else {
-		mgr.SB.Simulator = simulator
 		mgr.Run()
 		err = startServer(*caPath, *keyPath, *certPath)
 		if err != nil {
 			log.Fatal("Unable to start onos-ric ", err)
 		}
 	}
+	mgr.Close()
 }
 
 // Creates gRPC server and registers various services; then serves.

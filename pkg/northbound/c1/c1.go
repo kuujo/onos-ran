@@ -218,7 +218,20 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 			},
 		}
 
-		err := manager.GetManager().SB.SendResponse(ctrlResponse)
+		srcSession, ok := manager.GetManager().SbSessions[srcEcgi]
+		if !ok {
+			return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
+		}
+		err := srcSession.SendResponse(ctrlResponse)
+		if err != nil {
+			return nil, err
+		}
+
+		dstSession, ok := manager.GetManager().SbSessions[dstEcgi]
+		if !ok {
+			return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
+		}
+		err = dstSession.SendResponse(ctrlResponse)
 		if err != nil {
 			return nil, err
 		}
@@ -273,7 +286,11 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 				},
 			},
 		}
-		err := manager.GetManager().SB.SendResponse(ctrlResponse)
+		session, ok := manager.GetManager().SbSessions[ecgi]
+		if !ok {
+			return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
+		}
+		err := session.SendResponse(ctrlResponse)
 		if err != nil {
 			return nil, err
 		}

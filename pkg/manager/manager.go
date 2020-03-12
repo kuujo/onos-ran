@@ -19,12 +19,16 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/southbound"
+	"github.com/onosproject/onos-ric/pkg/southbound/monitor"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
 	"github.com/onosproject/onos-ric/pkg/store/updates"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
+	"strings"
 )
+
+const ranSimulatorType = topodevice.Type("RanSimulator")
 
 var log = logging.GetLogger("manager")
 var mgr Manager
@@ -49,27 +53,22 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		return nil, err
 	}
 
-	sbSession, err := southbound.NewSessions()
-	if err != nil {
-		return nil, err
-	}
-
 	mgr = Manager{
-		updatesStore,
-		telemetryStore,
-		deviceChangeStore,
-		sbSession,
-		make(chan sb.ControlUpdate),
-		make(chan sb.ControlResponse),
-		make(chan sb.TelemetryMessage),
-		make(chan *topodevice.ListResponse, 10),
+		updatesStore:       updatesStore,
+		telemetryStore:     telemetryStore,
+		deviceChangesStore: deviceChangeStore,
+		SbSessions:         make(map[sb.ECGI]*southbound.Session),
+		controlUpdates:     make(chan sb.ControlUpdate),
+		controlResponses:   make(chan sb.ControlResponse),
+		telemetryUpdates:   make(chan sb.TelemetryMessage),
+		topoMonitor: monitor.NewTopoMonitorBuilder().
+			SetTopoChannel(make(chan *topodevice.ListResponse)).
+			Build(),
 	}
 
 	go mgr.recvUpdates()
 
 	go mgr.recvTelemetryUpdates()
-
-	_ = mgr.deviceChangesStore.Watch(mgr.topoChannel)
 
 	return &mgr, nil
 }
@@ -79,11 +78,11 @@ type Manager struct {
 	updatesStore       updates.Store
 	telemetryStore     telemetry.Store
 	deviceChangesStore device.Store
-	SB                 *southbound.Sessions
+	SbSessions         map[sb.ECGI]*southbound.Session
 	controlUpdates     chan sb.ControlUpdate
 	controlResponses   chan sb.ControlResponse
 	telemetryUpdates   chan sb.TelemetryMessage
-	topoChannel        chan *topodevice.ListResponse
+	topoMonitor        monitor.TopoMonitor
 }
 
 func (m *Manager) recvUpdates() {
@@ -177,11 +176,45 @@ func (m *Manager) SubscribeTelemetry(ch chan<- sb.TelemetryMessage) error {
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
-	m.SB.Run(m.controlUpdates, m.controlResponses, m.telemetryUpdates)
+
+	m.topoMonitor.TopoEventHandler(m.topoEventHandler)
+
+	err := mgr.deviceChangesStore.Watch(m.topoMonitor.TopoChannel())
+	if err != nil {
+		log.Errorf("Error listening to topo service: %s", err.Error())
+	}
+}
+
+func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
+	log.Infof("Watching topo channel")
+	for device := range topoChannel {
+		log.Infof("Device received %s", device.GetDevice().GetID())
+		if device.GetDevice().GetType() != ranSimulatorType {
+			continue
+		}
+		if device.Type == topodevice.ListResponse_NONE || device.Type == topodevice.ListResponse_ADDED {
+			ecgi := ecgiFromTopoID(device.GetDevice().GetID())
+			deviceEndpoint := sb.Endpoint(device.GetDevice().GetAddress())
+			session, err := southbound.NewSession(ecgi, deviceEndpoint)
+			if err != nil {
+				log.Fatalf("Unable to create new session %s", err.Error())
+			}
+			if session != nil {
+				m.SbSessions[ecgi] = session
+				session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials(),
+					m.controlUpdates, m.controlResponses, m.telemetryUpdates)
+			} else {
+				log.Fatalf("Error creating new session for %v", ecgi)
+			}
+		} else {
+			log.Warnf("Topo device event not yet handled %s %v", device.String())
+		}
+	}
 }
 
 //Close kills the channels and manager related objects
 func (m *Manager) Close() {
+	m.topoMonitor.Close()
 	log.Info("Closing Manager")
 }
 
@@ -237,4 +270,10 @@ func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) erro
 
 	return nil
 
+}
+
+// ecgiFromTopoID topo device is formatted like "001001-0001786" PlmnId:Ecid
+func ecgiFromTopoID(id topodevice.ID) sb.ECGI {
+	parts := strings.Split(string(id), "-")
+	return sb.ECGI{Ecid: parts[1], PlmnId: parts[0]}
 }

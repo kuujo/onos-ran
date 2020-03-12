@@ -16,6 +16,7 @@ package southbound
 
 import (
 	"context"
+	topodevice "github.com/onosproject/onos-topo/api/device"
 	"sync"
 	"time"
 
@@ -28,10 +29,11 @@ import (
 
 var log = logging.GetLogger("southbound")
 
-// Sessions is responsible for managing connections to and interactions with the RAN southbound.
-type Sessions struct {
-	Simulator *string
-	client    sb.InterfaceServiceClient
+// Session is responsible for managing connections to and interactions with the RAN southbound.
+type Session struct {
+	EndPoint sb.Endpoint
+	Ecgi     sb.ECGI
+	client   sb.InterfaceServiceClient
 
 	controlResponses chan sb.ControlResponse
 	controlUpdates   chan sb.ControlUpdate
@@ -52,56 +54,55 @@ type HOEventMeasuredRIC struct {
 var ListHOEventMeasuredRIC []HOEventMeasuredRIC
 var mutexListHOEventMeasuredRIC sync.RWMutex
 
-// NewSessions creates a new southbound sessions controller.
-func NewSessions() (*Sessions, error) {
-	log.Info("Creating Sessions")
-	return &Sessions{}, nil
+// NewSession creates a new southbound session controller.
+func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
+	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
+	return &Session{Ecgi: ecgi, EndPoint: endPoint}, nil
 }
 
 // Run starts the southbound control loop.
-func (m *Sessions) Run(controlUpdates chan sb.ControlUpdate, controlResponses chan sb.ControlResponse, telemetryUpdates chan sb.TelemetryMessage) {
+func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials,
+	controlUpdates chan sb.ControlUpdate, controlResponses chan sb.ControlResponse, telemetryUpdates chan sb.TelemetryMessage) {
 	// Kick off a go routine that manages the connection to the simulator
-	m.controlUpdates = controlUpdates
-	m.controlResponses = controlResponses
-	m.telemetryUpdates = telemetryUpdates
-	go m.manageConnections()
+	s.controlUpdates = controlUpdates
+	s.controlResponses = controlResponses
+	s.telemetryUpdates = telemetryUpdates
+	go s.manageConnections(tls, creds)
 }
 
 // SendResponse sends the specified response on the control channel.
-func (m *Sessions) SendResponse(response sb.ControlResponse) error {
-	m.controlResponses <- response
+func (s *Session) SendResponse(response sb.ControlResponse) error {
+	s.controlResponses <- response
 	return nil
 }
 
-func (m *Sessions) manageConnections() {
+func (s *Session) manageConnections(tls topodevice.TlsConfig, creds topodevice.Credentials) {
 	for {
 		// Attempt to create connection to the simulator
-
-		log.Infof("Connecting to simulator...%s with context", *m.Simulator)
-		connection, err := southbound.Connect(context.Background(), *m.Simulator, "", "")
+		log.Infof("Connecting to simulator...%s with context", s.EndPoint)
+		connection, err := southbound.Connect(context.Background(), string(s.EndPoint), tls.GetCert(), tls.GetKey())
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.
-			m.manageConnection(connection)
+			s.manageConnection(connection)
 		}
 		time.Sleep(5 * time.Second)
 	}
 }
 
-func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
+func (s *Session) manageConnection(connection *grpc.ClientConn) {
 	// Offer the telemetry and control surfaces to the E2 devices
-	m.client = sb.NewInterfaceServiceClient(connection)
-	if m.client == nil {
+	s.client = sb.NewInterfaceServiceClient(connection)
+	if s.client == nil {
 		return
 	}
-
-	log.Info("Connected to simulator")
+	log.Infof("Connected to simulator on %s", s.EndPoint)
 	// Setup coordination channel
 	errors := make(chan error)
 
-	go m.handleControl(errors)
+	go s.handleControl(errors)
 
-	go m.handleTelemetry(errors)
+	go s.handleTelemetry(errors)
 
 	// Wait for the first error on the coordination channel.
 	for i := 0; i < 2; i++ {
@@ -112,14 +113,14 @@ func (m *Sessions) manageConnection(connection *grpc.ClientConn) {
 	_ = connection.Close()
 
 	// FIXME: should be done separately
-	//close(m.responses)
-	//close(m.updates)
+	//close(s.responses)
+	//close(s.updates)
 
 	close(errors)
-	log.Info("Disconnected from simulator")
+	log.Info("Disconnected from simulator %s", s.EndPoint)
 }
 
-func (m *Sessions) handleControl(errors chan error) {
+func (s *Session) handleControl(errors chan error) {
 
 	cellConfigRequest := &sb.ControlResponse{
 		MessageType: sb.MessageType_CELL_CONFIG_REQUEST,
@@ -130,7 +131,7 @@ func (m *Sessions) handleControl(errors chan error) {
 		},
 	}
 
-	stream, err := m.client.SendControl(context.Background())
+	stream, err := s.client.SendControl(context.Background())
 	if err != nil {
 		errors <- err
 		return
@@ -144,8 +145,8 @@ func (m *Sessions) handleControl(errors chan error) {
 				close(waitc)
 				return
 			}
-			log.Infof("Got messageType %d", update.MessageType)
-			m.processControlUpdate(update)
+			log.Infof("Got messageType %d from %s", update.MessageType, s.EndPoint)
+			s.processControlUpdate(update)
 		}
 	}()
 
@@ -154,8 +155,8 @@ func (m *Sessions) handleControl(errors chan error) {
 	}
 
 	for {
-		response := <-m.controlResponses
-		m.updateHOEventMeasuredRIC(response) // to monitor HO delay
+		response := <-s.controlResponses
+		s.updateHOEventMeasuredRIC(response) // to monitor HO delay
 		err := stream.Send(&response)
 		if err != nil {
 			waitc <- err
@@ -164,26 +165,26 @@ func (m *Sessions) handleControl(errors chan error) {
 	}
 }
 
-func (m *Sessions) processControlUpdate(update *sb.ControlUpdate) {
+func (s *Session) processControlUpdate(update *sb.ControlUpdate) {
 	switch x := update.S.(type) {
 	case *sb.ControlUpdate_CellConfigReport:
-		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
+		log.Infof("%s CellConfigReport plmnid:%s, ecid:%s", s.EndPoint, x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
 	case *sb.ControlUpdate_UEAdmissionRequest:
-		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
+		log.Infof("%s UEAdmissionRequest plmnid:%s, ecid:%s, crnti:%s", s.EndPoint, x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
 	case *sb.ControlUpdate_UEReleaseInd:
-		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		log.Infof("%s UEReleaseInd plmnid:%s, ecid:%s, crnti:%s", s.EndPoint, x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
 	default:
-		log.Fatalf("Control update has unexpected type %T", x)
+		log.Fatalf("%s Control update has unexpected type %T", s.EndPoint, x)
 	}
-	m.controlUpdates <- *update
+	s.controlUpdates <- *update
 }
 
-func (m *Sessions) handleTelemetry(errors chan error) {
+func (s *Session) handleTelemetry(errors chan error) {
 	l2MeasConfig := &sb.L2MeasConfig{
 		Ecgi: &sb.ECGI{PlmnId: "test", Ecid: "test"},
 	}
 
-	stream, err := m.client.SendTelemetry(context.Background(), l2MeasConfig)
+	stream, err := s.client.SendTelemetry(context.Background(), l2MeasConfig)
 	if err != nil {
 		errors <- err
 		return
@@ -197,23 +198,23 @@ func (m *Sessions) handleTelemetry(errors chan error) {
 				close(waitc)
 				return
 			}
-			log.Infof("Got telemetry messageType %d", update.MessageType)
-			m.processTelemetryUpdate(update)
+			log.Infof("%s telemetry messageType %d", s.EndPoint, update.MessageType)
+			s.processTelemetryUpdate(update)
 		}
 	}()
 }
 
-func (m *Sessions) processTelemetryUpdate(update *sb.TelemetryMessage) {
+func (s *Session) processTelemetryUpdate(update *sb.TelemetryMessage) {
 	switch x := update.S.(type) {
 	case *sb.TelemetryMessage_RadioMeasReportPerUE:
-		m.addReceivedHOEventMeasuredRIC(update) // to monitor HO delay
+		s.addReceivedHOEventMeasuredRIC(update) // to monitor HO delay
 	default:
-		log.Fatalf("Telemetry update has unexpected type %T", x)
+		log.Fatalf("%s Telemetry update has unexpected type %T", s.EndPoint, x)
 	}
-	m.telemetryUpdates <- *update
+	s.telemetryUpdates <- *update
 }
 
-func (m *Sessions) addReceivedHOEventMeasuredRIC(update *sb.TelemetryMessage) {
+func (s *Session) addReceivedHOEventMeasuredRIC(update *sb.TelemetryMessage) {
 	servStationID := update.GetRadioMeasReportPerUE().GetEcgi()
 	numNeighborCells := len(update.GetRadioMeasReportPerUE().GetRadioReportServCells())
 	bestStationID := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetEcgi()
@@ -240,7 +241,7 @@ func (m *Sessions) addReceivedHOEventMeasuredRIC(update *sb.TelemetryMessage) {
 	}
 }
 
-func (m *Sessions) updateHOEventMeasuredRIC(ctrMsg sb.ControlResponse) {
+func (s *Session) updateHOEventMeasuredRIC(ctrMsg sb.ControlResponse) {
 	switch ctrMsg.S.(type) {
 	case *sb.ControlResponse_HORequest:
 		for i := 0; i < len(ListHOEventMeasuredRIC); i++ {

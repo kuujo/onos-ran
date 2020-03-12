@@ -33,8 +33,7 @@ type TopoMonitorBuilder interface {
 
 // TopoEventHandler topology event handler
 func (s *TopoMonitor) TopoEventHandler(eventHandler topoEventHandler) {
-	eventHandler(s.topoChannel)
-
+	go eventHandler(s.topoChannel)
 }
 
 // TopoMonitor topology monitor
@@ -58,5 +57,9 @@ func (s *TopoMonitor) Build() TopoMonitor {
 	return TopoMonitor{
 		topoChannel: s.topoChannel,
 	}
+}
 
+// Close closes the underlying channel
+func (s *TopoMonitor) Close() {
+	close(s.topoChannel)
 }
