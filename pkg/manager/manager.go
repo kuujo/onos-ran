@@ -58,18 +58,10 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		telemetryStore:     telemetryStore,
 		deviceChangesStore: deviceChangeStore,
 		SbSessions:         make(map[sb.ECGI]*southbound.Session),
-		controlUpdates:     make(chan sb.ControlUpdate),
-		controlResponses:   make(chan sb.ControlResponse),
-		telemetryUpdates:   make(chan sb.TelemetryMessage),
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
 	}
-
-	go mgr.recvUpdates()
-
-	go mgr.recvTelemetryUpdates()
-
 	return &mgr, nil
 }
 
@@ -79,19 +71,11 @@ type Manager struct {
 	telemetryStore     telemetry.Store
 	deviceChangesStore device.Store
 	SbSessions         map[sb.ECGI]*southbound.Session
-	controlUpdates     chan sb.ControlUpdate
-	controlResponses   chan sb.ControlResponse
-	telemetryUpdates   chan sb.TelemetryMessage
 	topoMonitor        monitor.TopoMonitor
 }
 
-func (m *Manager) recvUpdates() {
-	for update := range mgr.controlUpdates {
-		m.storeControlUpdate(update)
-	}
-}
-
-func (m *Manager) storeControlUpdate(update sb.ControlUpdate) {
+// StoreControlUpdate - put the control update in the atomix store
+func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
 	log.Infof("Got messageType %d", update.MessageType)
 	switch x := update.S.(type) {
 	case *sb.ControlUpdate_CellConfigReport:
@@ -200,9 +184,10 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 				log.Fatalf("Unable to create new session %s", err.Error())
 			}
 			if session != nil {
+				session.ControlUpdateHandlerFunc = m.StoreControlUpdate
+				session.TelemetryUpdateHandlerFunc = m.StoreTelemetry
 				m.SbSessions[ecgi] = session
-				session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials(),
-					m.controlUpdates, m.controlResponses, m.telemetryUpdates)
+				session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials())
 			} else {
 				log.Fatalf("Error creating new session for %v", ecgi)
 			}
@@ -224,13 +209,8 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func (m *Manager) recvTelemetryUpdates() {
-	for update := range mgr.telemetryUpdates {
-		m.storeTelemetry(update)
-	}
-}
-
-func (m *Manager) storeTelemetry(update sb.TelemetryMessage) {
+// StoreTelemetry - put the telemetry update in the atomix store
+func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
 	_ = m.telemetryStore.Put(&update)
 	switch x := update.S.(type) {
 	case *sb.TelemetryMessage_RadioMeasReportPerUE:

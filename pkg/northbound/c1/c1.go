@@ -21,10 +21,14 @@ import (
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
 
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	service "github.com/onosproject/onos-lib-go/pkg/northbound"
+
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"google.golang.org/grpc"
 )
+
+var log = logging.GetLogger("c1")
 
 // NewService returns a new device Service
 func NewService() (service.Service, error) {
@@ -222,6 +226,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 		if !ok {
 			return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
 		}
+		log.Infof("Sending HO for %v to %s %v", srcEcgi, srcSession.EndPoint, srcSession.Ecgi)
 		err := srcSession.SendResponse(ctrlResponse)
 		if err != nil {
 			return nil, err
@@ -231,6 +236,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 		if !ok {
 			return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
 		}
+		log.Infof("Sending HO for %v to %s %v", srcEcgi, dstSession.EndPoint, dstSession.Ecgi)
 		err = dstSession.SendResponse(ctrlResponse)
 		if err != nil {
 			return nil, err
@@ -244,7 +250,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 	} else {
 		return nil, fmt.Errorf("HandOverRequest is nil")
 	}
-	return &nb.HandOverResponse{}, nil
+	return &nb.HandOverResponse{Success: true}, nil
 }
 
 // SetRadioPower returns a response indicating success or failure.

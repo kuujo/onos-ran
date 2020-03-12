@@ -29,6 +29,12 @@ import (
 
 var log = logging.GetLogger("southbound")
 
+// TelemetryUpdateHandler - a function for the session to write back to manager without the import cycle
+type TelemetryUpdateHandler = func(sb.TelemetryMessage)
+
+// ControlUpdateHandler - a function for the session to write back to manager without the import cycle
+type ControlUpdateHandler = func(sb.ControlUpdate)
+
 // Session is responsible for managing connections to and interactions with the RAN southbound.
 type Session struct {
 	EndPoint sb.Endpoint
@@ -39,6 +45,9 @@ type Session struct {
 	controlUpdates   chan sb.ControlUpdate
 
 	telemetryUpdates chan sb.TelemetryMessage
+
+	ControlUpdateHandlerFunc   ControlUpdateHandler
+	TelemetryUpdateHandlerFunc TelemetryUpdateHandler
 }
 
 // HOEventMeasuredRIC is struct including UE ID and its eNB ID
@@ -57,17 +66,33 @@ var mutexListHOEventMeasuredRIC sync.RWMutex
 // NewSession creates a new southbound session controller.
 func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
 	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
-	return &Session{Ecgi: ecgi, EndPoint: endPoint}, nil
+
+	return &Session{
+		EndPoint:         endPoint,
+		Ecgi:             ecgi,
+		controlResponses: make(chan sb.ControlResponse),
+		controlUpdates:   make(chan sb.ControlUpdate),
+		telemetryUpdates: make(chan sb.TelemetryMessage),
+	}, nil
 }
 
 // Run starts the southbound control loop.
-func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials,
-	controlUpdates chan sb.ControlUpdate, controlResponses chan sb.ControlResponse, telemetryUpdates chan sb.TelemetryMessage) {
-	// Kick off a go routine that manages the connection to the simulator
-	s.controlUpdates = controlUpdates
-	s.controlResponses = controlResponses
-	s.telemetryUpdates = telemetryUpdates
+func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials) {
 	go s.manageConnections(tls, creds)
+	go s.recvTelemetryUpdates()
+	go s.recvUpdates()
+}
+
+func (s *Session) recvTelemetryUpdates() {
+	for update := range s.telemetryUpdates {
+		s.TelemetryUpdateHandlerFunc(update)
+	}
+}
+
+func (s *Session) recvUpdates() {
+	for update := range s.controlUpdates {
+		s.ControlUpdateHandlerFunc(update)
+	}
 }
 
 // SendResponse sends the specified response on the control channel.

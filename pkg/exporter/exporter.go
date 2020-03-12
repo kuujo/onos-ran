@@ -216,21 +216,43 @@ func exposeUELinkInfo(mgr *manager.Manager) []prometheus.Counter {
 
 func exposeHOEventInfo() []prometheus.Counter {
 	var listHOEvents []prometheus.Counter
+	hoEventsMap := make(map[string]prometheus.Counter)
 	for _, e := range southbound.ListHOEventMeasuredRIC {
 		if e.ElapsedTime == 0 {
 			continue
 		}
+		label := generateLabel(e)
+		labelStr := labelAsString(label)
+		if _, ok := hoEventsMap[labelStr]; ok {
+			// label already used - can't add it as new counter - ignore
+			continue
+		}
 		tmp := promauto.NewCounter(prometheus.CounterOpts{
-			Name: "ho_events",
-			ConstLabels: prometheus.Labels{
-				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d", e.Timestamp.Year(), e.Timestamp.Month(), e.Timestamp.Day(), e.Timestamp.Hour(), e.Timestamp.Minute(), e.Timestamp.Second()),
-				"crnti":     e.Crnti,
-				"plmnid":    e.DestPlmnID,
-				"ecid":      e.DestECID,
-			},
+			Name:        "ho_events",
+			ConstLabels: label,
 		})
 		tmp.Add(float64(e.ElapsedTime))
-		listHOEvents = append(listHOEvents, tmp)
+		hoEventsMap[labelStr] = tmp // Overwrite a duplicate entry
+	}
+	for _, hoEvent := range hoEventsMap {
+		listHOEvents = append(listHOEvents, hoEvent)
 	}
 	return listHOEvents
+}
+
+func generateLabel(e southbound.HOEventMeasuredRIC) prometheus.Labels {
+	return prometheus.Labels{
+		"timestamp": e.Timestamp.Format(time.Stamp),
+		"crnti":     e.Crnti,
+		"plmnid":    e.DestPlmnID,
+		"ecid":      e.DestECID,
+	}
+}
+
+func labelAsString(labels prometheus.Labels) string {
+	var labelStr string
+	for k, v := range labels {
+		labelStr = fmt.Sprintf("%s:%s;%s", k, v, labelStr)
+	}
+	return labelStr
 }

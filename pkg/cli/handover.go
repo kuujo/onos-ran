@@ -23,6 +23,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TestPlmnID - the default PlmnID
+const TestPlmnID = "001001"
+
 func getHandOverCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "handover <crnti> <src-ecgi> <dst-ecgi>",
@@ -40,14 +43,16 @@ func runHandOverCommand(cmd *cobra.Command, args []string) error {
 	}
 	defer conn.Close()
 
-	request := nb.HandOverRequest{Crnti: args[0], SrcStation: &nb.ECGI{Ecid: args[1]}, DstStation: &nb.ECGI{Ecid: args[2]}}
+	request := nb.HandOverRequest{Crnti: args[0],
+		SrcStation: &nb.ECGI{Ecid: args[1], Plmnid: TestPlmnID},
+		DstStation: &nb.ECGI{Ecid: args[2], Plmnid: TestPlmnID}}
 	client := nb.NewC1InterfaceServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	response, err := client.TriggerHandOver(ctx, &request)
 	if err != nil {
-		log.Error("handover error ", err)
+		log.Errorf("handover error %s", err.Error())
 		return err
 	}
 	if !response.Success {
