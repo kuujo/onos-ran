@@ -17,6 +17,7 @@ package updates
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"io"
 	"time"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/gogo/protobuf/proto"
-	"github.com/onosproject/onos-ric/pkg/store/utils"
 
 	"github.com/onosproject/onos-ric/api/sb"
 )
@@ -39,7 +39,7 @@ const primitiveName = "control-updates"
 // NewDistributedStore creates a new distributed control updates store
 func NewDistributedStore() (Store, error) {
 	log.Info("Creating distributed control updates store")
-	database, err := utils.GetAtomixDatabase()
+	database, err := atomix.GetAtomixDatabase()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func NewDistributedStore() (Store, error) {
 
 // NewLocalStore returns a new local control updates store
 func NewLocalStore() (Store, error) {
-	_, address := utils.StartLocalNode()
+	_, address := atomix.StartLocalNode()
 	return newLocalStore(address)
 }
 
