@@ -93,6 +93,9 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
+	if req.Subscribe {
+		return fmt.Errorf("subscribe not yet implemented")
+	}
 	if req.Ecgi == nil {
 		ch := make(chan sb.ControlUpdate)
 		if req.Subscribe {
@@ -131,7 +134,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 			}
 		}
 	} else {
-		return fmt.Errorf("req ecgi is not nil")
+		return fmt.Errorf("list station links for specific ecgi not yet implemented")
 	}
 	return nil
 }
@@ -185,123 +188,126 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 				if err := stream.Send(&ueLinkInfo); err != nil {
 					return err
 				}
-
+			default:
+				log.Errorf("Unhandled case %s", telemetry.GetMessageType())
 			}
 		}
 	} else {
-		return fmt.Errorf("UELinkListRequest is not empty")
+		return fmt.Errorf("listuelinks for specific crnti and ecgi not yet implemented %v", req)
 	}
 	return nil
 }
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
 func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
-	if req != nil {
-		src := req.GetSrcStation()
-		dst := req.GetDstStation()
-		crnti := req.GetCrnti()
+	if req == nil || req.Crnti == "" ||
+		req.DstStation == nil || req.DstStation.Plmnid == "" || req.DstStation.Ecid == "" ||
+		req.SrcStation == nil || req.SrcStation.Plmnid == "" || req.SrcStation.Ecid == "" {
 
-		srcEcgi := sb.ECGI{
-			Ecid:   src.GetEcid(),
-			PlmnId: src.GetPlmnid(),
-		}
-
-		dstEcgi := sb.ECGI{
-			Ecid:   dst.GetEcid(),
-			PlmnId: dst.GetPlmnid(),
-		}
-
-		ctrlResponse := sb.ControlResponse{
-			MessageType: sb.MessageType_HO_REQUEST,
-			S: &sb.ControlResponse_HORequest{
-				HORequest: &sb.HORequest{
-					Crnti: crnti,
-					EcgiS: &srcEcgi,
-					EcgiT: &dstEcgi,
-				},
-			},
-		}
-
-		srcSession, ok := manager.GetManager().SbSessions[srcEcgi]
-		if !ok {
-			return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
-		}
-		log.Infof("Sending HO for %v to %s %v", srcEcgi, srcSession.EndPoint, srcSession.Ecgi)
-		err := srcSession.SendResponse(ctrlResponse)
-		if err != nil {
-			return nil, err
-		}
-
-		dstSession, ok := manager.GetManager().SbSessions[dstEcgi]
-		if !ok {
-			return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
-		}
-		log.Infof("Sending HO for %v to %s %v", srcEcgi, dstSession.EndPoint, dstSession.Ecgi)
-		err = dstSession.SendResponse(ctrlResponse)
-		if err != nil {
-			return nil, err
-		}
-
-		err = manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
-		if err != nil {
-			return nil, err
-		}
-
-	} else {
-		return nil, fmt.Errorf("HandOverRequest is nil")
+		return nil, fmt.Errorf("HandOverRequest is missing values %v", req)
 	}
+	src := req.GetSrcStation()
+	dst := req.GetDstStation()
+	crnti := req.GetCrnti()
+
+	srcEcgi := sb.ECGI{
+		Ecid:   src.GetEcid(),
+		PlmnId: src.GetPlmnid(),
+	}
+
+	dstEcgi := sb.ECGI{
+		Ecid:   dst.GetEcid(),
+		PlmnId: dst.GetPlmnid(),
+	}
+
+	ctrlResponse := sb.ControlResponse{
+		MessageType: sb.MessageType_HO_REQUEST,
+		S: &sb.ControlResponse_HORequest{
+			HORequest: &sb.HORequest{
+				Crnti: crnti,
+				EcgiS: &srcEcgi,
+				EcgiT: &dstEcgi,
+			},
+		},
+	}
+
+	srcSession, ok := manager.GetManager().SbSessions[srcEcgi]
+	if !ok {
+		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
+	}
+	log.Infof("Sending HO for %v to %s %v", srcEcgi, srcSession.EndPoint, srcSession.Ecgi)
+	err := srcSession.SendResponse(ctrlResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	dstSession, ok := manager.GetManager().SbSessions[dstEcgi]
+	if !ok {
+		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
+	}
+	log.Infof("Sending HO for %v to %s %v", srcEcgi, dstSession.EndPoint, dstSession.Ecgi)
+	err = dstSession.SendResponse(ctrlResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	err = manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
+	if err != nil {
+		return nil, err
+	}
+
 	return &nb.HandOverResponse{Success: true}, nil
 }
 
 // SetRadioPower returns a response indicating success or failure.
 func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
-	if req != nil {
-		offset := req.GetOffset()
-		var pa []sb.XICICPA
-		switch offset {
-		case nb.StationPowerOffset_PA_DB_0:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_0)
-		case nb.StationPowerOffset_PA_DB_1:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_1)
-		case nb.StationPowerOffset_PA_DB_2:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_2)
-		case nb.StationPowerOffset_PA_DB_3:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_3)
-		case nb.StationPowerOffset_PA_DB_MINUS3:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS3)
-		case nb.StationPowerOffset_PA_DB_MINUS6:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS6)
-		case nb.StationPowerOffset_PA_DB_MINUS1DOT77:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS1DOT77)
-		case nb.StationPowerOffset_PA_DB_MINUX4DOT77:
-			pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUX4DOT77)
-
-		}
-
-		ecgi := sb.ECGI{
-			Ecid:   req.GetEcgi().GetEcid(),
-			PlmnId: req.GetEcgi().GetPlmnid(),
-		}
-
-		ctrlResponse := sb.ControlResponse{
-			MessageType: sb.MessageType_RRM_CONFIG,
-			S: &sb.ControlResponse_RRMConfig{
-				RRMConfig: &sb.RRMConfig{
-					Ecgi: &ecgi,
-					PA:   pa,
-				},
-			},
-		}
-		session, ok := manager.GetManager().SbSessions[ecgi]
-		if !ok {
-			return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
-		}
-		err := session.SendResponse(ctrlResponse)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		return nil, fmt.Errorf("SetRadioPower request cannot be nil")
+	if req == nil || req.Ecgi == nil || req.Ecgi.Plmnid == "" || req.Ecgi.Ecid == "" || req.Offset < 0 {
+		return nil, fmt.Errorf("SetRadioPower is missing values %v", req)
 	}
+	offset := req.GetOffset()
+	var pa []sb.XICICPA
+	switch offset {
+	case nb.StationPowerOffset_PA_DB_0:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_0)
+	case nb.StationPowerOffset_PA_DB_1:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_1)
+	case nb.StationPowerOffset_PA_DB_2:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_2)
+	case nb.StationPowerOffset_PA_DB_3:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_3)
+	case nb.StationPowerOffset_PA_DB_MINUS3:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS3)
+	case nb.StationPowerOffset_PA_DB_MINUS6:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS6)
+	case nb.StationPowerOffset_PA_DB_MINUS1DOT77:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS1DOT77)
+	case nb.StationPowerOffset_PA_DB_MINUX4DOT77:
+		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUX4DOT77)
+
+	}
+
+	ecgi := sb.ECGI{
+		Ecid:   req.GetEcgi().GetEcid(),
+		PlmnId: req.GetEcgi().GetPlmnid(),
+	}
+
+	ctrlResponse := sb.ControlResponse{
+		MessageType: sb.MessageType_RRM_CONFIG,
+		S: &sb.ControlResponse_RRMConfig{
+			RRMConfig: &sb.RRMConfig{
+				Ecgi: &ecgi,
+				PA:   pa,
+			},
+		},
+	}
+	session, ok := manager.GetManager().SbSessions[ecgi]
+	if !ok {
+		return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
+	}
+	err := session.SendResponse(ctrlResponse)
+	if err != nil {
+		return nil, err
+	}
+
 	return &nb.RadioPowerResponse{Success: true}, nil
 }

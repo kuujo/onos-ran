@@ -29,7 +29,10 @@ func setStationsPower(t *testing.T, offset nb.StationPowerOffset, attempts int) 
 	for _, station := range stations {
 		for i := 1; i <= attempts; i++ {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			request := &nb.RadioPowerRequest{Ecgi: &nb.ECGI{Ecid: station.Ecgi.Ecid}, Offset: offset}
+			request := &nb.RadioPowerRequest{
+				Ecgi:   &nb.ECGI{Plmnid: defaultPlmnid, Ecid: station.Ecgi.Ecid},
+				Offset: offset,
+			}
 			response, err := client.SetRadioPower(ctx, request)
 			cancel()
 			assert.NoError(t, err)

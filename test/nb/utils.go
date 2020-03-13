@@ -26,6 +26,20 @@ import (
 	"time"
 )
 
+const defaultPlmnid = "001001"
+const cellNamePattern = "000[0-9]{4}"
+const (
+	cell0Name = "0001420"
+	cell1Name = "0001421"
+	cell2Name = "0001422"
+	cell3Name = "0001423"
+	cell4Name = "0001424"
+	cell5Name = "0001425"
+	cell6Name = "0001426"
+	cell7Name = "0001427"
+	cell8Name = "0001428"
+)
+
 // waitForSimulator polls until the simulator is responding properly.
 // the can take a while, allow a minute before giving up.
 func waitForSimulator() error {
@@ -106,10 +120,9 @@ func readLinks(t *testing.T) map[string]*nb.UELinkInfo {
 // verifyUELinkInfo makes sure that a UE link info has
 // reasonable values in it
 func verifyUELinkInfo(t *testing.T, link *nb.UELinkInfo) {
-	const defaultPlmnid = "001001"
 	assert.Equal(t, defaultPlmnid, link.Ecgi.Plmnid)
 
-	re := regexp.MustCompile("00000[0-9][0-9]")
+	re := regexp.MustCompile(cellNamePattern)
 
 	assert.True(t, re.MatchString(link.Ecgi.Ecid))
 

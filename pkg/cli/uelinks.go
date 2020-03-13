@@ -16,15 +16,12 @@ package cli
 
 import (
 	"context"
-	"io"
-	"sort"
-	"text/tabwriter"
-	"text/template"
-	"time"
-
 	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
+	"io"
+	"sort"
+	"text/template"
 )
 
 // QualSet - used for the Go template/text output
@@ -65,7 +62,6 @@ func getWatchUeLinksCommand() *cobra.Command {
 		Short: "Watch UE Links",
 		RunE:  runUeLinksCommand,
 	}
-	cmd.SetArgs([]string{_subscribe})
 	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	cmd.Flags().String("ecgi", "", "optional station identifier")
 	cmd.Flags().String("crnti", "", "optional UE identifier in the local station context")
@@ -79,17 +75,13 @@ func getCRNTI(cmd *cobra.Command) string {
 
 func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
-	var subscribe bool
-	if len(args) == 1 && args[0] == _subscribe {
-		subscribe = true
-	}
+	subscribe, _ := cmd.Flags().GetBool(_subscribe)
 
 	conn, err := cli.GetConnection(cmd)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	outputWriter := GetOutput()
 	tmplCellsList, _ := template.New("uelinkscells").Parse(ueLinksCellsTemplate)
 	tmplUesList, _ := template.New("uelinksues").Parse(ueLinksTemplate)
 
@@ -113,16 +105,11 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 
 	client := nb.NewC1InterfaceServiceClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	stream, err := client.ListUELinks(ctx, &request)
+	stream, err := client.ListUELinks(context.Background(), &request)
 	if err != nil {
-		log.Error("list error ", err)
+		Output("list error %s", err.Error())
 		return err
 	}
-	writer := new(tabwriter.Writer)
-	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
-
 	towers := make(map[string]interface{})
 	var towerKeys []string
 	qualityMap := make(map[string][]*nb.ChannelQuality)
@@ -134,10 +121,9 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Error("rcv error ", err)
+			Output("rcv error %s", err.Error())
 			return err
 		}
-
 		if _, ok := towers[response.Ecgi.Ecid]; !ok {
 			towers[response.Ecgi.Ecid] = struct{}{}
 			towerKeys = make([]string, len(towers))
@@ -149,25 +135,34 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 			sort.Slice(towerKeys, func(i, j int) bool {
 				return towerKeys[i] < towerKeys[j]
 			})
-		}
-		qualityMap[response.Crnti] = response.ChannelQualities
-		// TODO handle the streaming case
-	}
-	_ = tmplCellsList.Execute(GetOutput(), towerKeys)
-
-	for k, qualities := range qualityMap {
-		qualTable := make([]uint32, len(towerKeys))
-		for _, q := range qualities {
-			for i, t := range towerKeys {
-				if t == q.TargetEcgi.Ecid {
-					qualTable[i] = q.CqiHist
-					break
-				}
+			if subscribe {
+				_ = tmplCellsList.Execute(GetOutput(), towerKeys)
 			}
 		}
-		qualSet := QualSet{Ue: k, UeQual: qualTable}
-		_ = tmplUesList.Execute(GetOutput(), qualSet)
+		qualityMap[response.Crnti] = response.ChannelQualities
+		if subscribe {
+			printQualMap(response.Crnti, response.ChannelQualities, towerKeys, tmplUesList)
+		}
 	}
-
+	if !subscribe {
+		_ = tmplCellsList.Execute(GetOutput(), towerKeys)
+		for k, qualities := range qualityMap {
+			printQualMap(k, qualities, towerKeys, tmplUesList)
+		}
+	}
 	return nil
+}
+
+func printQualMap(crnti string, qualities []*nb.ChannelQuality, towerKeys []string, tmplUesList *template.Template) {
+	qualTable := make([]uint32, len(towerKeys))
+	for _, q := range qualities {
+		for i, t := range towerKeys {
+			if t == q.TargetEcgi.Ecid {
+				qualTable[i] = q.CqiHist
+				break
+			}
+		}
+	}
+	qualSet := QualSet{Ue: crnti, UeQual: qualTable}
+	_ = tmplUesList.Execute(GetOutput(), qualSet)
 }

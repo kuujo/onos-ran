@@ -16,7 +16,6 @@ package nb
 
 import (
 	"context"
-	"fmt"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -57,7 +56,7 @@ func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
 
 	const (
 		expectedStationInfoCount          = 9
-		expectedPLMNID                    = "001001"
+		expectedPLMNID                    = defaultPlmnid
 		expectedMaxNumConnectedUes uint32 = 5
 	)
 
@@ -69,12 +68,22 @@ func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
 
 	// Make sure the data returned are correct
 	assert.Equal(t, expectedStationInfoCount, len(ids))
-	for stationIndex := 1; stationIndex <= expectedStationInfoCount; stationIndex++ {
-		id := fmt.Sprintf("000000%d", stationIndex)
-		station, stationFound := ids[id]
-		assert.True(t, stationFound)
-		assert.Equal(t, id, station.GetEcgi().Ecid)
-		assert.Equal(t, expectedPLMNID, station.Ecgi.Plmnid)
-		assert.Equal(t, expectedMaxNumConnectedUes, station.MaxNumConnectedUes)
+	for id, station := range ids {
+		switch id {
+		case cell0Name:
+		case cell1Name:
+		case cell2Name:
+		case cell3Name:
+		case cell4Name:
+		case cell5Name:
+		case cell6Name:
+		case cell7Name:
+		case cell8Name:
+			assert.Equal(t, id, station.GetEcgi().Ecid)
+			assert.Equal(t, expectedPLMNID, station.Ecgi.Plmnid)
+			assert.Equal(t, expectedMaxNumConnectedUes, station.MaxNumConnectedUes)
+		default:
+			assert.Failf(t, "Unexpected station ID %s", id)
+		}
 	}
 }

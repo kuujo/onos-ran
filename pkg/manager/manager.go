@@ -211,7 +211,10 @@ func GetManager() *Manager {
 
 // StoreTelemetry - put the telemetry update in the atomix store
 func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
-	_ = m.telemetryStore.Put(&update)
+	err := m.telemetryStore.Put(&update)
+	if err != nil {
+		log.Errorf("Could not put message %v in telemetry store %s", update, err.Error())
+	}
 	switch x := update.S.(type) {
 	case *sb.TelemetryMessage_RadioMeasReportPerUE:
 		log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",

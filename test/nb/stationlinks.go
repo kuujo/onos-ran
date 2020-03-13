@@ -16,7 +16,6 @@ package nb
 
 import (
 	"context"
-	"fmt"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -58,7 +57,7 @@ func (s *TestSuite) TestNBStationLinksAPI(t *testing.T) {
 
 	const (
 		expectedStationLinkCount = 9
-		expectedPLMNID           = "001001"
+		expectedPLMNID           = defaultPlmnid
 	)
 
 	// Wait for simulator to respond
@@ -68,18 +67,28 @@ func (s *TestSuite) TestNBStationLinksAPI(t *testing.T) {
 	links := readStationLinks(t)
 
 	// Make sure the data returned are correct
-	re := regexp.MustCompile("00000[0-9][0-9]")
+	re := regexp.MustCompile(cellNamePattern)
 	assert.Equal(t, expectedStationLinkCount, len(links))
-	for stationIndex := 1; stationIndex <= expectedStationLinkCount; stationIndex++ {
-		id := fmt.Sprintf("000000%d", stationIndex)
-		link, linkFound := links[id]
-		assert.True(t, linkFound)
-		assert.Equal(t, id, link.GetEcgi().Ecid)
-		assert.Equal(t, expectedPLMNID, link.Ecgi.Plmnid)
 
-		for _, neighbor := range link.NeighborECGI {
-			assert.Equal(t, expectedPLMNID, neighbor.Plmnid)
-			assert.True(t, re.MatchString(neighbor.Ecid))
+	for id, link := range links {
+		switch id {
+		case cell0Name:
+		case cell1Name:
+		case cell2Name:
+		case cell3Name:
+		case cell4Name:
+		case cell5Name:
+		case cell6Name:
+		case cell7Name:
+		case cell8Name:
+			assert.Equal(t, id, link.GetEcgi().Ecid)
+			assert.Equal(t, expectedPLMNID, link.Ecgi.Plmnid)
+			for _, neighbor := range link.NeighborECGI {
+				assert.Equal(t, expectedPLMNID, neighbor.Plmnid)
+				assert.True(t, re.MatchString(neighbor.Ecid))
+			}
+		default:
+			assert.Failf(t, "Unexpected station ID %s", id)
 		}
 	}
 }

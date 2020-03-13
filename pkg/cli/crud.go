@@ -16,6 +16,8 @@ package cli
 
 import "github.com/spf13/cobra"
 
+const _subscribe = "subscribe"
+
 func getGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get {stations|stationlinks|uelinks} [args]",
@@ -32,6 +34,8 @@ func getWatchCommand() *cobra.Command {
 		Use:   "watch {stations|stationlinks|uelinks} [args]",
 		Short: "Watch for changes to a RIC resource type",
 	}
+	cmd.PersistentFlags().Bool(_subscribe, true, "subscribe")
+	_ = cmd.PersistentFlags().MarkHidden(_subscribe)
 	cmd.AddCommand(getWatchStationsCommand())
 	cmd.AddCommand(getWatchStationLinksCommand())
 	cmd.AddCommand(getWatchUeLinksCommand())

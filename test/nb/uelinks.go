@@ -24,7 +24,7 @@ import (
 
 // TestNBUELinksAPI tests the NB stations API
 func (s *TestSuite) TestNBUELinksAPI(t *testing.T) {
-	const expectedPLMNID = "001001"
+	const expectedPLMNID = defaultPlmnid
 
 	// Wait for simulator to respond
 	waitForSimulatorOrFail(t)
@@ -45,7 +45,7 @@ func (s *TestSuite) TestNBUELinksAPI(t *testing.T) {
 	}
 
 	// Make sure the data returned are correct
-	re := regexp.MustCompile("00000[0-9][0-9]")
+	re := regexp.MustCompile(cellNamePattern)
 
 	for _, link := range ids {
 		assert.Equal(t, expectedPLMNID, link.Ecgi.Plmnid)

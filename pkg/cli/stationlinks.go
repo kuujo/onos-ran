@@ -43,17 +43,13 @@ func getWatchStationLinksCommand() *cobra.Command {
 		Short: "Watch Station Links",
 		RunE:  runStationLinksCommand,
 	}
-	cmd.SetArgs([]string{_subscribe})
 	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	return cmd
 }
 
 func runStationLinksCommand(cmd *cobra.Command, args []string) error {
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
-	var subscribe bool
-	if len(args) == 1 && args[0] == _subscribe {
-		subscribe = true
-	}
+	subscribe, _ := cmd.Flags().GetBool(_subscribe)
 
 	conn, err := cli.GetConnection(cmd)
 	if err != nil {
