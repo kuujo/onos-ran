@@ -48,12 +48,9 @@ func main() {
 	caPath := flag.String("caPath", "", "path to CA certificate")
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
-	simulator := flag.String("simulator", "", "address:port of the RAN simulator")
 	topoEndpoint := flag.String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
-
-	// TODO Have to remove from Helm chart and onit first
-	log.Infof("Argument 'simulator' is ignored %s", *simulator)
 	flag.Parse()
+
 	log.Info("Starting onos-ric")
 
 	opts, err := certs.HandleCertArgs(keyPath, certPath)
