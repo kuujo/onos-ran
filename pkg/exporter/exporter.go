@@ -250,9 +250,12 @@ func generateLabel(e southbound.HOEventMeasuredRIC) prometheus.Labels {
 }
 
 func labelAsString(labels prometheus.Labels) string {
-	var labelStr string
-	for k, v := range labels {
-		labelStr = fmt.Sprintf("%s:%s;%s", k, v, labelStr)
-	}
+	timeStamp := fmt.Sprintf("timestamp:%s", labels["timestamp"])
+	crnti := fmt.Sprintf("crnti:%s", labels["crnti"])
+	plmnid := fmt.Sprintf("plmnid:%s", labels["plmnid"])
+	ecid := fmt.Sprintf("ecid:%s", labels["ecid"])
+
+	labelStr := fmt.Sprintf("%s;%s;%s;%s", timeStamp, crnti, plmnid, ecid)
+
 	return labelStr
 }
