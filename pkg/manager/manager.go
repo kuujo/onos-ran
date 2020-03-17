@@ -16,6 +16,8 @@
 package manager
 
 import (
+	"strings"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/southbound"
@@ -25,7 +27,6 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/updates"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 const ranSimulatorType = topodevice.Type("RanSimulator")
@@ -86,25 +87,14 @@ func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
 		_ = m.updatesStore.Put(&update)
 	case *sb.ControlUpdate_UEReleaseInd:
 		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
-		// Delete UE's UEAdmissionRequest record from store
-		key := updates.ID{
-			PlmnID:      x.UEReleaseInd.Ecgi.PlmnId,
-			Ecid:        x.UEReleaseInd.Ecgi.Ecid,
-			Crnti:       x.UEReleaseInd.Crnti,
-			MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
-		}.String()
-		if err := m.updatesStore.DeleteWithKey(key); err != nil {
-			log.Infof("Error deleting UEAdmissionRequest, key=%s", key)
+
+		err := m.DeleteTelemetry(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		if err != nil {
+			log.Errorf("%s", err)
 		}
-		// Delete UE's RadioMeasReportPerUE record from store
-		key = updates.ID{
-			PlmnID:      x.UEReleaseInd.Ecgi.PlmnId,
-			Ecid:        x.UEReleaseInd.Ecgi.Ecid,
-			Crnti:       x.UEReleaseInd.Crnti,
-			MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
-		}.String()
-		if err := m.telemetryStore.DeleteWithKey(key); err != nil {
-			log.Infof("Error deleting UEAdmissionRequest, key=%s", key)
+		err = m.DeleteUEAdmissionRequest(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		if err != nil {
+			log.Errorf("%s", err)
 		}
 	default:
 		log.Fatalf("ControlReport has unexpected type %T", x)
@@ -241,18 +231,27 @@ func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) erro
 		Ecid:        ecid,
 		Crnti:       crnti,
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
-	}
-	telemetryMsg, err := m.telemetryStore.Get(id)
-	if err != nil {
+	}.String()
+	if err := m.telemetryStore.DeleteWithKey(id); err != nil {
+		log.Infof("Error deleting Telemetry, key=%s", id)
 		return err
 	}
-	err = m.telemetryStore.Delete(telemetryMsg)
-	if err != nil {
-		return err
-	}
-
 	return nil
+}
 
+// DeleteUEAdmissionRequest deletes UpdateControls
+func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti string) error {
+	id := updates.ID{
+		PlmnID:      plmnid,
+		Ecid:        ecid,
+		Crnti:       crnti,
+		MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
+	}.String()
+	if err := m.updatesStore.DeleteWithKey(id); err != nil {
+		log.Infof("Error deleting UEAdmissionRequest, key=%s", id)
+		return err
+	}
+	return nil
 }
 
 // ecgiFromTopoID topo device is formatted like "001001-0001786" PlmnId:Ecid

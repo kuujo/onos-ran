@@ -255,6 +255,10 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 	if err != nil {
 		return nil, err
 	}
+	err = manager.GetManager().DeleteUEAdmissionRequest(src.GetPlmnid(), src.GetEcid(), crnti)
+	if err != nil {
+		return nil, err
+	}
 
 	return &nb.HandOverResponse{Success: true}, nil
 }
