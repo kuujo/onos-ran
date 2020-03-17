@@ -84,7 +84,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
 
 	if !noHeaders {
-		fmt.Fprintln(writer, "ECID\tMAX UEs")
+		_, _ = fmt.Fprintln(writer, "ECID\tMAX UEs")
 	}
 
 	for {
@@ -96,9 +96,9 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%d", response.Ecgi.Ecid, response.MaxNumConnectedUes))
+		_, _ = fmt.Fprintf(writer, "%s\t%d\n", response.Ecgi.Ecid, response.MaxNumConnectedUes)
 	}
-	writer.Flush()
+	_ = writer.Flush()
 
 	return nil
 }

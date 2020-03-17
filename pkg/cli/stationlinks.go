@@ -79,7 +79,7 @@ func runStationLinksCommand(cmd *cobra.Command, args []string) error {
 	writer.Init(outputWriter, 0, 0, 3, ' ', tabwriter.FilterHTML)
 
 	if !noHeaders {
-		fmt.Fprintln(writer, "ECID\tNEIGHBOR ECIDs")
+		_, _ = fmt.Fprintln(writer, "ECID\tNEIGHBOR ECIDs")
 	}
 
 	for {
@@ -99,9 +99,9 @@ func runStationLinksCommand(cmd *cobra.Command, args []string) error {
 				neighbours = s.Ecid
 			}
 		}
-		fmt.Fprintln(writer, fmt.Sprintf("%s\t%s", response.Ecgi.Ecid, neighbours))
+		_, _ = fmt.Fprintf(writer, "%s\t%s\n", response.Ecgi.Ecid, neighbours)
 	}
-	writer.Flush()
+	_ = writer.Flush()
 
 	return nil
 }
