@@ -53,15 +53,6 @@ func main() {
 
 	// TODO Have to remove from Helm chart and onit first
 	log.Infof("Argument 'simulator' is ignored %s", *simulator)
-	//lines 93-109 are implemented according to
-	// https://github.com/kubernetes/klog/blob/master/examples/coexist_glog/coexist_glog.go
-	// because of libraries importing glog. With glog import we can't call log.InitFlags(nil) as per klog readme
-	// thus the alsologtostderr is not set properly and we issue multiple logs.
-	// Calling log.InitFlags(nil) throws panic with error `flag redefined: log_dir`
-	err := flag.Set("alsologtostderr", "true")
-	if err != nil {
-		log.Error("Cant' avoid double Error logging ", err)
-	}
 	flag.Parse()
 	log.Info("Starting onos-ric")
 
