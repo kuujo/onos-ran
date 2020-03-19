@@ -128,7 +128,7 @@ func exposeMLBEventInfo(sb *mlbappsouthbound.MLBSessions) []prometheus.Counter {
 		tmp := promauto.NewCounter(prometheus.CounterOpts{
 			Name: "mlbapp_mlb_event_info",
 			ConstLabels: prometheus.Labels{
-				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d", e.TimeStamp.Year(), e.TimeStamp.Month(), e.TimeStamp.Day(), e.TimeStamp.Hour(), e.TimeStamp.Minute(), e.TimeStamp.Second()),
+				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d.%d", e.TimeStamp.Year(), e.TimeStamp.Month(), e.TimeStamp.Day(), e.TimeStamp.Hour(), e.TimeStamp.Minute(), e.TimeStamp.Second(), e.TimeStamp.Nanosecond()),
 				"plmnid":    e.PlmnID,
 				"ecid":      e.Ecid,
 				"maxnumues": fmt.Sprintf("%d", e.MaxNumUes),

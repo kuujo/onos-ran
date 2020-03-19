@@ -114,7 +114,7 @@ func exposeHOEventListInfo(sb *hoappsouthbound.HOSessions) []prometheus.Counter 
 		tmp := promauto.NewCounter(prometheus.CounterOpts{
 			Name: "hoapp_ho_event_info",
 			ConstLabels: prometheus.Labels{
-				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d", e.TimeStamp.Year(), e.TimeStamp.Month(), e.TimeStamp.Day(), e.TimeStamp.Hour(), e.TimeStamp.Minute(), e.TimeStamp.Second()),
+				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d.%d", e.TimeStamp.Year(), e.TimeStamp.Month(), e.TimeStamp.Day(), e.TimeStamp.Hour(), e.TimeStamp.Minute(), e.TimeStamp.Second(), e.TimeStamp.Nanosecond()),
 				"crnti":     e.CRNTI,
 				"srcplmnid": e.SrcPlmnID,
 				"srcecid":   e.SrcEcid,
