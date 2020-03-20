@@ -43,22 +43,15 @@ func setStationsPower(t *testing.T, offset nb.StationPowerOffset, attempts int) 
 	time.Sleep(15 * time.Second)
 }
 
-func linksHaveHigherPowerCQI(baseLinks map[string]*nb.UELinkInfo, currentLinks map[string]*nb.UELinkInfo) bool {
+func linksAreAllPresent(baseLinks map[string]*nb.UELinkInfo, currentLinks map[string]*nb.UELinkInfo) bool {
 	found := 0
-	for key, baseLink := range baseLinks {
+	for key := range baseLinks {
 		currentLink := currentLinks[key]
-		for _, baseCQI := range baseLink.ChannelQualities {
-			for _, currentCQI := range currentLink.ChannelQualities {
-				if baseCQI.TargetEcgi.Ecid == currentCQI.TargetEcgi.Ecid {
-					if currentCQI.CqiHist > baseCQI.CqiHist {
-						found++
-						break
-					}
-				}
-			}
+		if currentLink.Ecgi.Ecid == baseLinks[key].Ecgi.Ecid {
+			found++
 		}
 	}
-	return found == 0
+	return found == len(baseLinks)
 }
 
 // TestNBPowerAPI tests the NB stations API
@@ -77,8 +70,8 @@ func (s *TestSuite) TestNBPowerAPI(t *testing.T) {
 	// get the uelinks after the power down change
 	uelinksAfterPowerDown := readLinks(t)
 
-	//  make sure that power has been reduced
-	assert.True(t, linksHaveHigherPowerCQI(uelinksBeforePowerDown, uelinksAfterPowerDown),
+	//  make sure that links are still there
+	assert.True(t, linksAreAllPresent(uelinksBeforePowerDown, uelinksAfterPowerDown),
 		"After power down, one or more links have higher CQI")
 
 	// turn the power back up for all stations
@@ -87,7 +80,7 @@ func (s *TestSuite) TestNBPowerAPI(t *testing.T) {
 	// get the uelinks after the power up change
 	uelinksAfterPowerUp := readLinks(t)
 
-	// make sure that power has been increased
-	assert.True(t, !linksHaveHigherPowerCQI(uelinksAfterPowerDown, uelinksAfterPowerUp),
+	// make sure the links are still there
+	assert.True(t, linksAreAllPresent(uelinksAfterPowerDown, uelinksAfterPowerUp),
 		"After power up, one or more links have lower CQI")
 }
