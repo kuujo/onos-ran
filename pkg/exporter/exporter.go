@@ -24,7 +24,6 @@ import (
 
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/manager"
-	"github.com/onosproject/onos-ric/pkg/southbound"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -48,7 +47,7 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 	go func() {
 		for {
 			var wg sync.WaitGroup
-			wg.Add(4) // because there are four goroutines
+			wg.Add(3) // because there are four goroutines
 
 			var listRNIBCell []prometheus.Counter
 			var listRNIBUEAdmReq []prometheus.Counter
@@ -65,10 +64,6 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 			}()
 			go func() {
 				listRNIBUERel = exposeUEReleaseInd(mgr)
-				defer wg.Done()
-			}()
-			go func() {
-				listHOEvents = exposeHOEventInfo()
 				defer wg.Done()
 			}()
 			wg.Wait()
@@ -212,50 +207,4 @@ func exposeUELinkInfo(mgr *manager.Manager) []prometheus.Counter {
 		}
 	}
 	return listUELinkInfo
-}
-
-func exposeHOEventInfo() []prometheus.Counter {
-	var listHOEvents []prometheus.Counter
-	hoEventsMap := make(map[string]prometheus.Counter)
-	for _, e := range southbound.ListHOEventMeasuredRIC {
-		if e.ElapsedTime == 0 {
-			continue
-		}
-		label := generateLabel(e)
-		labelStr := labelAsString(label)
-		if _, ok := hoEventsMap[labelStr]; ok {
-			// label already used - can't add it as new counter - ignore
-			continue
-		}
-		tmp := promauto.NewCounter(prometheus.CounterOpts{
-			Name:        "ho_events",
-			ConstLabels: label,
-		})
-		tmp.Add(float64(e.ElapsedTime))
-		hoEventsMap[labelStr] = tmp // Overwrite a duplicate entry
-	}
-	for _, hoEvent := range hoEventsMap {
-		listHOEvents = append(listHOEvents, hoEvent)
-	}
-	return listHOEvents
-}
-
-func generateLabel(e southbound.HOEventMeasuredRIC) prometheus.Labels {
-	return prometheus.Labels{
-		"timestamp": e.Timestamp.Format(time.Stamp),
-		"crnti":     e.Crnti,
-		"plmnid":    e.DestPlmnID,
-		"ecid":      e.DestECID,
-	}
-}
-
-func labelAsString(labels prometheus.Labels) string {
-	timeStamp := fmt.Sprintf("timestamp:%s", labels["timestamp"])
-	crnti := fmt.Sprintf("crnti:%s", labels["crnti"])
-	plmnid := fmt.Sprintf("plmnid:%s", labels["plmnid"])
-	ecid := fmt.Sprintf("ecid:%s", labels["ecid"])
-
-	labelStr := fmt.Sprintf("%s;%s;%s;%s", timeStamp, crnti, plmnid, ecid)
-
-	return labelStr
 }

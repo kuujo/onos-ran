@@ -16,9 +16,9 @@ package southbound
 
 import (
 	"context"
-	topodevice "github.com/onosproject/onos-topo/api/device"
-	"sync"
 	"time"
+
+	topodevice "github.com/onosproject/onos-topo/api/device"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
@@ -61,7 +61,6 @@ type HOEventMeasuredRIC struct {
 
 // ListHOEventMeasuredRIC is the list of HOEvent which is measured at ONOS RIC
 var ListHOEventMeasuredRIC []HOEventMeasuredRIC
-var mutexListHOEventMeasuredRIC sync.RWMutex
 
 // NewSession creates a new southbound session controller.
 func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
@@ -181,7 +180,6 @@ func (s *Session) handleControl(errors chan error) {
 
 	for {
 		response := <-s.controlResponses
-		s.updateHOEventMeasuredRIC(response) // to monitor HO delay
 		err := stream.Send(&response)
 		if err != nil {
 			waitc <- err
@@ -232,54 +230,8 @@ func (s *Session) handleTelemetry(errors chan error) {
 func (s *Session) processTelemetryUpdate(update *sb.TelemetryMessage) {
 	switch x := update.S.(type) {
 	case *sb.TelemetryMessage_RadioMeasReportPerUE:
-		s.addReceivedHOEventMeasuredRIC(update) // to monitor HO delay
 	default:
 		log.Fatalf("%s Telemetry update has unexpected type %T", s.EndPoint, x)
 	}
 	s.telemetryUpdates <- *update
-}
-
-func (s *Session) addReceivedHOEventMeasuredRIC(update *sb.TelemetryMessage) {
-	servStationID := update.GetRadioMeasReportPerUE().GetEcgi()
-	numNeighborCells := len(update.GetRadioMeasReportPerUE().GetRadioReportServCells())
-	bestStationID := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetEcgi()
-	bestCQI := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetCqiHist()[0]
-
-	for i := 1; i < numNeighborCells; i++ {
-		tmpCQI := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetCqiHist()[0]
-		if bestCQI < tmpCQI {
-			bestStationID = update.GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetEcgi()
-			bestCQI = tmpCQI
-		}
-	}
-
-	if servStationID.GetEcid() != bestStationID.GetEcid() || servStationID.GetPlmnId() != bestStationID.GetPlmnId() {
-		tmpHOEventMeasuredRIC := HOEventMeasuredRIC{
-			Timestamp:  time.Now(),
-			Crnti:      update.GetRadioMeasReportPerUE().GetCrnti(),
-			DestPlmnID: bestStationID.GetPlmnId(),
-			DestECID:   bestStationID.GetEcid(),
-		}
-		mutexListHOEventMeasuredRIC.Lock()
-		ListHOEventMeasuredRIC = append(ListHOEventMeasuredRIC, tmpHOEventMeasuredRIC)
-		mutexListHOEventMeasuredRIC.Unlock()
-	}
-}
-
-func (s *Session) updateHOEventMeasuredRIC(ctrMsg sb.ControlResponse) {
-	switch ctrMsg.S.(type) {
-	case *sb.ControlResponse_HORequest:
-		for i := 0; i < len(ListHOEventMeasuredRIC); i++ {
-			mutexListHOEventMeasuredRIC.Lock()
-			if ListHOEventMeasuredRIC[i].Crnti == ctrMsg.GetHORequest().GetCrnti() &&
-				ListHOEventMeasuredRIC[i].DestECID == ctrMsg.GetHORequest().EcgiT.GetEcid() &&
-				ListHOEventMeasuredRIC[i].DestPlmnID == ctrMsg.GetHORequest().EcgiT.GetPlmnId() &&
-				ListHOEventMeasuredRIC[i].ElapsedTime == 0 {
-				ListHOEventMeasuredRIC[i].ElapsedTime = time.Since(ListHOEventMeasuredRIC[i].Timestamp).Microseconds()
-			}
-			mutexListHOEventMeasuredRIC.Unlock()
-		}
-	default:
-	}
-
 }
