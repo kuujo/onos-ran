@@ -30,13 +30,13 @@ package main
 
 import (
 	"flag"
+	"github.com/onosproject/onos-ric/pkg/exporter"
 
 	"github.com/onosproject/onos-lib-go/pkg/certs"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
 	service "github.com/onosproject/onos-lib-go/pkg/northbound"
 
-	"github.com/onosproject/onos-ric/pkg/exporter"
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"github.com/onosproject/onos-ric/pkg/northbound/c1"
 )
@@ -49,6 +49,7 @@ func main() {
 	keyPath := flag.String("keyPath", "", "path to client private key")
 	certPath := flag.String("certPath", "", "path to client certificate")
 	topoEndpoint := flag.String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
+	enableMetrics := flag.Bool("enableMetrics", true, "Enable gathering of metrics for Prometheus")
 	flag.Parse()
 
 	log.Info("Starting onos-ric")
@@ -60,8 +61,10 @@ func main() {
 
 	mgr, err := manager.NewManager(*topoEndpoint, opts)
 
-	log.Info("Starting ONOS-RIC Exposer")
-	go exporter.RunRICExposer(mgr)
+	if *enableMetrics {
+		log.Info("Starting ONOS-RIC Exposer")
+		go exporter.RunRICExposer(mgr)
+	}
 
 	if err != nil {
 		log.Fatal("Unable to load onos-ric ", err)

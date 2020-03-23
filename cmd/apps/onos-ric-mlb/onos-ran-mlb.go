@@ -16,10 +16,10 @@ package main
 
 import (
 	"flag"
+	mlbappexporter "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/exporter"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 
-	mlbappexporter "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/exporter"
 	mlbappmanager "github.com/onosproject/onos-ric/pkg/apps/onos-ric-mlb/manager"
 )
 
@@ -30,14 +30,18 @@ func main() {
 	onosricaddr := flag.String("onosricaddr", "localhost:5150", "address:port of the ONOS RIC subsystem")
 	loadthresh := flag.Float64("threshold", 1, "Threshold for MLB [0, 1] (e.g., 0.5 means 50%)")
 	period := flag.Int64("period", 10000, "Period to run MLB procedure [ms]")
+	enableMetrics := flag.Bool("enableMetrics", true, "Enable gathering of metrics for Prometheus")
+
 	flag.Parse()
 
 	log.Info("Starting MLB Application")
 
 	appMgr, err := mlbappmanager.NewManager()
 
-	log.Info("Starting MLB Exporter")
-	go mlbappexporter.RunMLBExposer(appMgr.SB)
+	if *enableMetrics {
+		log.Info("Starting MLB Exporter")
+		go mlbappexporter.RunMLBExposer(appMgr.SB)
+	}
 
 	if err != nil {
 		log.Fatal("Unable to load MLB Application: ", err)

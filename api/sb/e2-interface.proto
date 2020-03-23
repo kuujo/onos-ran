@@ -259,6 +259,7 @@ message UEAdmissionRequest {
     string crnti = 1;
     ECGI ecgi = 2;
     AdmEstCause admissionEstCause = 3;
+    uint64 imsi = 4;
 }
 
 // UEAdmissionResponse message

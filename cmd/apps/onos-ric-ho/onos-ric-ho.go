@@ -28,14 +28,17 @@ var log = logging.GetLogger("main")
 // The main entry point.
 func main() {
 	onosricaddr := flag.String("onosricaddr", "localhost:5150", "address:port of the ONOS RIC subsystem")
+	enableMetrics := flag.Bool("enableMetrics", true, "Enable gathering of metrics for Prometheus")
 	flag.Parse()
 
 	log.Info("Starting HO Application")
 
 	appMgr, err := hoappmanager.NewManager()
 
-	log.Info("Starting HO Exporter")
-	go hoappexporter.RunHOExposer(appMgr.SB)
+	if *enableMetrics {
+		log.Info("Starting HO Exporter")
+		go hoappexporter.RunHOExposer(appMgr.SB)
+	}
 
 	if err != nil {
 		log.Fatal("Unable to load HO Application: ", err)
