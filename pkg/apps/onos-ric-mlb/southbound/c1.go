@@ -33,13 +33,12 @@ var log = logging.GetLogger("mlb", "southbound")
 
 // MLBSessions is responsible for mapping connnections to and interactions with the northbound of ONOS-RAN subsystem.
 type MLBSessions struct {
-	ONOSRICAddr   *string
-	LoadThresh    *float64
-	Period        *int64
-	client        nb.C1InterfaceServiceClient
-	prevRNIB      []*nb.UELinkInfo
-	RNIBCellInfo  []*nb.StationInfo
-	MLBEventStore []*mlbapploadbalance.StaUeJointLink
+	ONOSRICAddr  *string
+	LoadThresh   *float64
+	Period       *int64
+	client       nb.C1InterfaceServiceClient
+	prevRNIB     []*nb.UELinkInfo
+	RNIBCellInfo []*nb.StationInfo
 }
 
 // NewSession creates a new southbound session of MLB application.
@@ -90,8 +89,6 @@ func (m *MLBSessions) manageConnection(conn *grpc.ClientConn) {
 
 func (m *MLBSessions) runMLBProcedure() {
 
-	t := time.Now()
-
 	// get all R-NIB information
 	var wg sync.WaitGroup
 
@@ -114,17 +111,11 @@ func (m *MLBSessions) runMLBProcedure() {
 	// if R-NIB (UELink) is not old one, start MLB procedure
 	// otherwise, skip this timeslot, because MLBDecisionMaker was already run before
 	if m.prevRNIB == nil || !m.isEqualUeLinkLists(m.prevRNIB, ueLinkInfoList) {
-		mlbReqs, mlbEvents := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellInfo, stationLinkInfoList, ueLinkInfoList, m.LoadThresh)
-		elapsedTime := time.Since(t).Microseconds()
+		mlbReqs, _ := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellInfo, stationLinkInfoList, ueLinkInfoList, m.LoadThresh)
 		for _, req := range *mlbReqs {
 			m.sendRadioPowerOffset(req)
 		}
 		m.prevRNIB = ueLinkInfoList
-		for i := 0; i < len(mlbEvents); i++ {
-			mlbEvents[i].ElapsedTime = elapsedTime
-			mlbEvents[i].TimeStamp = t
-			m.MLBEventStore = append(m.MLBEventStore, &mlbEvents[i])
-		}
 	}
 }
 

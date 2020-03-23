@@ -45,18 +45,12 @@ func exposeHOInfo(sb *hoappsouthbound.HOSessions) {
 		for {
 			listRNIB := exposeUELinkInfo(sb)
 			numListRNIB := exposeNumUELinkInfo(sb)
-			hoEventList := exposeHOEventListInfo(sb)
-			numHOEventsCounter := exposeNumHOEvents(sb)
 
 			time.Sleep(1000 * time.Millisecond)
 			prometheus.Unregister(numListRNIB)
 			for i := 0; i < len(listRNIB); i++ {
 				prometheus.Unregister(listRNIB[i])
 			}
-			for i := 0; i < len(hoEventList); i++ {
-				prometheus.Unregister(hoEventList[i])
-			}
-			prometheus.Unregister(numHOEventsCounter)
 		}
 	}()
 }
@@ -96,34 +90,4 @@ func exposeNumUELinkInfo(sb *hoappsouthbound.HOSessions) prometheus.Counter {
 	numListRNIB.Add(float64(len(sb.GetUELinkInfo())))
 
 	return numListRNIB
-}
-
-// exposeNumHOEvents is the function to expose the number of HO events
-func exposeNumHOEvents(sb *hoappsouthbound.HOSessions) prometheus.Counter {
-	numHOEventsCounter := promauto.NewCounter(prometheus.CounterOpts{
-		Name: "hoapp_num_ho_events",
-	})
-	numHOEventsCounter.Add(float64(sb.NumHOEvents))
-
-	return numHOEventsCounter
-}
-
-func exposeHOEventListInfo(sb *hoappsouthbound.HOSessions) []prometheus.Counter {
-	var listHOEvents []prometheus.Counter
-	for _, e := range sb.HOEventStore {
-		tmp := promauto.NewCounter(prometheus.CounterOpts{
-			Name: "hoapp_ho_event_info",
-			ConstLabels: prometheus.Labels{
-				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d.%d", e.TimeStamp.Year(), e.TimeStamp.Month(), e.TimeStamp.Day(), e.TimeStamp.Hour(), e.TimeStamp.Minute(), e.TimeStamp.Second(), e.TimeStamp.Nanosecond()),
-				"crnti":     e.CRNTI,
-				"srcplmnid": e.SrcPlmnID,
-				"srcecid":   e.SrcEcid,
-				"dstplmnid": e.DstPlmnID,
-				"dstecid":   e.DstEcid,
-			},
-		})
-		tmp.Add(float64(e.ElapsedTime))
-		listHOEvents = append(listHOEvents, tmp)
-	}
-	return listHOEvents
 }

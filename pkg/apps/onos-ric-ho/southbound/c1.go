@@ -35,11 +35,9 @@ var ueLinks map[ueLinkID]*nb.UELinkInfo
 
 // HOSessions is responsible for mapping connections to and interactions with the Northbound of ONOS RAN subsystem.
 type HOSessions struct {
-	ONOSRICAddr  *string
-	client       nb.C1InterfaceServiceClient
-	prevRNIB     []*nb.UELinkInfo
-	NumHOEvents  uint64
-	HOEventStore []*hoapphandover.HOEvent
+	ONOSRICAddr *string
+	client      nb.C1InterfaceServiceClient
+	prevRNIB    []*nb.UELinkInfo
 }
 
 // NewSession creates a new southbound session of HO application.
@@ -101,14 +99,10 @@ func (m *HOSessions) runHandoverProcedure() {
 		// otherwise, skip this timeslot, because HODecisionMaker was already run before
 		if m.prevRNIB == nil || !m.isEqualUeLinkLists(m.prevRNIB, ueLinkList) {
 
-			// check performance - get startTime
-			t := time.Now()
-
 			// compare previous and current UELinkList and pick new or different UELinks
 			newUeLinks := m.getNewUeLinks(m.prevRNIB, ueLinkList)
 			// HO procedure 2. get requirement messages
 			hoReqs := hoapphandover.HODecisionMaker(newUeLinks)
-			elapsedTime := time.Since(t).Microseconds()
 			// HO procedure 3. send trigger message
 			m.sendHandoverTrigger(hoReqs)
 			// Update RNIB in HO App.
@@ -120,18 +114,6 @@ func (m *HOSessions) runHandoverProcedure() {
 					Crnti:  r.GetCrnti(),
 				}
 				delete(ueLinks, id)
-
-				tmpHOEvent := &hoapphandover.HOEvent{
-					TimeStamp:   t,
-					CRNTI:       r.GetCrnti(),
-					SrcPlmnID:   r.GetSrcStation().GetPlmnid(),
-					SrcEcid:     r.GetSrcStation().GetEcid(),
-					DstPlmnID:   r.GetDstStation().GetPlmnid(),
-					DstEcid:     r.GetDstStation().GetEcid(),
-					ElapsedTime: elapsedTime,
-				}
-
-				m.HOEventStore = append(m.HOEventStore, tmpHOEvent)
 			}
 		}
 	}
@@ -233,7 +215,6 @@ func (m *HOSessions) sendHandoverTrigger(hoReqs []*nb.HandOverRequest) {
 			hoReqs[i].GetSrcStation().GetPlmnid(), hoReqs[i].GetSrcStation().GetEcid(),
 			hoReqs[i].GetDstStation().GetPlmnid(), hoReqs[i].GetDstStation().GetEcid())
 		_, err := m.client.TriggerHandOver(context.Background(), hoReqs[i])
-		m.NumHOEvents++
 		if err != nil {
 			log.Error(err)
 		}

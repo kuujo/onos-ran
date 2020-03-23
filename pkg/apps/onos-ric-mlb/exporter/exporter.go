@@ -44,7 +44,7 @@ func exposeMLBInfo(sb *mlbappsouthbound.MLBSessions) {
 	go func() {
 		for {
 			var wg sync.WaitGroup
-			wg.Add(3)
+			wg.Add(2)
 
 			var listUELinkInfo []prometheus.Counter
 			var listCellInfo []prometheus.Counter
@@ -56,10 +56,6 @@ func exposeMLBInfo(sb *mlbappsouthbound.MLBSessions) {
 			}()
 			go func() {
 				listCellInfo = exposeCellInfo(sb)
-				defer wg.Done()
-			}()
-			go func() {
-				listMLBEventInfo = exposeMLBEventInfo(sb)
 				defer wg.Done()
 			}()
 			wg.Wait()
@@ -119,25 +115,4 @@ func exposeCellInfo(sb *mlbappsouthbound.MLBSessions) []prometheus.Counter {
 		listRNIBCell = append(listRNIBCell, tmp)
 	}
 	return listRNIBCell
-}
-
-// exposeMLBEventInfo exposes MLB events
-func exposeMLBEventInfo(sb *mlbappsouthbound.MLBSessions) []prometheus.Counter {
-	var listMLBEvents []prometheus.Counter
-	for _, e := range sb.MLBEventStore {
-		tmp := promauto.NewCounter(prometheus.CounterOpts{
-			Name: "mlbapp_mlb_event_info",
-			ConstLabels: prometheus.Labels{
-				"timestamp": fmt.Sprintf("%d-%d-%d %d:%d:%d.%d", e.TimeStamp.Year(), e.TimeStamp.Month(), e.TimeStamp.Day(), e.TimeStamp.Hour(), e.TimeStamp.Minute(), e.TimeStamp.Second(), e.TimeStamp.Nanosecond()),
-				"plmnid":    e.PlmnID,
-				"ecid":      e.Ecid,
-				"maxnumues": fmt.Sprintf("%d", e.MaxNumUes),
-				"numues":    fmt.Sprintf("%d", e.NumUes),
-				"pa":        fmt.Sprintf("%d", e.Pa),
-			},
-		})
-		tmp.Add(float64(e.ElapsedTime))
-		listMLBEvents = append(listMLBEvents, tmp)
-	}
-	return listMLBEvents
 }
