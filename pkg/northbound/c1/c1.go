@@ -20,6 +20,8 @@ import (
 
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/sb/e2sm"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	service "github.com/onosproject/onos-lib-go/pkg/northbound"
@@ -220,13 +222,17 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 		PlmnId: dst.GetPlmnid(),
 	}
 
-	ctrlResponse := sb.ControlResponse{
-		MessageType: sb.MessageType_HO_REQUEST,
-		S: &sb.ControlResponse_HORequest{
-			HORequest: &sb.HORequest{
-				Crnti: crnti,
-				EcgiS: &srcEcgi,
-				EcgiT: &dstEcgi,
+	hoReq := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_HO_REQUEST,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_HORequest{
+				HORequest: &sb.HORequest{
+					Crnti: crnti,
+					EcgiS: &srcEcgi,
+					EcgiT: &dstEcgi,
+				},
 			},
 		},
 	}
@@ -236,7 +242,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
 	}
 	log.Infof("Sending HO for %v to %s %v", srcEcgi, srcSession.EndPoint, srcSession.Ecgi)
-	err := srcSession.SendResponse(ctrlResponse)
+	err := srcSession.SendRicControlRequest(hoReq)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +252,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
 	}
 	log.Infof("Sending HO for %v to %s %v", srcEcgi, dstSession.EndPoint, dstSession.Ecgi)
-	err = dstSession.SendResponse(ctrlResponse)
+	err = dstSession.SendRicControlRequest(hoReq)
 	if err != nil {
 		return nil, err
 	}
@@ -295,12 +301,16 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 		PlmnId: req.GetEcgi().GetPlmnid(),
 	}
 
-	ctrlResponse := sb.ControlResponse{
-		MessageType: sb.MessageType_RRM_CONFIG,
-		S: &sb.ControlResponse_RRMConfig{
-			RRMConfig: &sb.RRMConfig{
-				Ecgi: &ecgi,
-				PA:   pa,
+	rrmConfigReq := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_RRM_CONFIG,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_RRMConfig{
+				RRMConfig: &sb.RRMConfig{
+					Ecgi: &ecgi,
+					PA:   pa,
+				},
 			},
 		},
 	}
@@ -308,7 +318,7 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 	if !ok {
 		return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
 	}
-	err := session.SendResponse(ctrlResponse)
+	err := session.SendRicControlRequest(rrmConfigReq)
 	if err != nil {
 		return nil, err
 	}

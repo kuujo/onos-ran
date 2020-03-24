@@ -18,16 +18,6 @@ syntax = "proto3";
 
 package interface.e2;
 
-service InterfaceService {
-    // SendControl is used by the controller to setup a bi-directional stream of control update messages
-    // from RAN environment to which it can respond asynchronously.
-    rpc SendControl (stream ControlResponse) returns (stream ControlUpdate) {}
-
-    // SendTelemetry is used by the controller to start receiving a stream of telemetry messages from RAN environment.
-    rpc SendTelemetry (L2MeasConfig) returns (stream TelemetryMessage) {}
-
-}
-
 // TelemetryMessage carries sensory data about the RAN environment.
 message TelemetryMessage {
     MessageType messageType = 1;

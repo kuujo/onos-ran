@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
 
 	"github.com/onosproject/onos-ric/api/sb"
+	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
 	"google.golang.org/grpc"
 )
 
@@ -39,10 +40,11 @@ type ControlUpdateHandler = func(sb.ControlUpdate)
 type Session struct {
 	EndPoint sb.Endpoint
 	Ecgi     sb.ECGI
-	client   sb.InterfaceServiceClient
+	client   e2ap.E2APClient
 
-	controlResponses chan sb.ControlResponse
-	controlUpdates   chan sb.ControlUpdate
+	ricControlRequestChan chan e2ap.RicControlRequest
+	controlResponses      chan sb.ControlResponse
+	controlUpdates        chan sb.ControlUpdate
 
 	telemetryUpdates chan sb.TelemetryMessage
 
@@ -67,11 +69,12 @@ func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
 	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
 
 	return &Session{
-		EndPoint:         endPoint,
-		Ecgi:             ecgi,
-		controlResponses: make(chan sb.ControlResponse),
-		controlUpdates:   make(chan sb.ControlUpdate),
-		telemetryUpdates: make(chan sb.TelemetryMessage),
+		EndPoint:              endPoint,
+		Ecgi:                  ecgi,
+		ricControlRequestChan: make(chan e2ap.RicControlRequest),
+		controlResponses:      make(chan sb.ControlResponse),
+		controlUpdates:        make(chan sb.ControlUpdate),
+		telemetryUpdates:      make(chan sb.TelemetryMessage),
 	}, nil
 }
 
@@ -94,9 +97,9 @@ func (s *Session) recvUpdates() {
 	}
 }
 
-// SendResponse sends the specified response on the control channel.
-func (s *Session) SendResponse(response sb.ControlResponse) error {
-	s.controlResponses <- response
+// SendRicControlRequest sends the specified RicControlRequest on the control channel
+func (s *Session) SendRicControlRequest(req e2ap.RicControlRequest) error {
+	s.ricControlRequestChan <- req
 	return nil
 }
 
@@ -116,7 +119,7 @@ func (s *Session) manageConnections(tls topodevice.TlsConfig, creds topodevice.C
 
 func (s *Session) manageConnection(connection *grpc.ClientConn) {
 	// Offer the telemetry and control surfaces to the E2 devices
-	s.client = sb.NewInterfaceServiceClient(connection)
+	s.client = e2ap.NewE2APClient(connection)
 	if s.client == nil {
 		return
 	}
@@ -142,6 +145,34 @@ func (s *Session) manageConnection(connection *grpc.ClientConn) {
 
 	close(errors)
 	log.Info("Disconnected from simulator %s", s.EndPoint)
+}
+
+func (s *Session) ricControl(errors chan error) {
+	stream, err := s.client.RicControl(context.Background())
+	if err != nil {
+		errors <- err
+		return
+	}
+	//	waitc := make(chan error)
+	//	go func() {
+	//		for {
+	//			resp, err := stream.Recv()
+	//			if err != nil {
+	//				close(waitc)
+	//				return
+	//			}
+	//			log.Infof("Got messageType %d from %s", resp.Hdr.MessageType, s.EndPoint)
+	//			s.ricControlResponse(resp)
+	//		}
+	//	}()
+	for {
+		req := <-s.ricControlRequestChan
+		err := stream.Send(&req)
+		if err != nil {
+			errors <- err
+			return
+		}
+	}
 }
 
 func (s *Session) handleControl(errors chan error) {
@@ -178,6 +209,8 @@ func (s *Session) handleControl(errors chan error) {
 		log.Fatalf("Failed to send a note: %v", err)
 	}
 
+	go s.ricControl(errors)
+
 	for {
 		response := <-s.controlResponses
 		err := stream.Send(&response)
@@ -187,6 +220,12 @@ func (s *Session) handleControl(errors chan error) {
 		}
 	}
 }
+
+/*
+func (s *Session) ricControlResponse(update *e2ap.RicControlResponse) {
+	// Nothing to do here yet
+}
+*/
 
 func (s *Session) processControlUpdate(update *sb.ControlUpdate) {
 	switch x := update.S.(type) {
