@@ -16,32 +16,41 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/cli"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/spf13/cobra"
 	"io"
 	"sort"
 	"text/template"
+	"time"
 )
 
 // QualSet - used for the Go template/text output
 type QualSet struct {
-	Ue     string
-	UeQual []uint32
+	Ue        string
+	Imsi      string
+	UeQual    []string
+	PrintTime bool
+	Time      string
 }
 
-const ueLinksCellsTemplate = "{{ printf \"UEs       \" }}" +
+const ueLinksCellsTemplate = "{{ printf \"IMSIs           UEs       \" }}" +
 	"{{range . }}" +
 	"{{ printf \"%-10s\" . }}" +
 	"{{end}}\n"
 
-const ueLinksTemplate = "{{printf \"%-10s\" .Ue}}" +
+const ueLinksTemplate = "{{ printf \"%-16s\" .Imsi }}" +
+	"{{printf \"%-10s\" .Ue}}" +
 	"{{ range $idx, $qual := .UeQual }}" +
 	"{{ if $qual}}" +
-	"{{printf \"%-10d\" $qual}}" +
+	"{{printf \"%-10s\" $qual}}" +
 	"{{ else}}" +
 	"{{printf \"%-10s\" \"\"}}" +
 	"{{ end}}" +
+	"{{end}}" +
+	"{{ if .PrintTime }}" +
+	"{{printf \"%-20s\" .Time }}" +
 	"{{end}}\n"
 
 func getGetUeLinksCommand() *cobra.Command {
@@ -113,8 +122,9 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	towers := make(map[string]interface{})
 	var towerKeys []string
 	qualityMap := make(map[string][]*nb.ChannelQuality)
+	imsiMap := make(map[string]string)
 	if !noHeaders {
-		Output("          Cell sites\n")
+		Output("                        Cell sites\n")
 	}
 	for {
 		response, err := stream.Recv()
@@ -140,29 +150,33 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 			}
 		}
 		qualityMap[response.Crnti] = response.ChannelQualities
+		imsiMap[response.Crnti] = response.Imsi
 		if subscribe {
-			printQualMap(response.Crnti, response.ChannelQualities, towerKeys, tmplUesList)
+			printQualMap(response.Crnti, response.Imsi, response.Ecgi.Ecid, response.ChannelQualities, towerKeys, tmplUesList, true)
 		}
 	}
 	if !subscribe {
 		_ = tmplCellsList.Execute(GetOutput(), towerKeys)
 		for k, qualities := range qualityMap {
-			printQualMap(k, qualities, towerKeys, tmplUesList)
+			printQualMap(k, imsiMap[k], "", qualities, towerKeys, tmplUesList, false)
 		}
 	}
 	return nil
 }
 
-func printQualMap(crnti string, qualities []*nb.ChannelQuality, towerKeys []string, tmplUesList *template.Template) {
-	qualTable := make([]uint32, len(towerKeys))
+func printQualMap(crnti string, imsi string, serving string, qualities []*nb.ChannelQuality, towerKeys []string, tmplUesList *template.Template, printTime bool) {
+	qualTable := make([]string, len(towerKeys))
 	for _, q := range qualities {
 		for i, t := range towerKeys {
 			if t == q.TargetEcgi.Ecid {
-				qualTable[i] = q.CqiHist
+				qualTable[i] = fmt.Sprintf("%d", q.CqiHist)
+				if t == serving {
+					qualTable[i] = fmt.Sprintf("*%d", q.CqiHist)
+				}
 				break
 			}
 		}
 	}
-	qualSet := QualSet{Ue: crnti, UeQual: qualTable}
+	qualSet := QualSet{Ue: crnti, Imsi: imsi, UeQual: qualTable, PrintTime: printTime, Time: time.Now().Format("15:04:05.0")}
 	_ = tmplUesList.Execute(GetOutput(), qualSet)
 }

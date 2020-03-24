@@ -83,7 +83,7 @@ func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
 		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
 		_ = m.updatesStore.Put(&update)
 	case *sb.ControlUpdate_UEAdmissionRequest:
-		log.Infof("plmnid:%s, ecid:%s, crnti:%s", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
+		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti, x.UEAdmissionRequest.Imsi)
 		_ = m.updatesStore.Put(&update)
 	case *sb.ControlUpdate_UEReleaseInd:
 		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
@@ -112,6 +112,17 @@ func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
 		messages = append(messages, update)
 	}
 	return messages, nil
+}
+
+// GetUEAdmissionByID retrieve a single value from the updates store
+func (m *Manager) GetUEAdmissionByID(ecgi *sb.ECGI, crnti string) (*sb.ControlUpdate, error) {
+	id := updates.ID{
+		PlmnID:      ecgi.PlmnId,
+		Ecid:        ecgi.Ecid,
+		Crnti:       crnti,
+		MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
+	}
+	return m.updatesStore.Get(id)
 }
 
 // ListControlUpdates lists control updates

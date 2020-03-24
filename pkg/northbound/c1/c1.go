@@ -186,6 +186,12 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 					Crnti:            radioReportUe.GetCrnti(),
 					ChannelQualities: cqis,
 				}
+				update, err := manager.GetManager().GetUEAdmissionByID(radioReportUe.GetEcgi(), radioReportUe.Crnti)
+				if err == nil {
+					ueLinkInfo.Imsi = fmt.Sprintf("%d", update.GetUEAdmissionRequest().GetImsi())
+				} else {
+					log.Infof("Cannot find Imsi for %v %s", radioReportUe.Ecgi, radioReportUe.Crnti)
+				}
 
 				if err := stream.Send(&ueLinkInfo); err != nil {
 					return err

@@ -232,7 +232,7 @@ func (s *Session) processControlUpdate(update *sb.ControlUpdate) {
 	case *sb.ControlUpdate_CellConfigReport:
 		log.Infof("%s CellConfigReport plmnid:%s, ecid:%s", s.EndPoint, x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
 	case *sb.ControlUpdate_UEAdmissionRequest:
-		log.Infof("%s UEAdmissionRequest plmnid:%s, ecid:%s, crnti:%s", s.EndPoint, x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti)
+		log.Infof("%s UEAdmissionRequest plmnid:%s, ecid:%s, crnti:%s, imsi:%d", s.EndPoint, x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti, x.UEAdmissionRequest.Imsi)
 	case *sb.ControlUpdate_UEReleaseInd:
 		log.Infof("%s UEReleaseInd plmnid:%s, ecid:%s, crnti:%s", s.EndPoint, x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
 	default:
