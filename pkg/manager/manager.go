@@ -42,10 +42,18 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err = updatesStore.Clear(); err != nil {
+		log.Error("Error clearing Updates store %s", err.Error())
+	}
 
 	telemetryStore, err := telemetry.NewDistributedStore()
 	if err != nil {
 		return nil, err
+	}
+
+	// Should always clear out the stores on startup because it will be out of sync with ran-simulator
+	if err = telemetryStore.Clear(); err != nil {
+		log.Error("Error clearing Telemetry store %s", err.Error())
 	}
 
 	deviceChangeStore, err := device.NewTopoStore(topoEndPoint, opts...)

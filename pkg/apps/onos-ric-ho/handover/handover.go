@@ -36,41 +36,36 @@ type HOEvent struct {
 }
 
 // HODecisionMaker decide whether the UE in UELinkInfo should do handover or not
-func HODecisionMaker(ueinfo []*nb.UELinkInfo) []*nb.HandOverRequest {
+func HODecisionMaker(ueInfo *nb.UELinkInfo) *nb.HandOverRequest {
 
-	var resultHoReqs []*nb.HandOverRequest
+	servStationID := ueInfo.GetEcgi()
+	numNeighborCells := len(ueInfo.GetChannelQualities())
+	bestStationID := ueInfo.GetChannelQualities()[0].GetTargetEcgi()
+	bestCQI := ueInfo.GetChannelQualities()[0].GetCqiHist()
 
-	for _, l := range ueinfo {
-		servStationID := l.GetEcgi()
-		numNeighborCells := len(l.GetChannelQualities())
-		bestStationID := l.GetChannelQualities()[0].GetTargetEcgi()
-		bestCQI := l.GetChannelQualities()[0].GetCqiHist()
-
-		for i := 1; i < numNeighborCells; i++ {
-			tmpCQI := l.GetChannelQualities()[i].GetCqiHist()
-			if bestCQI < tmpCQI {
-				bestStationID = l.GetChannelQualities()[i].GetTargetEcgi()
-				bestCQI = tmpCQI
-			}
+	for i := 1; i < numNeighborCells; i++ {
+		tmpCQI := ueInfo.GetChannelQualities()[i].GetCqiHist()
+		if bestCQI < tmpCQI {
+			bestStationID = ueInfo.GetChannelQualities()[i].GetTargetEcgi()
+			bestCQI = tmpCQI
 		}
-
-		if servStationID.GetEcid() == bestStationID.GetEcid() && servStationID.GetPlmnid() == bestStationID.GetPlmnid() {
-			log.Infof("No need to trigger HO - UE: %s (p:%s,e:%s)", l.GetCrnti(), l.GetEcgi().GetPlmnid(), l.GetEcgi().GetEcid())
-			continue
-		}
-
-		hoReq := &nb.HandOverRequest{
-			Crnti: l.GetCrnti(),
-			SrcStation: &nb.ECGI{
-				Plmnid: servStationID.GetPlmnid(),
-				Ecid:   servStationID.GetEcid(),
-			},
-			DstStation: &nb.ECGI{
-				Plmnid: bestStationID.GetPlmnid(),
-				Ecid:   bestStationID.GetEcid(),
-			},
-		}
-		resultHoReqs = append(resultHoReqs, hoReq)
 	}
-	return resultHoReqs
+
+	if servStationID.GetEcid() == bestStationID.GetEcid() && servStationID.GetPlmnid() == bestStationID.GetPlmnid() {
+		log.Infof("No need to trigger HO - UE: %s (p:%s,e:%s)", ueInfo.GetCrnti(), ueInfo.GetEcgi().GetPlmnid(), ueInfo.GetEcgi().GetEcid())
+		return nil
+	}
+
+	hoReq := &nb.HandOverRequest{
+		Crnti: ueInfo.GetCrnti(),
+		SrcStation: &nb.ECGI{
+			Plmnid: servStationID.GetPlmnid(),
+			Ecid:   servStationID.GetEcid(),
+		},
+		DstStation: &nb.ECGI{
+			Plmnid: bestStationID.GetPlmnid(),
+			Ecid:   bestStationID.GetEcid(),
+		},
+	}
+	return hoReq
 }

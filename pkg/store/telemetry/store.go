@@ -105,6 +105,8 @@ type Store interface {
 
 	// Delete a telemetry message based on a given ID
 
+	// Clear deletes all entries from the store
+	Clear() error
 }
 
 // WatchOption is a telemetry store watch option
@@ -144,7 +146,7 @@ func (s *atomixStore) Get(id ID) (*sb.TelemetryMessage, error) {
 	entry, err := s.telemetry.Get(ctx, id.String())
 	if err != nil {
 		return nil, err
-	} else if entry.Value == nil {
+	} else if entry == nil || entry.Value == nil {
 		return nil, nil
 	}
 	telemetry := &sb.TelemetryMessage{}
@@ -231,6 +233,10 @@ func (s *atomixStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) 
 		}
 	}()
 	return nil
+}
+
+func (s *atomixStore) Clear() error {
+	return s.telemetry.Clear(context.Background())
 }
 
 func (s *atomixStore) Close() error {

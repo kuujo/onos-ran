@@ -66,8 +66,7 @@ func TestHODecisionMakerCase1(t *testing.T) {
 		},
 		ChannelQualities: cqV1,
 	}
-	listValue := []*nb.UELinkInfo{value1}
-	hoReqV1 := HODecisionMaker(listValue)
+	hoReqV1 := HODecisionMaker(value1)
 	assert.Nil(t, hoReqV1)
 }
 
@@ -116,9 +115,8 @@ func TestHODecisionMakerCase2Dot1(t *testing.T) {
 		},
 		ChannelQualities: cqV2,
 	}
-	listValue := []*nb.UELinkInfo{value2}
-	hoReqV2 := HODecisionMaker(listValue)
-	assert.Equal(t, (hoReqV2)[0].GetDstStation().GetEcid(), v2TargetECID)
+	hoReqV2 := HODecisionMaker(value2)
+	assert.Equal(t, (hoReqV2).GetDstStation().GetEcid(), v2TargetECID)
 }
 
 // Case 2-2. 2nd neighbor station is the best one
@@ -166,9 +164,8 @@ func TestHODecisionMakerCase2Dot2(t *testing.T) {
 		},
 		ChannelQualities: cqV2,
 	}
-	listValue := []*nb.UELinkInfo{value2}
-	hoReqV2 := HODecisionMaker(listValue)
-	assert.Equal(t, hoReqV2[0].GetDstStation().GetEcid(), v2TargetECID)
+	hoReqV2 := HODecisionMaker(value2)
+	assert.Equal(t, hoReqV2.GetDstStation().GetEcid(), v2TargetECID)
 }
 
 // Case 2-3. 3rd neighbor station is the best one
@@ -216,7 +213,6 @@ func TestHODecisionMakerCase2Dot3(t *testing.T) {
 		},
 		ChannelQualities: cqV2,
 	}
-	listValue := []*nb.UELinkInfo{value2}
-	hoReqV2 := HODecisionMaker(listValue)
-	assert.Equal(t, hoReqV2[0].GetDstStation().GetEcid(), v2TargetECID)
+	hoReqV2 := HODecisionMaker(value2)
+	assert.Equal(t, hoReqV2.GetDstStation().GetEcid(), v2TargetECID)
 }

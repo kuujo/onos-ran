@@ -102,6 +102,9 @@ type Store interface {
 
 	// Watch watches the store for control update messages
 	Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error
+
+	// Clear deletes all entries from the store
+	Clear() error
 }
 
 // WatchOption is a RAN store watch option
@@ -141,7 +144,7 @@ func (s *atomixStore) Get(id ID) (*sb.ControlUpdate, error) {
 	entry, err := s.updates.Get(ctx, id.String())
 	if err != nil {
 		return nil, err
-	} else if entry.Value == nil {
+	} else if entry == nil || entry.Value == nil {
 		return nil, nil
 	}
 	update := &sb.ControlUpdate{}
@@ -228,6 +231,10 @@ func (s *atomixStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) err
 		}
 	}()
 	return nil
+}
+
+func (s *atomixStore) Clear() error {
+	return s.updates.Clear(context.Background())
 }
 
 func (s *atomixStore) Close() error {
