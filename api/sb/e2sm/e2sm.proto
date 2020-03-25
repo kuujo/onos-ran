@@ -19,23 +19,52 @@ package interface.e2sm;
 
 import "github.com/onosproject/onos-ric/api/sb/e2-interface.proto";
 
-/*
-   -- **************************************************************
-   -- Following IE defined in E2SM
-   -- **************************************************************
-   RICcontrolHeader ::= OCTET STRING
-*/
+//-- **************************************************************
+//-- Following IE defined in E2SM
+//-- **************************************************************
+//RANfunctionDefinition ::= OCTET STRING
+//
+//RANfunctionID ::= INTEGER (0..4095)
+//
+//RANfunctionRevision ::= INTEGER (0..4095)
+enum RanFunctionID {
+	RAN_FUNCTION_ID_INVALID = 0;
+    RAN_FUNCTION_ID_L2_MEAS = 1;
+}
+
+//-- **************************************************************
+//-- Following IE defined in E2SM
+//-- **************************************************************
+//RICeventTriggerDefinition ::= OCTET STRING
+message RicEventTriggerDefinition {
+    oneof s {
+        interface.e2.L2MeasConfig l2MeasConfig = 1;
+    }
+}
+
+//-- **************************************************************
+//-- Following IE defined in E2SM
+//-- **************************************************************
+//RICindicationHeader ::= OCTET STRING
+//RICindicationMessage ::= OCTET STRING
+message RicIndicationHeader {
+    interface.e2.MessageType messageType = 1;
+}
+message RicIndicationMessage {
+    oneof s {
+        interface.e2.RadioMeasReportPerUE radioMeasReportPerUE = 1;
+    }
+}
+
+//RICcontrolHeader ::= OCTET STRING
 message RicControlHeader {
     interface.e2.MessageType messageType = 1;
 }
 
-/*
-   -- **************************************************************
-   -- Following IE defined in E2SM
-   -- **************************************************************
-   RICcontrolMessage ::= OCTET STRING
-*/
-
+//-- **************************************************************
+//-- Following IE defined in E2SM
+//-- **************************************************************
+//RICcontrolMessage ::= OCTET STRING
 message RicControlMessage {
     oneof s {
         interface.e2.RRMConfig rRMConfig = 1;

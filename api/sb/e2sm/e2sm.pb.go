@@ -23,10 +23,236 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-//
 //-- **************************************************************
 //-- Following IE defined in E2SM
 //-- **************************************************************
+//RANfunctionDefinition ::= OCTET STRING
+//
+//RANfunctionID ::= INTEGER (0..4095)
+//
+//RANfunctionRevision ::= INTEGER (0..4095)
+type RanFunctionID int32
+
+const (
+	RanFunctionID_RAN_FUNCTION_ID_INVALID RanFunctionID = 0
+	RanFunctionID_RAN_FUNCTION_ID_L2_MEAS RanFunctionID = 1
+)
+
+var RanFunctionID_name = map[int32]string{
+	0: "RAN_FUNCTION_ID_INVALID",
+	1: "RAN_FUNCTION_ID_L2_MEAS",
+}
+
+var RanFunctionID_value = map[string]int32{
+	"RAN_FUNCTION_ID_INVALID": 0,
+	"RAN_FUNCTION_ID_L2_MEAS": 1,
+}
+
+func (x RanFunctionID) String() string {
+	return proto.EnumName(RanFunctionID_name, int32(x))
+}
+
+func (RanFunctionID) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_048d76895a87e9ca, []int{0}
+}
+
+//-- **************************************************************
+//-- Following IE defined in E2SM
+//-- **************************************************************
+//RICeventTriggerDefinition ::= OCTET STRING
+type RicEventTriggerDefinition struct {
+	// Types that are valid to be assigned to S:
+	//	*RicEventTriggerDefinition_L2MeasConfig
+	S isRicEventTriggerDefinition_S `protobuf_oneof:"s"`
+}
+
+func (m *RicEventTriggerDefinition) Reset()         { *m = RicEventTriggerDefinition{} }
+func (m *RicEventTriggerDefinition) String() string { return proto.CompactTextString(m) }
+func (*RicEventTriggerDefinition) ProtoMessage()    {}
+func (*RicEventTriggerDefinition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_048d76895a87e9ca, []int{0}
+}
+func (m *RicEventTriggerDefinition) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RicEventTriggerDefinition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RicEventTriggerDefinition.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RicEventTriggerDefinition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RicEventTriggerDefinition.Merge(m, src)
+}
+func (m *RicEventTriggerDefinition) XXX_Size() int {
+	return m.Size()
+}
+func (m *RicEventTriggerDefinition) XXX_DiscardUnknown() {
+	xxx_messageInfo_RicEventTriggerDefinition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RicEventTriggerDefinition proto.InternalMessageInfo
+
+type isRicEventTriggerDefinition_S interface {
+	isRicEventTriggerDefinition_S()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type RicEventTriggerDefinition_L2MeasConfig struct {
+	L2MeasConfig *sb.L2MeasConfig `protobuf:"bytes,1,opt,name=l2MeasConfig,proto3,oneof" json:"l2MeasConfig,omitempty"`
+}
+
+func (*RicEventTriggerDefinition_L2MeasConfig) isRicEventTriggerDefinition_S() {}
+
+func (m *RicEventTriggerDefinition) GetS() isRicEventTriggerDefinition_S {
+	if m != nil {
+		return m.S
+	}
+	return nil
+}
+
+func (m *RicEventTriggerDefinition) GetL2MeasConfig() *sb.L2MeasConfig {
+	if x, ok := m.GetS().(*RicEventTriggerDefinition_L2MeasConfig); ok {
+		return x.L2MeasConfig
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*RicEventTriggerDefinition) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*RicEventTriggerDefinition_L2MeasConfig)(nil),
+	}
+}
+
+//-- **************************************************************
+//-- Following IE defined in E2SM
+//-- **************************************************************
+//RICindicationHeader ::= OCTET STRING
+//RICindicationMessage ::= OCTET STRING
+type RicIndicationHeader struct {
+	MessageType sb.MessageType `protobuf:"varint,1,opt,name=messageType,proto3,enum=interface.e2.MessageType" json:"messageType,omitempty"`
+}
+
+func (m *RicIndicationHeader) Reset()         { *m = RicIndicationHeader{} }
+func (m *RicIndicationHeader) String() string { return proto.CompactTextString(m) }
+func (*RicIndicationHeader) ProtoMessage()    {}
+func (*RicIndicationHeader) Descriptor() ([]byte, []int) {
+	return fileDescriptor_048d76895a87e9ca, []int{1}
+}
+func (m *RicIndicationHeader) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RicIndicationHeader) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RicIndicationHeader.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RicIndicationHeader) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RicIndicationHeader.Merge(m, src)
+}
+func (m *RicIndicationHeader) XXX_Size() int {
+	return m.Size()
+}
+func (m *RicIndicationHeader) XXX_DiscardUnknown() {
+	xxx_messageInfo_RicIndicationHeader.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RicIndicationHeader proto.InternalMessageInfo
+
+func (m *RicIndicationHeader) GetMessageType() sb.MessageType {
+	if m != nil {
+		return m.MessageType
+	}
+	return sb.MessageType_UNKNOWN_MESSAGE
+}
+
+type RicIndicationMessage struct {
+	// Types that are valid to be assigned to S:
+	//	*RicIndicationMessage_RadioMeasReportPerUE
+	S isRicIndicationMessage_S `protobuf_oneof:"s"`
+}
+
+func (m *RicIndicationMessage) Reset()         { *m = RicIndicationMessage{} }
+func (m *RicIndicationMessage) String() string { return proto.CompactTextString(m) }
+func (*RicIndicationMessage) ProtoMessage()    {}
+func (*RicIndicationMessage) Descriptor() ([]byte, []int) {
+	return fileDescriptor_048d76895a87e9ca, []int{2}
+}
+func (m *RicIndicationMessage) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RicIndicationMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RicIndicationMessage.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RicIndicationMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RicIndicationMessage.Merge(m, src)
+}
+func (m *RicIndicationMessage) XXX_Size() int {
+	return m.Size()
+}
+func (m *RicIndicationMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_RicIndicationMessage.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RicIndicationMessage proto.InternalMessageInfo
+
+type isRicIndicationMessage_S interface {
+	isRicIndicationMessage_S()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type RicIndicationMessage_RadioMeasReportPerUE struct {
+	RadioMeasReportPerUE *sb.RadioMeasReportPerUE `protobuf:"bytes,1,opt,name=radioMeasReportPerUE,proto3,oneof" json:"radioMeasReportPerUE,omitempty"`
+}
+
+func (*RicIndicationMessage_RadioMeasReportPerUE) isRicIndicationMessage_S() {}
+
+func (m *RicIndicationMessage) GetS() isRicIndicationMessage_S {
+	if m != nil {
+		return m.S
+	}
+	return nil
+}
+
+func (m *RicIndicationMessage) GetRadioMeasReportPerUE() *sb.RadioMeasReportPerUE {
+	if x, ok := m.GetS().(*RicIndicationMessage_RadioMeasReportPerUE); ok {
+		return x.RadioMeasReportPerUE
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*RicIndicationMessage) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*RicIndicationMessage_RadioMeasReportPerUE)(nil),
+	}
+}
+
 //RICcontrolHeader ::= OCTET STRING
 type RicControlHeader struct {
 	MessageType sb.MessageType `protobuf:"varint,1,opt,name=messageType,proto3,enum=interface.e2.MessageType" json:"messageType,omitempty"`
@@ -36,7 +262,7 @@ func (m *RicControlHeader) Reset()         { *m = RicControlHeader{} }
 func (m *RicControlHeader) String() string { return proto.CompactTextString(m) }
 func (*RicControlHeader) ProtoMessage()    {}
 func (*RicControlHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_048d76895a87e9ca, []int{0}
+	return fileDescriptor_048d76895a87e9ca, []int{3}
 }
 func (m *RicControlHeader) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -72,6 +298,10 @@ func (m *RicControlHeader) GetMessageType() sb.MessageType {
 	return sb.MessageType_UNKNOWN_MESSAGE
 }
 
+//-- **************************************************************
+//-- Following IE defined in E2SM
+//-- **************************************************************
+//RICcontrolMessage ::= OCTET STRING
 type RicControlMessage struct {
 	// Types that are valid to be assigned to S:
 	//	*RicControlMessage_RRMConfig
@@ -83,7 +313,7 @@ func (m *RicControlMessage) Reset()         { *m = RicControlMessage{} }
 func (m *RicControlMessage) String() string { return proto.CompactTextString(m) }
 func (*RicControlMessage) ProtoMessage()    {}
 func (*RicControlMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_048d76895a87e9ca, []int{1}
+	return fileDescriptor_048d76895a87e9ca, []int{4}
 }
 func (m *RicControlMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -168,7 +398,7 @@ func (m *RicControlOutcome) Reset()         { *m = RicControlOutcome{} }
 func (m *RicControlOutcome) String() string { return proto.CompactTextString(m) }
 func (*RicControlOutcome) ProtoMessage()    {}
 func (*RicControlOutcome) Descriptor() ([]byte, []int) {
-	return fileDescriptor_048d76895a87e9ca, []int{2}
+	return fileDescriptor_048d76895a87e9ca, []int{5}
 }
 func (m *RicControlOutcome) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -243,6 +473,10 @@ func (*RicControlOutcome) XXX_OneofWrappers() []interface{} {
 }
 
 func init() {
+	proto.RegisterEnum("interface.e2sm.RanFunctionID", RanFunctionID_name, RanFunctionID_value)
+	proto.RegisterType((*RicEventTriggerDefinition)(nil), "interface.e2sm.RicEventTriggerDefinition")
+	proto.RegisterType((*RicIndicationHeader)(nil), "interface.e2sm.RicIndicationHeader")
+	proto.RegisterType((*RicIndicationMessage)(nil), "interface.e2sm.RicIndicationMessage")
 	proto.RegisterType((*RicControlHeader)(nil), "interface.e2sm.RicControlHeader")
 	proto.RegisterType((*RicControlMessage)(nil), "interface.e2sm.RicControlMessage")
 	proto.RegisterType((*RicControlOutcome)(nil), "interface.e2sm.RicControlOutcome")
@@ -251,28 +485,172 @@ func init() {
 func init() { proto.RegisterFile("api/sb/e2sm/e2sm.proto", fileDescriptor_048d76895a87e9ca) }
 
 var fileDescriptor_048d76895a87e9ca = []byte{
-	// 302 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0x41, 0x4b, 0xb4, 0x40,
-	0x1c, 0xc6, 0x9d, 0xf7, 0x85, 0xa0, 0x59, 0x58, 0xca, 0x43, 0x59, 0x87, 0x21, 0xf6, 0xd4, 0x65,
-	0x15, 0xb6, 0x43, 0x54, 0xb7, 0x15, 0xc2, 0xcb, 0x22, 0x0c, 0x7d, 0x01, 0x9d, 0xfe, 0xab, 0x13,
-	0xea, 0xd8, 0xcc, 0x78, 0xe8, 0x2b, 0x04, 0x41, 0x1f, 0xab, 0xe3, 0x1e, 0x3b, 0x86, 0x7e, 0x91,
-	0x70, 0x56, 0x57, 0x37, 0xea, 0x22, 0xea, 0xf3, 0x3c, 0xbf, 0xf9, 0xc1, 0xe0, 0x93, 0xa8, 0xe4,
-	0x9e, 0x8a, 0x3d, 0x58, 0xa8, 0xdc, 0x3c, 0xdc, 0x52, 0x0a, 0x2d, 0xec, 0x29, 0x2f, 0x34, 0xc8,
-	0x75, 0xc4, 0xc0, 0x6d, 0xff, 0x9e, 0xdf, 0x24, 0x5c, 0xa7, 0x55, 0xec, 0x32, 0x91, 0x7b, 0xa2,
-	0x10, 0xaa, 0x94, 0xe2, 0x09, 0x98, 0x36, 0xef, 0x73, 0xc9, 0x99, 0xb7, 0xe3, 0xcc, 0x87, 0xa5,
-	0x41, 0xcd, 0x42, 0x7c, 0x44, 0x39, 0xf3, 0x45, 0xa1, 0xa5, 0xc8, 0x02, 0x88, 0x1e, 0x41, 0xda,
-	0x77, 0x78, 0x92, 0x83, 0x52, 0x51, 0x02, 0x0f, 0x2f, 0x25, 0x38, 0xe8, 0x02, 0x5d, 0x4e, 0x17,
-	0x67, 0xee, 0xf8, 0x50, 0x77, 0x35, 0x14, 0xe8, 0xb8, 0x3d, 0x7b, 0x45, 0xf8, 0x78, 0x20, 0x76,
-	0x35, 0xfb, 0x1a, 0x1f, 0x4a, 0xba, 0xf2, 0x45, 0xb1, 0xe6, 0x89, 0x01, 0x4e, 0x16, 0xa7, 0xfb,
-	0x40, 0xda, 0xc7, 0x81, 0x45, 0x87, 0x6e, 0x3b, 0x4c, 0x43, 0x0a, 0xcf, 0x15, 0x28, 0xed, 0xfc,
-	0xfb, 0x6d, 0x18, 0xf4, 0x71, 0x3b, 0xdc, 0x75, 0x97, 0xff, 0x31, 0x52, 0xb3, 0xb7, 0x3d, 0x99,
-	0xb0, 0xd2, 0x4c, 0xe4, 0x60, 0xdf, 0x62, 0x9c, 0x86, 0xbe, 0xc8, 0xcb, 0x0c, 0x34, 0x74, 0x36,
-	0xce, 0x4f, 0x68, 0x9f, 0x07, 0x16, 0x1d, 0xb5, 0xb7, 0x3e, 0xf7, 0x11, 0xcf, 0x2a, 0x09, 0x7f,
-	0xf9, 0x74, 0xf1, 0xd6, 0xa7, 0xfb, 0x30, 0x3e, 0x4b, 0xe7, 0xa3, 0x26, 0x68, 0x53, 0x13, 0xf4,
-	0x55, 0x13, 0xf4, 0xde, 0x10, 0x6b, 0xd3, 0x10, 0xeb, 0xb3, 0x21, 0x56, 0x7c, 0x60, 0xae, 0xe3,
-	0xea, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x72, 0x55, 0xe0, 0x02, 0xf3, 0x01, 0x00, 0x00,
+	// 454 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x93, 0x4f, 0x8b, 0xd3, 0x40,
+	0x18, 0xc6, 0x67, 0x14, 0x04, 0x67, 0x75, 0xa9, 0x71, 0x71, 0xbb, 0x2b, 0x04, 0xe9, 0x49, 0x84,
+	0x4d, 0x21, 0x1e, 0x44, 0xbd, 0xd8, 0xed, 0x1f, 0x12, 0x68, 0x1b, 0x19, 0xbb, 0xe2, 0xad, 0x4c,
+	0xa7, 0x6f, 0xd3, 0x91, 0x66, 0x26, 0xce, 0x4c, 0x04, 0xbf, 0x82, 0x20, 0xf8, 0xb1, 0x3c, 0xee,
+	0xd1, 0xa3, 0xb4, 0x5f, 0x44, 0x92, 0xa6, 0xdb, 0x66, 0x89, 0x37, 0x2f, 0x21, 0xc9, 0xfb, 0x3c,
+	0xbf, 0xfc, 0xde, 0x84, 0x90, 0x27, 0x2c, 0x15, 0x6d, 0x33, 0x6b, 0x83, 0x6f, 0x92, 0xe2, 0xe0,
+	0xa5, 0x5a, 0x59, 0xe5, 0x1c, 0x0b, 0x69, 0x41, 0x2f, 0x18, 0x07, 0x2f, 0xbf, 0x7b, 0xfe, 0x3a,
+	0x16, 0x76, 0x99, 0xcd, 0x3c, 0xae, 0x92, 0xb6, 0x92, 0xca, 0xa4, 0x5a, 0x7d, 0x06, 0x6e, 0x8b,
+	0xf3, 0x0b, 0x2d, 0x78, 0xfb, 0x86, 0x73, 0xb1, 0x6f, 0x16, 0xa8, 0xd6, 0x8c, 0x9c, 0x51, 0xc1,
+	0xfb, 0x5f, 0x41, 0xda, 0x89, 0x16, 0x71, 0x0c, 0xba, 0x07, 0x0b, 0x21, 0x85, 0x15, 0x4a, 0x3a,
+	0xef, 0xc8, 0x83, 0x95, 0x3f, 0x02, 0x66, 0xba, 0x4a, 0x2e, 0x44, 0xdc, 0xc4, 0xcf, 0xf0, 0xf3,
+	0x23, 0xff, 0xdc, 0x3b, 0x7c, 0xbc, 0x37, 0x3c, 0x48, 0x04, 0x88, 0x56, 0x1a, 0x97, 0x77, 0x09,
+	0x36, 0x2d, 0x4a, 0x1e, 0x53, 0xc1, 0x43, 0x39, 0x17, 0x9c, 0xe5, 0xdc, 0x00, 0xd8, 0x1c, 0xb4,
+	0xf3, 0x96, 0x1c, 0x25, 0x60, 0x0c, 0x8b, 0x61, 0xf2, 0x2d, 0x85, 0x02, 0x7e, 0xec, 0x9f, 0x55,
+	0xe1, 0xa3, 0x7d, 0x80, 0x1e, 0xa6, 0x5b, 0x19, 0x39, 0xa9, 0x30, 0xcb, 0xa0, 0xf3, 0x89, 0x9c,
+	0x68, 0x36, 0x17, 0x2a, 0x77, 0xa0, 0x90, 0x2a, 0x6d, 0xdf, 0x83, 0xbe, 0xea, 0x97, 0xea, 0xad,
+	0x2a, 0x9d, 0xd6, 0x24, 0x03, 0x44, 0x6b, 0x09, 0xdb, 0x55, 0x22, 0xd2, 0xa0, 0x82, 0x77, 0x95,
+	0xb4, 0x5a, 0xad, 0xfe, 0xc7, 0x1e, 0xdf, 0x31, 0x79, 0xb4, 0x27, 0xee, 0xb6, 0x78, 0x45, 0xee,
+	0x6b, 0x3a, 0xaa, 0xbc, 0xf5, 0xd3, 0x5b, 0xea, 0xbb, 0x71, 0x80, 0xe8, 0x3e, 0x9b, 0x17, 0x97,
+	0x11, 0x85, 0x2f, 0x19, 0x18, 0xdb, 0xbc, 0x53, 0x57, 0x0c, 0x76, 0xe3, 0xbc, 0x78, 0x93, 0xdd,
+	0x6e, 0xf7, 0xa3, 0x22, 0x13, 0x65, 0x96, 0xab, 0x04, 0x9c, 0x37, 0x84, 0x2c, 0xa3, 0xae, 0x4a,
+	0xd2, 0x15, 0x58, 0x28, 0x6d, 0x9a, 0xb7, 0xa1, 0xbb, 0x79, 0x80, 0xe8, 0x41, 0x7a, 0xeb, 0x33,
+	0x60, 0x62, 0x95, 0x69, 0xf8, 0x97, 0x4f, 0x39, 0xde, 0xfa, 0x94, 0x17, 0x85, 0xcf, 0x8b, 0x90,
+	0x3c, 0xa4, 0x4c, 0x0e, 0x32, 0xc9, 0xf3, 0x4f, 0x1c, 0xf6, 0x9c, 0xa7, 0xe4, 0x94, 0x76, 0xc6,
+	0xd3, 0xc1, 0xd5, 0xb8, 0x3b, 0x09, 0xa3, 0xf1, 0x34, 0xec, 0x4d, 0xc3, 0xf1, 0xc7, 0xce, 0x30,
+	0xec, 0x35, 0x50, 0xdd, 0x70, 0xe8, 0x4f, 0x47, 0xfd, 0xce, 0x87, 0x06, 0xbe, 0x6c, 0xfe, 0x5a,
+	0xbb, 0xf8, 0x7a, 0xed, 0xe2, 0x3f, 0x6b, 0x17, 0xff, 0xdc, 0xb8, 0xe8, 0x7a, 0xe3, 0xa2, 0xdf,
+	0x1b, 0x17, 0xcd, 0xee, 0x15, 0x3f, 0xc2, 0xcb, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x8c, 0x0f,
+	0x7c, 0x3b, 0x6d, 0x03, 0x00, 0x00,
 }
 
+func (m *RicEventTriggerDefinition) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RicEventTriggerDefinition) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RicEventTriggerDefinition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.S != nil {
+		{
+			size := m.S.Size()
+			i -= size
+			if _, err := m.S.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RicEventTriggerDefinition_L2MeasConfig) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RicEventTriggerDefinition_L2MeasConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.L2MeasConfig != nil {
+		{
+			size, err := m.L2MeasConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintE2Sm(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *RicIndicationHeader) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RicIndicationHeader) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RicIndicationHeader) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.MessageType != 0 {
+		i = encodeVarintE2Sm(dAtA, i, uint64(m.MessageType))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RicIndicationMessage) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RicIndicationMessage) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RicIndicationMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.S != nil {
+		{
+			size := m.S.Size()
+			i -= size
+			if _, err := m.S.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RicIndicationMessage_RadioMeasReportPerUE) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RicIndicationMessage_RadioMeasReportPerUE) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.RadioMeasReportPerUE != nil {
+		{
+			size, err := m.RadioMeasReportPerUE.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintE2Sm(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
 func (m *RicControlHeader) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -460,6 +838,66 @@ func encodeVarintE2Sm(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *RicEventTriggerDefinition) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.S != nil {
+		n += m.S.Size()
+	}
+	return n
+}
+
+func (m *RicEventTriggerDefinition_L2MeasConfig) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.L2MeasConfig != nil {
+		l = m.L2MeasConfig.Size()
+		n += 1 + l + sovE2Sm(uint64(l))
+	}
+	return n
+}
+func (m *RicIndicationHeader) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.MessageType != 0 {
+		n += 1 + sovE2Sm(uint64(m.MessageType))
+	}
+	return n
+}
+
+func (m *RicIndicationMessage) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.S != nil {
+		n += m.S.Size()
+	}
+	return n
+}
+
+func (m *RicIndicationMessage_RadioMeasReportPerUE) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RadioMeasReportPerUE != nil {
+		l = m.RadioMeasReportPerUE.Size()
+		n += 1 + l + sovE2Sm(uint64(l))
+	}
+	return n
+}
 func (m *RicControlHeader) Size() (n int) {
 	if m == nil {
 		return 0
@@ -550,6 +988,254 @@ func sovE2Sm(x uint64) (n int) {
 }
 func sozE2Sm(x uint64) (n int) {
 	return sovE2Sm(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *RicEventTriggerDefinition) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowE2Sm
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RicEventTriggerDefinition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RicEventTriggerDefinition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field L2MeasConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowE2Sm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &sb.L2MeasConfig{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.S = &RicEventTriggerDefinition_L2MeasConfig{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipE2Sm(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RicIndicationHeader) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowE2Sm
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RicIndicationHeader: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RicIndicationHeader: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageType", wireType)
+			}
+			m.MessageType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowE2Sm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MessageType |= sb.MessageType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipE2Sm(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RicIndicationMessage) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowE2Sm
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RicIndicationMessage: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RicIndicationMessage: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RadioMeasReportPerUE", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowE2Sm
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &sb.RadioMeasReportPerUE{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.S = &RicIndicationMessage_RadioMeasReportPerUE{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipE2Sm(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthE2Sm
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *RicControlHeader) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)

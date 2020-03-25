@@ -20,41 +20,54 @@ package interface.e2ap;
 import "github.com/onosproject/onos-ric/api/sb/e2-interface.proto";
 import "github.com/onosproject/onos-ric/api/sb/e2sm/e2sm.proto";
 
-/*
--- **************************************************************
---
--- Interface Elementary Procedure List
---
--- **************************************************************
+//-- **************************************************************
+//--
+//-- Interface Elementary Procedure List
+//--
+//-- **************************************************************
+//
+//E2AP-ELEMENTARY-PROCEDURES E2AP-ELEMENTARY-PROCEDURE ::= {
+//    E2AP-ELEMENTARY-PROCEDURES-CLASS-1                    |
+//    E2AP-ELEMENTARY-PROCEDURES-CLASS-2,
+//    ...
+//}
+//
+//E2AP-ELEMENTARY-PROCEDURES-CLASS-1 E2AP-ELEMENTARY-PROCEDURE ::= {
+//    ricSubscription                                        |
+//    ricSubscriptionDelete                                |
+//    ricServiceUpdate                                    |
+//    ricControl                                            |
+//    e2setup                                                |
+//    reset,
+//    ...
+//}
+//
+//	ricSubscription E2AP-ELEMENTARY-PROCEDURE ::= {
+//		INITIATING MESSAGE        RICsubscriptionRequest
+//		SUCCESSFUL OUTCOME        RICsubscriptionResponse
+//		UNSUCCESSFUL OUTCOME    RICsubscriptionFailure
+//		PROCEDURE CODE            id-RICsubscription
+//		CRITICALITY                reject
+//	}
+//
+//	ricControl E2AP-ELEMENTARY-PROCEDURE ::= {
+//		INITIATING MESSAGE        RICcontrolRequest
+//		SUCCESSFUL OUTCOME        RICcontrolAcknowledge
+//		UNSUCCESSFUL OUTCOME    RICcontrolFailure
+//		PROCEDURE CODE            id-RICcontrol
+//		CRITICALITY                reject
+//	}
+//
+//ricIndication E2AP-ELEMENTARY-PROCEDURE ::= {
+//    INITIATING MESSAGE        RICindication
+//    PROCEDURE CODE            id-RICindication
+//    CRITICALITY                ignore
+//}
 
-E2AP-ELEMENTARY-PROCEDURES E2AP-ELEMENTARY-PROCEDURE ::= {
-    E2AP-ELEMENTARY-PROCEDURES-CLASS-1                    |
-    E2AP-ELEMENTARY-PROCEDURES-CLASS-2,
-    ...
-}
-
-E2AP-ELEMENTARY-PROCEDURES-CLASS-1 E2AP-ELEMENTARY-PROCEDURE ::= {
-    ricSubscription                                        |
-    ricSubscriptionDelete                                |
-    ricServiceUpdate                                    |
-    ricControl                                            |
-    e2setup                                                |
-    reset,
-    ...
-}
-*/
 
 service E2AP {
 
-	/*
-	ricControl E2AP-ELEMENTARY-PROCEDURE ::= {
-		INITIATING MESSAGE        RICcontrolRequest
-		SUCCESSFUL OUTCOME        RICcontrolAcknowledge
-		UNSUCCESSFUL OUTCOME    RICcontrolFailure
-		PROCEDURE CODE            id-RICcontrol
-		CRITICALITY                reject
-	}
-	*/
+    rpc RicSubscription (stream RicSubscriptionRequest) returns (stream RicIndication) {}
     rpc RicControl (stream RicControlRequest) returns (stream RicControlResponse) {}
 
     // TODO - convert rest of the services to new E2
@@ -62,116 +75,150 @@ service E2AP {
     rpc SendTelemetry (interface.e2.L2MeasConfig) returns (stream interface.e2.TelemetryMessage) {}
 }
 
-/*
--- **************************************************************
---
--- RIC Control Elementary Procedure
---
--- **************************************************************
--- **************************************************************
---
--- RIC CONTROL REQUEST
---
--- **************************************************************
-RICcontrolRequest ::= SEQUENCE {
-    protocolIEs                    ProtocolIE-Container    {{RICcontrolRequest-IEs}},
-    ...
+//-- **************************************************************
+//--
+//-- RIC Subscription Elementary Procedure
+//--
+//-- **************************************************************
+//-- **************************************************************
+//--
+//-- RIC SUBSCRIPTION REQUEST
+//--
+//-- **************************************************************
+//RICsubscriptionRequest ::= SEQUENCE {
+//    protocolIEs                    ProtocolIE-Container    {{RICsubscriptionRequest-IEs}},
+//    ...
+//}
+//
+//RICsubscriptionRequest-IEs E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory}|
+//    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory}|
+//    { ID id-RICsubscriptionDetails        CRITICALITY reject    TYPE RICsubscriptionDetails            PRESENCE mandatory},
+//    ...
+//}
+//
+//
+//RICsubscriptionDetails ::= SEQUENCE {
+//    ricEventTriggerDefinition    RICeventTriggerDefinition,
+//   ricAction-ToBeSetup-List    RICactions-ToBeSetup-List,
+//    ...
+//}
+//
+//RICactions-ToBeSetup-List ::= SEQUENCE (SIZE(1..maxofRICactionID)) OF ProtocolIE-SingleContainer { {RICaction-ToBeSetup-ItemIEs} }
+//
+//RICaction-ToBeSetup-ItemIEs     E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICaction-ToBeSetup-Item    CRITICALITY ignore     TYPE RICaction-ToBeSetup-Item     PRESENCE mandatory },
+//    ...
+//}
+//
+//RICaction-ToBeSetup-Item ::= SEQUENCE {
+//    ricActionID                    RICactionID,
+//    ricActionType                RICactionType,
+//    ricActionDefinition            RICactionDefinition     OPTIONAL,
+//    ricSubsequentAction            RICsubsequentAction     OPTIONAL,
+//    ...
+//}
+
+message RicSubscriptionRequest {
+	interface.e2sm.RanFunctionID ranFunctionID = 1;
+	RicSubscriptionDetails ricSubscriptionDetails = 2;
 }
 
-RICcontrolRequest-IEs E2AP-PROTOCOL-IES ::= {
-    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory    }|
-    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory    }|
-    { ID id-RICcallProcessID            CRITICALITY reject    TYPE RICcallProcessID                PRESENCE optional    }|
-    { ID id-RICcontrolHeader            CRITICALITY reject    TYPE RICcontrolHeader                PRESENCE mandatory    }|
-    { ID id-RICcontrolMessage            CRITICALITY reject    TYPE RICcontrolMessage                PRESENCE mandatory    }|
-    { ID id-RICcontrolAckRequest        CRITICALITY reject    TYPE RICcontrolAckRequest            PRESENCE optional    },
-    ...
+message RicSubscriptionDetails {
+    interface.e2sm.RicEventTriggerDefinition    ricEventTriggerDefinition = 1;
 }
-*/
+
+//-- **************************************************************
+//--
+//-- RIC INDICATION
+//--
+//-- **************************************************************
+//RICindication ::= SEQUENCE {
+//    protocolIEs                    ProtocolIE-Container    {{RICindication-IEs}},
+//    ...
+//}
+//
+//RICindication-IEs E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory    }|
+//    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory    }|
+//    { ID id-RICactionID                    CRITICALITY reject    TYPE RICactionID                    PRESENCE mandatory    }|
+//    { ID id-RICindicationSN                CRITICALITY reject    TYPE RICindicationSN                PRESENCE optional    }|
+//    { ID id-RICindicationType            CRITICALITY reject    TYPE RICindicationType              PRESENCE mandatory    }|
+//    { ID id-RICindicationHeader            CRITICALITY reject    TYPE RICindicationHeader            PRESENCE mandatory    }|
+//    { ID id-RICindicationMessage        CRITICALITY reject    TYPE RICindicationMessage            PRESENCE mandatory    }|
+//    { ID id-RICcallProcessID            CRITICALITY reject    TYPE RICcallProcessID                PRESENCE optional    },
+//    ...
+//}
+
+message RicIndication {
+	interface.e2sm.RicIndicationHeader hdr = 1;
+	interface.e2sm.RicIndicationMessage msg = 2;
+}
+
+//-- **************************************************************
+//--
+//-- RIC CONTROL REQUEST
+//--
+//-- **************************************************************
+//RICcontrolRequest ::= SEQUENCE {
+//    protocolIEs                    ProtocolIE-Container    {{RICcontrolRequest-IEs}},
+//    ...
+//}
+//
+//RICcontrolRequest-IEs E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory    }|
+//    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory    }|
+//    { ID id-RICcallProcessID            CRITICALITY reject    TYPE RICcallProcessID                PRESENCE optional    }|
+//    { ID id-RICcontrolHeader            CRITICALITY reject    TYPE RICcontrolHeader                PRESENCE mandatory    }|
+//    { ID id-RICcontrolMessage            CRITICALITY reject    TYPE RICcontrolMessage                PRESENCE mandatory    }|
+//    { ID id-RICcontrolAckRequest        CRITICALITY reject    TYPE RICcontrolAckRequest            PRESENCE optional    },
+//    ...
+//}
 
 message RicControlRequest {
 	interface.e2sm.RicControlHeader hdr = 1;
 	interface.e2sm.RicControlMessage msg = 2;
 }
 
-/*
--- **************************************************************
---
--- RIC CONTROL ACKNOWLEDGE
---
--- **************************************************************
-RICcontrolAcknowledge ::= SEQUENCE {
-    protocolIEs                    ProtocolIE-Container    {{RICcontrolAcknowledge-IEs}},
-    ...
-}
 
-RICcontrolAcknowledge-IEs E2AP-PROTOCOL-IES ::= {
-    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory    }|
-    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory    }|
-    { ID id-RICcallProcessID            CRITICALITY reject    TYPE RICcallProcessID                PRESENCE optional    }|
-    { ID id-RICcontrolStatus            CRITICALITY reject    TYPE RICcontrolStatus                PRESENCE mandatory    } |
-    { ID id-RICcontrolOutcome            CRITICALITY reject    TYPE RICcontrolOutcome                PRESENCE optional    },
-    ...
-}
--- **************************************************************
---
--- RIC CONTROL FAILURE
---
--- **************************************************************
-RICcontrolFailure ::= SEQUENCE {
-    protocolIEs                    ProtocolIE-Container    {{RICcontrolFailure-IEs}},
-    ...
-}
-
-RICcontrolFailure-IEs E2AP-PROTOCOL-IES ::= {
-    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory    }|
-    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory    }|
-    { ID id-RICcallProcessID            CRITICALITY reject    TYPE RICcallProcessID                PRESENCE optional    }|
-    { ID id-Cause                        CRITICALITY ignore    TYPE Cause                            PRESENCE mandatory    } |
-    { ID id-RICcontrolOutcome            CRITICALITY reject    TYPE RICcontrolOutcome                PRESENCE optional    },
-    ...
-}
-
-*/
+//-- **************************************************************
+//--
+//-- RIC CONTROL ACKNOWLEDGE
+//--
+//-- **************************************************************
+//RICcontrolAcknowledge ::= SEQUENCE {
+//    protocolIEs                    ProtocolIE-Container    {{RICcontrolAcknowledge-IEs}},
+//    ...
+//}
+//
+//RICcontrolAcknowledge-IEs E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory    }|
+//    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory    }|
+//    { ID id-RICcallProcessID            CRITICALITY reject    TYPE RICcallProcessID                PRESENCE optional    }|
+//    { ID id-RICcontrolStatus            CRITICALITY reject    TYPE RICcontrolStatus                PRESENCE mandatory    } |
+//    { ID id-RICcontrolOutcome            CRITICALITY reject    TYPE RICcontrolOutcome                PRESENCE optional    },
+//    ...
+//}
+//-- **************************************************************
+//--
+//-- RIC CONTROL FAILURE
+//--
+//-- **************************************************************
+//RICcontrolFailure ::= SEQUENCE {
+//    protocolIEs                    ProtocolIE-Container    {{RICcontrolFailure-IEs}},
+//    ...
+//}
+//
+//RICcontrolFailure-IEs E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory    }|
+//    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory    }|
+//    { ID id-RICcallProcessID            CRITICALITY reject    TYPE RICcallProcessID                PRESENCE optional    }|
+//    { ID id-Cause                        CRITICALITY ignore    TYPE Cause                            PRESENCE mandatory    } |
+//    { ID id-RICcontrolOutcome            CRITICALITY reject    TYPE RICcontrolOutcome                PRESENCE optional    },
+//    ...
+//}
 
 message RicControlResponse {
 	interface.e2sm.RicControlHeader hdr = 1;
 	interface.e2sm.RicControlOutcome msg = 2;
 }
-
-/*
--- **************************************************************
--- Following IE defined in E2SM
--- **************************************************************
-RANfunctionDefinition ::= OCTET STRING
-
-RANfunctionID ::= INTEGER (0..4095)
-
-RICcallProcessID ::= OCTET STRING
-
-RICcontrolAckRequest ::= ENUMERATED{
-    noAck,
-    ack,
-    nAck,
-    ...
-}
-
-RICcontrolHeader ::= OCTET STRING
-
-RICcontrolMessage ::= OCTET STRING
-
-RICcontrolOutcome ::= OCTET STRING
-
-RICcontrolStatus ::= ENUMERATED{
-    success,
-    rejected,
-    failed,
-    ...
-}
-
-RICrequestID ::= SEQUENCE {
-    ricRequestorID                INTEGER (0..65535),
-    ricInstanceID    INTEGER (0..65535),
-    ...
-}
-*/
