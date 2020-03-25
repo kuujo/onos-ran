@@ -27,7 +27,7 @@ var log = logging.GetLogger("main")
 
 // The main entry point.
 func main() {
-	onosricaddr := flag.String("onosricaddr", "localhost:5150", "address:port of the ONOS RIC subsystem")
+	onosricEndpoint := flag.String("onosricaddr", "onos-ric:5150", "endpoint:port of the ONOS RIC subsystem")
 	loadthresh := flag.Float64("threshold", 1, "Threshold for MLB [0, 1] (e.g., 0.5 means 50%)")
 	period := flag.Int64("period", 10000, "Period to run MLB procedure [ms]")
 	enableMetrics := flag.Bool("enableMetrics", true, "Enable gathering of metrics for Prometheus")
@@ -37,20 +37,17 @@ func main() {
 	log.Info("Starting MLB Application")
 
 	appMgr, err := mlbappmanager.NewManager()
+	if err != nil {
+		log.Fatal("Unable to load MLB Application: ", err)
+	}
 
 	if *enableMetrics {
 		log.Info("Starting MLB Exporter")
 		go mlbappexporter.RunMLBExposer(appMgr.SB)
 	}
 
-	if err != nil {
-		log.Fatal("Unable to load MLB Application: ", err)
-	} else {
-		appMgr.SB.ONOSRICAddr = onosricaddr
-		appMgr.SB.LoadThresh = loadthresh
-		appMgr.SB.Period = period
-		appMgr.Run()
-	}
-
-	// If this application requires gRPC server, should be called here.
+	appMgr.SB.ONOSRICAddr = onosricEndpoint
+	appMgr.SB.LoadThresh = loadthresh
+	appMgr.SB.Period = period
+	appMgr.Run()
 }

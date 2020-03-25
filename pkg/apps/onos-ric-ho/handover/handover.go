@@ -17,12 +17,8 @@ package hoapphandover
 import (
 	"time"
 
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-
 	"github.com/onosproject/onos-ric/api/nb"
 )
-
-var log = logging.GetLogger("ho", "handover")
 
 // HOEvent represents a single HO event
 type HOEvent struct {
@@ -52,7 +48,6 @@ func HODecisionMaker(ueInfo *nb.UELinkInfo) *nb.HandOverRequest {
 	}
 
 	if servStationID.GetEcid() == bestStationID.GetEcid() && servStationID.GetPlmnid() == bestStationID.GetPlmnid() {
-		log.Infof("No need to trigger HO - UE: %s (p:%s,e:%s)", ueInfo.GetCrnti(), ueInfo.GetEcgi().GetPlmnid(), ueInfo.GetEcgi().GetEcid())
 		return nil
 	}
 

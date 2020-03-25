@@ -162,8 +162,11 @@ func (m *Manager) ListTelemetry(ch chan<- sb.TelemetryMessage) error {
 }
 
 // SubscribeTelemetry subscribes the given channel to telemetry events
-func (m *Manager) SubscribeTelemetry(ch chan<- sb.TelemetryMessage) error {
-	return m.telemetryStore.Watch(ch, telemetry.WithReplay())
+func (m *Manager) SubscribeTelemetry(ch chan<- sb.TelemetryMessage, withReplay bool) error {
+	if withReplay {
+		return m.telemetryStore.Watch(ch, telemetry.WithReplay())
+	}
+	return m.telemetryStore.Watch(ch)
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -219,13 +222,18 @@ func GetManager() *Manager {
 }
 
 // StoreTelemetry - put the telemetry update in the atomix store
+// Only handles MessageType_RADIO_MEAS_REPORT_PER_UE at the moment
 func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
 	err := m.telemetryStore.Put(&update)
 	if err != nil {
-		log.Errorf("Could not put message %v in telemetry store %s", update, err.Error())
+		log.Fatalf("Could not put message %v in telemetry store %s", update, err.Error())
 	}
-	switch x := update.S.(type) {
-	case *sb.TelemetryMessage_RadioMeasReportPerUE:
+	switch update.MessageType {
+	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+		x, ok := update.S.(*sb.TelemetryMessage_RadioMeasReportPerUE)
+		if !ok {
+			log.Fatalf("Telemetry update has unexpected type %T", x)
+		}
 		log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
 			x.RadioMeasReportPerUE.Ecgi.PlmnId,
 			x.RadioMeasReportPerUE.Ecgi.Ecid,
@@ -238,8 +246,7 @@ func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
 			x.RadioMeasReportPerUE.RadioReportServCells[2].GetEcgi().GetEcid(),
 		)
 	default:
-		log.Fatalf("Telemetry update has unexpected type %T", x)
-		log.Infof("Got telemetry messageType %d", update.MessageType)
+		log.Fatalf("Telemetry update has unexpected type %T", update.MessageType)
 	}
 }
 

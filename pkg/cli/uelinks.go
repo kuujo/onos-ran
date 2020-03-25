@@ -35,13 +35,13 @@ type QualSet struct {
 	Time      string
 }
 
-const ueLinksCellsTemplate = "{{ printf \"IMSIs           UEs       \" }}" +
+const ueLinksCellsTemplate = "{{ printf \"IMSIs           UEs                      \" }}" +
 	"{{range . }}" +
 	"{{ printf \"%-10s\" . }}" +
 	"{{end}}\n"
 
 const ueLinksTemplate = "{{ printf \"%-16s\" .Imsi }}" +
-	"{{printf \"%-10s\" .Ue}}" +
+	"{{printf \"%-25s\" .Ue}}" +
 	"{{ range $idx, $qual := .UeQual }}" +
 	"{{ if $qual}}" +
 	"{{printf \"%-10s\" $qual}}" +
@@ -53,6 +53,9 @@ const ueLinksTemplate = "{{ printf \"%-16s\" .Imsi }}" +
 	"{{printf \"%-20s\" .Time }}" +
 	"{{end}}\n"
 
+var tmplCellsList, _ = template.New("uelinkscells").Parse(ueLinksCellsTemplate)
+var tmplUesList, _ = template.New("uelinksues").Parse(ueLinksTemplate)
+
 func getGetUeLinksCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "uelinks",
@@ -62,6 +65,7 @@ func getGetUeLinksCommand() *cobra.Command {
 	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	cmd.Flags().String("ecgi", "", "optional station identifier")
 	cmd.Flags().String("crnti", "", "optional UE identifier in the local station context")
+	cmd.Flags().Bool("sortimsi", false, "Sort by UE Imsi instead of Cell")
 	return cmd
 }
 
@@ -71,7 +75,6 @@ func getWatchUeLinksCommand() *cobra.Command {
 		Short: "Watch UE Links",
 		RunE:  runUeLinksCommand,
 	}
-	cmd.Flags().Bool("no-headers", false, "disables output headers")
 	cmd.Flags().String("ecgi", "", "optional station identifier")
 	cmd.Flags().String("crnti", "", "optional UE identifier in the local station context")
 	return cmd
@@ -85,14 +88,13 @@ func getCRNTI(cmd *cobra.Command) string {
 func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	noHeaders, _ := cmd.Flags().GetBool("no-headers")
 	subscribe, _ := cmd.Flags().GetBool(_subscribe)
+	sortImsi, _ := cmd.Flags().GetBool("sortimsi")
 
 	conn, err := cli.GetConnection(cmd)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	tmplCellsList, _ := template.New("uelinkscells").Parse(ueLinksCellsTemplate)
-	tmplUesList, _ := template.New("uelinksues").Parse(ueLinksTemplate)
 
 	request := nb.UELinkListRequest{Subscribe: subscribe}
 	if subscribe {
@@ -119,13 +121,13 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 		Output("list error %s", err.Error())
 		return err
 	}
-	towers := make(map[string]interface{})
-	var towerKeys []string
+	towerKeys := make([]string, 0)
 	qualityMap := make(map[string][]*nb.ChannelQuality)
 	imsiMap := make(map[string]string)
-	if !noHeaders {
-		Output("                        Cell sites\n")
-	}
+	imsiInvMap := make(map[string]string)
+	imsiKeys := make([]string, 0)
+	servingMap := make(map[string]string)
+	qualKeys := make([]string, 0)
 	for {
 		response, err := stream.Recv()
 		if err == io.EOF {
@@ -134,37 +136,56 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 			Output("rcv error %s", err.Error())
 			return err
 		}
-		if _, ok := towers[response.Ecgi.Ecid]; !ok {
-			towers[response.Ecgi.Ecid] = struct{}{}
-			towerKeys = make([]string, len(towers))
-			var i = 0
-			for k := range towers {
-				towerKeys[i] = k
-				i++
-			}
-			sort.Slice(towerKeys, func(i, j int) bool {
-				return towerKeys[i] < towerKeys[j]
-			})
-			if subscribe {
+		ecids := make([]string, 0)
+		for _, cq := range response.ChannelQualities {
+			ecids = append(ecids, cq.GetTargetEcgi().GetEcid())
+		}
+		ecids = append(ecids, response.GetEcgi().GetEcid())
+		formerLen := len(towerKeys)
+		towerKeys = addTowerKeys(towerKeys, ecids...)
+		qualID := fmt.Sprintf("%s:%s:%s", response.Ecgi.Plmnid, response.Ecgi.Ecid, response.Crnti)
+		if subscribe {
+			if len(towerKeys) > formerLen {
 				_ = tmplCellsList.Execute(GetOutput(), towerKeys)
 			}
-		}
-		qualityMap[response.Crnti] = response.ChannelQualities
-		imsiMap[response.Crnti] = response.Imsi
-		if subscribe {
-			printQualMap(response.Crnti, response.Imsi, response.Ecgi.Ecid, response.ChannelQualities, towerKeys, tmplUesList, true)
+			printQualMap(qualID, response.Imsi, response.Ecgi.Ecid, response.ChannelQualities, towerKeys, tmplUesList, true)
+		} else {
+			qualityMap[qualID] = response.ChannelQualities
+			imsiMap[qualID] = response.Imsi
+			imsiInvMap[response.Imsi] = qualID
+			qualKeys = append(qualKeys, qualID)
+			imsiKeys = append(imsiKeys, response.GetImsi())
+			servingMap[qualID] = response.GetEcgi().GetEcid()
 		}
 	}
 	if !subscribe {
+		if !noHeaders {
+			Output("Cqi for UE-Cell links:    UEs: %4d      Cells %4d   (*=serving cell)\n", len(qualityMap), len(towerKeys))
+		}
 		_ = tmplCellsList.Execute(GetOutput(), towerKeys)
-		for k, qualities := range qualityMap {
-			printQualMap(k, imsiMap[k], "", qualities, towerKeys, tmplUesList, false)
+		if !sortImsi {
+			sort.Slice(qualKeys, func(i, j int) bool {
+				return qualKeys[i] < qualKeys[j]
+			})
+		} else {
+			sort.Slice(imsiKeys, func(i, j int) bool {
+				return imsiKeys[i] < imsiKeys[j]
+			})
+			qualKeys = make([]string, 0)
+			for _, imsi := range imsiKeys {
+				if qualID, ok := imsiInvMap[imsi]; ok {
+					qualKeys = append(qualKeys, qualID)
+				}
+			}
+		}
+		for _, qualID := range qualKeys {
+			printQualMap(qualID, imsiMap[qualID], servingMap[qualID], qualityMap[qualID], towerKeys, tmplUesList, false)
 		}
 	}
 	return nil
 }
 
-func printQualMap(crnti string, imsi string, serving string, qualities []*nb.ChannelQuality, towerKeys []string, tmplUesList *template.Template, printTime bool) {
+func printQualMap(qualid string, imsi string, serving string, qualities []*nb.ChannelQuality, towerKeys []string, tmplUesList *template.Template, printTime bool) {
 	qualTable := make([]string, len(towerKeys))
 	for _, q := range qualities {
 		for i, t := range towerKeys {
@@ -177,6 +198,26 @@ func printQualMap(crnti string, imsi string, serving string, qualities []*nb.Cha
 			}
 		}
 	}
-	qualSet := QualSet{Ue: crnti, Imsi: imsi, UeQual: qualTable, PrintTime: printTime, Time: time.Now().Format("15:04:05.0")}
+	qualSet := QualSet{Ue: qualid, Imsi: imsi, UeQual: qualTable, PrintTime: printTime, Time: time.Now().Format("15:04:05.0")}
 	_ = tmplUesList.Execute(GetOutput(), qualSet)
+}
+
+func addTowerKeys(existing []string, towerIds ...string) []string {
+	towers := make(map[string]interface{})
+	for _, t := range existing {
+		towers[t] = struct{}{}
+	}
+	for _, t := range towerIds { //Prevents duplicates
+		towers[t] = struct{}{}
+	}
+	towerKeys := make([]string, len(towers))
+	var i = 0
+	for t := range towers { //Back to array
+		towerKeys[i] = t
+		i++
+	}
+	sort.Slice(towerKeys, func(i, j int) bool {
+		return towerKeys[i] < towerKeys[j]
+	})
+	return towerKeys
 }

@@ -146,7 +146,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 	if req.Ecgi == nil {
 		ch := make(chan sb.TelemetryMessage)
 		if req.Subscribe {
-			if err := manager.GetManager().SubscribeTelemetry(ch); err != nil {
+			if err := manager.GetManager().SubscribeTelemetry(ch, !req.NoReplay); err != nil {
 				return err
 			}
 		} else {

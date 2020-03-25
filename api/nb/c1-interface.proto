@@ -103,6 +103,10 @@ message UELinkListRequest {
     // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
     // after all uelinks have been streamed to the client
     bool subscribe = 3;
+
+    // noReplay - do not replay the list of UELinks from before the request
+    // Used with subscribe, to only get new changes
+    bool noReplay = 4;
 }
 
 message ChannelQuality {

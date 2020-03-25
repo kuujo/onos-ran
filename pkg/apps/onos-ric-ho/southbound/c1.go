@@ -106,7 +106,7 @@ func (m *HOSessions) runHandoverProcedure() error {
 
 // getListUELinks gets the list of link between each UE and serving/neighbor stations, and call sendHandoverTrigger if HO is necessary.
 func (m *HOSessions) watchUELinks(ch chan<- *nb.UELinkInfo) error {
-	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{Subscribe: true})
+	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{Subscribe: true, NoReplay: true})
 	if err != nil {
 		log.Errorf("Failed to get stream: %s", err)
 		return err

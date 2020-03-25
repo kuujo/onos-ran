@@ -61,9 +61,6 @@ type HOEventMeasuredRIC struct {
 	ElapsedTime int64
 }
 
-// ListHOEventMeasuredRIC is the list of HOEvent which is measured at ONOS RIC
-var ListHOEventMeasuredRIC []HOEventMeasuredRIC
-
 // NewSession creates a new southbound session controller.
 func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
 	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
