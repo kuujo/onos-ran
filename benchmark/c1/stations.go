@@ -19,28 +19,26 @@ import (
 	"io"
 	"time"
 
+	"github.com/onosproject/helmit/pkg/benchmark"
 	"github.com/onosproject/onos-ric/api/nb"
-	"github.com/onosproject/onos-test/pkg/benchmark"
 )
 
 // BenchmarkGetStations tests get stations
-func (s *BenchmarkSuite) BenchmarkGetStations(b *benchmark.Benchmark) {
-	b.Run(func() error {
-		request := nb.StationListRequest{Subscribe: false}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		stream, err := s.client.ListStations(ctx, &request)
-		if err != nil {
+func (s *BenchmarkSuite) BenchmarkGetStations(b *benchmark.Benchmark) error {
+	request := nb.StationListRequest{Subscribe: false}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	stream, err := s.client.ListStations(ctx, &request)
+	if err != nil {
+		return err
+	}
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF {
+			break
+		} else if err != nil {
 			return err
 		}
-		for {
-			_, err := stream.Recv()
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	}
+	return nil
 }

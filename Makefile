@@ -78,16 +78,8 @@ onos-ric-mlb-docker: onos-ric-base-docker # @HELP build onos-ric-mlb Docker imag
 		--build-arg ONOS_RIC_BASE_VERSION=${ONOS_RIC_MLB_VERSION} \
 		-t onosproject/onos-ric-mlb:${ONOS_RIC_MLB_VERSION}
 
-onos-ric-tests-docker: # @HELP build onos-ric tests Docker image
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ric-tests/_output/bin/onos-ric-tests ./cmd/onos-ric-tests
-	docker build . -f build/onos-ric-tests/Dockerfile -t onosproject/onos-ric-tests:${ONOS_RIC_VERSION}
-
-onos-ric-benchmarks-docker: # @HELP build onos-ric benchmarks Docker image
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/onos-ric-benchmarks/_output/bin/onos-ric-benchmarks ./cmd/onos-ric-benchmarks
-	docker build . -f build/onos-ric-benchmarks/Dockerfile -t onosproject/onos-ric-benchmarks:${ONOS_RIC_VERSION}
-
 images: # @HELP build all Docker images
-images: build onos-ric-docker onos-ric-ho-docker onos-ric-mlb-docker onos-ric-tests-docker onos-ric-benchmarks-docker
+images: build onos-ric-docker onos-ric-ho-docker onos-ric-mlb-docker
 
 kind: # @HELP build Docker images and add them to the currently configured kind cluster
 kind: images
@@ -95,8 +87,6 @@ kind: images
 	kind load docker-image onosproject/onos-ric:${ONOS_RIC_VERSION}
 	kind load docker-image onosproject/onos-ric-ho:${ONOS_RIC_VERSION}
 	kind load docker-image onosproject/onos-ric-mlb:${ONOS_RIC_VERSION}
-	kind load docker-image onosproject/onos-ric-tests:${ONOS_RIC_VERSION}
-	kind load docker-image onosproject/onos-ric-benchmarks:${ONOS_RIC_VERSION}
 
 all: build images
 

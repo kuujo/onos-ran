@@ -15,9 +15,9 @@
 package main
 
 import (
+	"github.com/onosproject/helmit/pkg/registry"
+	"github.com/onosproject/helmit/pkg/test"
 	"github.com/onosproject/onos-ric/test/nb"
-	"github.com/onosproject/onos-test/pkg/registry"
-	"github.com/onosproject/onos-test/pkg/test"
 )
 
 func main() {

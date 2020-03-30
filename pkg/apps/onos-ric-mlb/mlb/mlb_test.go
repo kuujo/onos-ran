@@ -16,9 +16,9 @@ package mlbapploadbalance
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/docker/docker/pkg/testutil/assert"
 	"github.com/onosproject/onos-ric/api/nb"
 )
 

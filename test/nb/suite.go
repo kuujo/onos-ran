@@ -15,9 +15,8 @@
 package nb
 
 import (
-	"github.com/onosproject/onos-test/pkg/onit/env"
-	"github.com/onosproject/onos-test/pkg/onit/setup"
-	"github.com/onosproject/onos-test/pkg/test"
+	"github.com/onosproject/helmit/pkg/helm"
+	"github.com/onosproject/helmit/pkg/test"
 )
 
 // TestSuite is the primary onos-ric test suite
@@ -26,18 +25,36 @@ type TestSuite struct {
 }
 
 // SetupTestSuite sets up the onos-ric northbound test suite
-func (s *TestSuite) SetupTestSuite() {
-	setup.Atomix()
-	setup.Database().Raft()
-	setup.RIC().SetReplicas(1)
-	setup.Topo().SetReplicas(1)
-	setup.SetupOrDie()
+func (s *TestSuite) SetupTestSuite() error {
+	err := helm.Chart("atomix-controller").
+		Release("atomix-controller").
+		Set("scope", "Namespace").
+		Install(true)
+	if err != nil {
+		return err
+	}
 
-	env.Simulators().
-		New().
-		SetImage("onosproject/ran-simulator:latest").
-		SetPort(5150).
-		SetName("ran-simulator").
-		SetAddDevice(false).
-		AddOrDie()
+	err = helm.Chart("onos-topo").
+		Release("onos-topo").
+		Set("store.controller", "atomix-controller:5679").
+		Install(false)
+	if err != nil {
+		return err
+	}
+
+	err = helm.Chart("onos-ric").
+		Release("onos-ric").
+		Set("store.controller", "atomix-controller:5679").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	err = helm.Chart("ran-simulator").
+		Release("ran-simulator").
+		Install(true)
+	if err != nil {
+		return err
+	}
+	return nil
 }
