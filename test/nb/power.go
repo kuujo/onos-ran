@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-func setStationsPower(t *testing.T, offset nb.StationPowerOffset, attempts int) {
+func setStationsPowerOrFail(t *testing.T, offset nb.StationPowerOffset, attempts int) {
 	stations := readStations(t)
 	client := makeNBClientOrFail(t)
 
@@ -43,44 +43,16 @@ func setStationsPower(t *testing.T, offset nb.StationPowerOffset, attempts int) 
 	time.Sleep(15 * time.Second)
 }
 
-func linksAreAllPresent(baseLinks map[string]*nb.UELinkInfo, currentLinks map[string]*nb.UELinkInfo) bool {
-	found := 0
-	for key := range baseLinks {
-		currentLink := currentLinks[key]
-		if currentLink.Ecgi.Ecid == baseLinks[key].Ecgi.Ecid {
-			found++
-		}
-	}
-	return found == len(baseLinks)
-}
-
 // TestNBPowerAPI tests the NB stations API
 func (s *TestSuite) TestNBPowerAPI(t *testing.T) {
 
 	// Wait for simulator to respond
 	waitForSimulatorOrFail(t)
 
-	// get the uelinks before any changes
-	uelinksBeforePowerDown := readLinks(t)
-
 	//  turn the power down to 0 for all stations
-	setStationsPower(t, nb.StationPowerOffset_PA_DB_MINUS6, 2)
-	setStationsPower(t, nb.StationPowerOffset_PA_DB_1, 2)
-
-	// get the uelinks after the power down change
-	uelinksAfterPowerDown := readLinks(t)
-
-	//  make sure that links are still there
-	assert.True(t, linksAreAllPresent(uelinksBeforePowerDown, uelinksAfterPowerDown),
-		"After power down, one or more links have higher CQI")
+	setStationsPowerOrFail(t, nb.StationPowerOffset_PA_DB_MINUS6, 2)
+	setStationsPowerOrFail(t, nb.StationPowerOffset_PA_DB_1, 2)
 
 	// turn the power back up for all stations
-	setStationsPower(t, nb.StationPowerOffset_PA_DB_3, 5)
-
-	// get the uelinks after the power up change
-	uelinksAfterPowerUp := readLinks(t)
-
-	// make sure the links are still there
-	assert.True(t, linksAreAllPresent(uelinksAfterPowerDown, uelinksAfterPowerUp),
-		"After power up, one or more links have lower CQI")
+	setStationsPowerOrFail(t, nb.StationPowerOffset_PA_DB_3, 5)
 }
