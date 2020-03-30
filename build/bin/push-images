@@ -2,7 +2,5 @@
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
 make images
 docker push onosproject/onos-ric:latest
-docker push onosproject/onos-ric-tests:latest
 docker push onosproject/onos-ric-ho:latest
 docker push onosproject/onos-ric-mlb:latest
-docker push onosproject/onos-ric-benchmarks:latest
