@@ -103,8 +103,6 @@ type Store interface {
 	// Watch watches telemetry updates
 	Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error
 
-	// Delete a telemetry message based on a given ID
-
 	// Clear deletes all entries from the store
 	Clear() error
 }
@@ -163,7 +161,10 @@ func (s *atomixStore) Put(telemetry *sb.TelemetryMessage) error {
 	if err != nil {
 		return err
 	}
+	before := time.Now()
 	_, err = s.telemetry.Put(ctx, getKey(telemetry).String(), bytes)
+	after := time.Now()
+	log.Infof("Time to Put in Atomix %d µs", after.Sub(before).Microseconds())
 	if err != nil {
 		return err
 	}

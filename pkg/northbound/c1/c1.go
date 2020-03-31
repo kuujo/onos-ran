@@ -17,14 +17,13 @@ package c1
 import (
 	"context"
 	"fmt"
-
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+	service "github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
-
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-	service "github.com/onosproject/onos-lib-go/pkg/northbound"
+	"io"
 
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"google.golang.org/grpc"
@@ -146,9 +145,25 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 	if req.Ecgi == nil {
 		ch := make(chan sb.TelemetryMessage)
 		if req.Subscribe {
-			if err := manager.GetManager().SubscribeTelemetry(ch, !req.NoReplay); err != nil {
-				return err
+			streamID := fmt.Sprintf("ue-%p", stream)
+			telemetryChan, err := manager.GetManager().RegisterTelemetryListener(streamID)
+			if err != nil {
+				log.Fatalf("Unable to register for telemetry events %s: %v", streamID, err)
 			}
+			defer manager.GetManager().UnregisterTelemetryListener(streamID)
+			go func() {
+				for event := range telemetryChan {
+					if event.Type == "RADIO_MEAS_REPORT_PER_UE" {
+						tm, ok := event.Object.(sb.TelemetryMessage)
+						if !ok {
+							log.Fatal("Could not convert event to TelemetryMessage")
+						}
+						ch <- tm
+					} else {
+						log.Warnf("Unhandled message on telemetry channel %s", event.Type)
+					}
+				}
+			}()
 		} else {
 			if err := manager.GetManager().ListTelemetry(ch); err != nil {
 				return err
@@ -186,13 +201,14 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 					Crnti:            radioReportUe.GetCrnti(),
 					ChannelQualities: cqis,
 				}
-				update, err := manager.GetManager().GetUEAdmissionByID(radioReportUe.GetEcgi(), radioReportUe.Crnti)
-				if err == nil {
-					ueLinkInfo.Imsi = fmt.Sprintf("%d", update.GetUEAdmissionRequest().GetImsi())
-				} else {
-					log.Infof("Cannot find Imsi for %v %s", radioReportUe.Ecgi, radioReportUe.Crnti)
+				if !req.Noimsi {
+					update, err := manager.GetManager().GetUEAdmissionByID(radioReportUe.GetEcgi(), radioReportUe.Crnti)
+					if err == nil {
+						ueLinkInfo.Imsi = fmt.Sprintf("%d", update.GetUEAdmissionRequest().GetImsi())
+					} else {
+						log.Infof("Cannot find Imsi for %v %s", radioReportUe.Ecgi, radioReportUe.Crnti)
+					}
 				}
-
 				if err := stream.Send(&ueLinkInfo); err != nil {
 					return err
 				}
@@ -214,6 +230,34 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 
 		return nil, fmt.Errorf("HandOverRequest is missing values %v", req)
 	}
+	return sendHandoverTrigger(req)
+}
+
+// TriggerHandOverStream is a version that stays open all the time.
+func (s Server) TriggerHandOverStream(stream nb.C1InterfaceService_TriggerHandOverStreamServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&nb.HandOverResponse{Success: true})
+		}
+		if err != nil {
+			return err
+		}
+		if req == nil || req.Crnti == "" ||
+			req.DstStation == nil || req.DstStation.Plmnid == "" || req.DstStation.Ecid == "" ||
+			req.SrcStation == nil || req.SrcStation.Plmnid == "" || req.SrcStation.Ecid == "" {
+
+			log.Errorf("HandOverRequest is missing values %v", req)
+			continue
+		}
+
+		if _, err = sendHandoverTrigger(req); err != nil {
+			log.Warn("Error in sending HO trigger %v", err)
+		}
+	}
+}
+
+func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
 	src := req.GetSrcStation()
 	dst := req.GetDstStation()
 	crnti := req.GetCrnti()
@@ -247,7 +291,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 	if !ok {
 		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
 	}
-	log.Infof("Sending HO for %v to %s %v", srcEcgi, srcSession.EndPoint, srcSession.Ecgi)
+	log.Infof("Sending HO for %v:%s to Source %s", srcEcgi, crnti, srcSession.EndPoint)
 	err := srcSession.SendRicControlRequest(hoReq)
 	if err != nil {
 		return nil, err
@@ -257,7 +301,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 	if !ok {
 		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
 	}
-	log.Infof("Sending HO for %v to %s %v", srcEcgi, dstSession.EndPoint, dstSession.Ecgi)
+	log.Infof("Sending HO for %v:%s to Dest %s", srcEcgi, crnti, dstSession.EndPoint)
 	err = dstSession.SendRicControlRequest(hoReq)
 	if err != nil {
 		return nil, err

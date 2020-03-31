@@ -16,8 +16,6 @@
 package manager
 
 import (
-	"strings"
-
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/southbound"
@@ -27,6 +25,7 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/updates"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
+	"strings"
 )
 
 const ranSimulatorType = topodevice.Type("RanSimulator")
@@ -71,6 +70,8 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
+		dispatcher:       newDispatcher(),
+		telemetryChannel: make(chan Event),
 	}
 	return &mgr, nil
 }
@@ -83,11 +84,13 @@ type Manager struct {
 	SbSessions         map[sb.ECGI]*southbound.Session
 	topoMonitor        monitor.TopoMonitor
 	enableMetrics      bool
+	dispatcher         *Dispatcher
+	telemetryChannel   chan Event
 }
 
 // StoreControlUpdate - put the control update in the atomix store
 func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
-	log.Infof("Got messageType %d", update.MessageType)
+	log.Infof("Got messageType %s", update.MessageType)
 	switch x := update.S.(type) {
 	case *sb.ControlUpdate_CellConfigReport:
 		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
@@ -171,6 +174,16 @@ func (m *Manager) SubscribeTelemetry(ch chan<- sb.TelemetryMessage, withReplay b
 	return m.telemetryStore.Watch(ch)
 }
 
+// RegisterTelemetryListener :
+func (m *Manager) RegisterTelemetryListener(name string) (chan Event, error) {
+	return m.dispatcher.registerTelemetryListener(name)
+}
+
+// UnregisterTelemetryListener :
+func (m *Manager) UnregisterTelemetryListener(name string) {
+	m.dispatcher.unregisterTelemetryListener(name)
+}
+
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
@@ -181,6 +194,8 @@ func (m *Manager) Run() {
 	if err != nil {
 		log.Errorf("Error listening to topo service: %s", err.Error())
 	}
+
+	go m.dispatcher.listenTelemetryEvents(m.telemetryChannel)
 }
 
 func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
@@ -227,10 +242,16 @@ func GetManager() *Manager {
 // StoreTelemetry - put the telemetry update in the atomix store
 // Only handles MessageType_RADIO_MEAS_REPORT_PER_UE at the moment
 func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
+	m.telemetryChannel <- Event{
+		Type:   update.GetMessageType().String(),
+		Object: update,
+	}
+
 	err := m.telemetryStore.Put(&update)
 	if err != nil {
 		log.Fatalf("Could not put message %v in telemetry store %s", update, err.Error())
 	}
+
 	switch update.MessageType {
 	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
 		x, ok := update.S.(*sb.TelemetryMessage_RadioMeasReportPerUE)

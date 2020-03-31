@@ -34,12 +34,15 @@ var log = logging.GetLogger("ho", "southbound")
 type HOSessions struct {
 	ONOSRICAddr *string
 	client      nb.C1InterfaceServiceClient
+	hoReqChan   chan *nb.HandOverRequest
 }
 
 // NewSession creates a new southbound session of HO application.
 func NewSession() (*HOSessions, error) {
 	log.Info("Creating HOSessions")
-	return &HOSessions{}, nil
+	return &HOSessions{
+		hoReqChan: make(chan *nb.HandOverRequest),
+	}, nil
 }
 
 // Run starts the southbound control loop for handover.
@@ -80,6 +83,9 @@ func (m *HOSessions) manageConnection(conn *grpc.ClientConn) {
 	}
 
 	defer conn.Close()
+
+	go m.openHandoverTriggersStream(m.hoReqChan)
+
 	// run Handover procedure
 	err := m.runHandoverProcedure()
 	log.Fatalf("Failed to watch UELinks %s. Closing", err.Error())
@@ -96,9 +102,7 @@ func (m *HOSessions) runHandoverProcedure() error {
 		hoReq := hoapphandover.HODecisionMaker(ueLink)
 		// HO procedure 3. send trigger message
 		if hoReq != nil {
-			if err := m.sendHandoverTrigger(hoReq); err != nil {
-				log.Errorf("Error triggering HO event %s", err.Error())
-			}
+			m.hoReqChan <- hoReq
 		}
 	}
 	return nil
@@ -106,7 +110,12 @@ func (m *HOSessions) runHandoverProcedure() error {
 
 // getListUELinks gets the list of link between each UE and serving/neighbor stations, and call sendHandoverTrigger if HO is necessary.
 func (m *HOSessions) watchUELinks(ch chan<- *nb.UELinkInfo) error {
-	stream, err := m.client.ListUELinks(context.Background(), &nb.UELinkListRequest{Subscribe: true, NoReplay: true})
+	stream, err := m.client.ListUELinks(context.Background(),
+		&nb.UELinkListRequest{
+			Subscribe: true,
+			NoReplay:  true,
+			Noimsi:    true,
+		})
 	if err != nil {
 		log.Errorf("Failed to get stream: %s", err)
 		return err
@@ -129,11 +138,19 @@ func (m *HOSessions) watchUELinks(ch chan<- *nb.UELinkInfo) error {
 	return nil
 }
 
-// sendHanmdoverTrigger sends handover trigger to appropriate stations.
-func (m *HOSessions) sendHandoverTrigger(hoReq *nb.HandOverRequest) error {
-	log.Infof("HO %s(%s,%s) from %s,%s to %s,%s", hoReq.GetCrnti(), hoReq.GetSrcStation().GetPlmnid(), hoReq.GetSrcStation().GetEcid(),
-		hoReq.GetSrcStation().GetPlmnid(), hoReq.GetSrcStation().GetEcid(),
-		hoReq.GetDstStation().GetPlmnid(), hoReq.GetDstStation().GetEcid())
-	_, err := m.client.TriggerHandOver(context.Background(), hoReq)
-	return err
+func (m *HOSessions) openHandoverTriggersStream(reqChan chan *nb.HandOverRequest) {
+	stream, err := m.client.TriggerHandOverStream(context.Background())
+	if err != nil {
+		log.Errorf("Error on opening HO Trigger Channel %v", err)
+		return
+	}
+	for hoReq := range reqChan { // Block here until HORequest is received on channel
+		log.Infof("HO %s(%s,%s) from %s,%s to %s,%s", hoReq.GetCrnti(), hoReq.GetSrcStation().GetPlmnid(), hoReq.GetSrcStation().GetEcid(),
+			hoReq.GetSrcStation().GetPlmnid(), hoReq.GetSrcStation().GetEcid(),
+			hoReq.GetDstStation().GetPlmnid(), hoReq.GetDstStation().GetEcid())
+		if err := stream.Send(hoReq); err != nil {
+			log.Errorf("Error on sending HORequest %v", err)
+			return
+		}
+	}
 }

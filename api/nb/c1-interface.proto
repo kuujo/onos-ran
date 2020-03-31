@@ -34,6 +34,10 @@ service C1InterfaceService {
     // HO app will ask to handover to multiple UEs
     rpc TriggerHandOver(HandOverRequest) returns (HandOverResponse);
 
+    // TriggerHandOverStream is a version that stays open all the time
+    // and sends HO messages as they happen
+    rpc TriggerHandOverStream(stream HandOverRequest) returns (HandOverResponse);
+
     // SetRadioPower returns a response indicating success or failure.
     // MLB app will ask to change transmission power to multiple stations
     rpc SetRadioPower(RadioPowerRequest) returns (RadioPowerResponse);
@@ -107,6 +111,9 @@ message UELinkListRequest {
     // noReplay - do not replay the list of UELinks from before the request
     // Used with subscribe, to only get new changes
     bool noReplay = 4;
+
+    // noimsi - imsi is not needed in the response
+    bool noimsi = 5;
 }
 
 message ChannelQuality {

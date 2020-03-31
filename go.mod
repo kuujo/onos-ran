@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	github.com/atomix/go-client v0.0.0-20200307025134-f638fa3fb644
-	github.com/docker/docker v1.13.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onosproject/helmit v0.0.0-20200327211207-6ee099c52d08
