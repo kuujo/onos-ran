@@ -15,7 +15,6 @@
 package exporter
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/manager"
+	"github.com/onosproject/onos-ric/pkg/southbound"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -31,10 +31,14 @@ import (
 
 var log = logging.GetLogger("exporter")
 
+var hoLatencyHistogram prometheus.Histogram
+
 // RunRICExposer runs Prometheus exposer
 func RunRICExposer(mgr *manager.Manager) {
+	southbound.ChanHOEvent = make(chan southbound.HOEventMeasuredRIC)
+	initHOHistogram(mgr)
 	exposeCtrUpdateInfo(mgr)
-	exposeTelemetryInfo(mgr)
+	exposeHOLatency()
 	http.Handle("/metrics", promhttp.Handler())
 	err := http.ListenAndServe(":7000", nil)
 	if err != nil {
@@ -47,12 +51,10 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 	go func() {
 		for {
 			var wg sync.WaitGroup
-			wg.Add(3) // because there are four goroutines
+			wg.Add(2) // because there are four goroutines
 
 			var listRNIBCell []prometheus.Counter
 			var listRNIBUEAdmReq []prometheus.Counter
-			var listRNIBUERel []prometheus.Counter
-			var listHOEvents []prometheus.Counter
 
 			go func() {
 				listRNIBCell = exposeCellConfig(mgr)
@@ -60,10 +62,6 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 			}()
 			go func() {
 				listRNIBUEAdmReq = exposeUEAdmRequests(mgr)
-				defer wg.Done()
-			}()
-			go func() {
-				listRNIBUERel = exposeUEReleaseInd(mgr)
 				defer wg.Done()
 			}()
 			wg.Wait()
@@ -74,12 +72,6 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 			}
 			for i := 0; i < len(listRNIBUEAdmReq); i++ {
 				prometheus.Unregister(listRNIBUEAdmReq[i])
-			}
-			for i := 0; i < len(listRNIBUERel); i++ {
-				prometheus.Unregister(listRNIBUERel[i])
-			}
-			for i := 0; i < len(listHOEvents); i++ {
-				prometheus.Unregister(listHOEvents[i])
 			}
 		}
 	}()
@@ -141,70 +133,33 @@ func exposeUEAdmRequests(mgr *manager.Manager) []prometheus.Counter {
 	return listUEAdmRequestMsgs
 }
 
-// exposeUEReleaseInd exposes UEReleaseInd info
-func exposeUEReleaseInd(mgr *manager.Manager) []prometheus.Counter {
-	var listUEReleaseIndMsgs []prometheus.Counter
-	allControlUpdates, _ := mgr.GetControlUpdates()
-	for i := 0; i < len(allControlUpdates); i++ {
-		switch allControlUpdates[i].S.(type) {
-		case *sb.ControlUpdate_UEReleaseInd:
-			tmp := promauto.NewCounter(prometheus.CounterOpts{
-				Name: "ue_rel_info",
-				ConstLabels: prometheus.Labels{
-					"crnti":  allControlUpdates[i].GetUEReleaseInd().GetCrnti(),
-					"plmnid": allControlUpdates[i].GetUEReleaseInd().Ecgi.GetPlmnId(),
-					"ecid":   allControlUpdates[i].GetUEReleaseInd().GetEcgi().GetEcid(),
-				},
-			})
-			listUEReleaseIndMsgs = append(listUEReleaseIndMsgs, tmp)
-		default:
-		}
-	}
-	return listUEReleaseIndMsgs
-}
-
-// exposeTelemtryInfo is the function to expose Telemetry
-// Currently, Telemetry is singular, but should be extended
-func exposeTelemetryInfo(mgr *manager.Manager) {
+func exposeHOLatency() {
 	go func() {
 		for {
-			listRNIBUELink := exposeUELinkInfo(mgr)
-
-			time.Sleep(1000 * time.Millisecond)
-			for i := 0; i < len(listRNIBUELink); i++ {
-				prometheus.Unregister(listRNIBUELink[i])
+			for e := range southbound.ChanHOEvent {
+				tmp := promauto.NewCounter(prometheus.CounterOpts{
+					Name: "ho_events",
+					ConstLabels: prometheus.Labels{
+						"timestamp": e.Timestamp.Format(time.StampNano),
+						"crnti":     e.Crnti,
+						"plmnid":    e.DestPlmnID,
+						"ecid":      e.DestECID,
+					},
+				})
+				eTime := float64(e.ElapsedTime)
+				tmp.Add(eTime)
+				hoLatencyHistogram.Observe(eTime)
 			}
 		}
 	}()
 }
 
-// exposeUELinkInfo exposes UELink info
-func exposeUELinkInfo(mgr *manager.Manager) []prometheus.Counter {
-	var listUELinkInfo []prometheus.Counter
-	allTelemetry, _ := mgr.GetTelemetry()
-	for i := 0; i < len(allTelemetry); i++ {
-		switch allTelemetry[i].S.(type) {
-		case *sb.TelemetryMessage_RadioMeasReportPerUE:
-			tmp := promauto.NewCounter(prometheus.CounterOpts{
-				Name: "ue_link_info",
-				ConstLabels: prometheus.Labels{
-					"crnti":       allTelemetry[i].GetRadioMeasReportPerUE().GetCrnti(),
-					"serv_plmnid": allTelemetry[i].GetRadioMeasReportPerUE().GetEcgi().GetPlmnId(),
-					"serv_ecid":   allTelemetry[i].GetRadioMeasReportPerUE().GetEcgi().GetEcid(),
-					"n1_plmnid":   allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetEcgi().GetPlmnId(),
-					"n1_ecid":     allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetEcgi().GetEcid(),
-					"n1_cqi":      fmt.Sprintf("%d", allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetCqiHist()[0]),
-					"n2_plmnid":   allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[1].GetEcgi().GetPlmnId(),
-					"n2_ecid":     allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[1].GetEcgi().GetEcid(),
-					"n2_cqi":      fmt.Sprintf("%d", allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[1].GetCqiHist()[0]),
-					"n3_plmnid":   allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[2].GetEcgi().GetPlmnId(),
-					"n3_ecid":     allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[2].GetEcgi().GetEcid(),
-					"n3_cqi":      fmt.Sprintf("%d", allTelemetry[i].GetRadioMeasReportPerUE().GetRadioReportServCells()[2].GetCqiHist()[0]),
-				},
-			})
-			listUELinkInfo = append(listUELinkInfo, tmp)
-		default:
-		}
-	}
-	return listUELinkInfo
+func initHOHistogram(mgr *manager.Manager) {
+	hoLatencyHistogram = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "ho_histogram",
+			Buckets: prometheus.ExponentialBuckets(1e3, 1.5, 20),
+		},
+	)
+	prometheus.MustRegister(hoLatencyHistogram)
 }

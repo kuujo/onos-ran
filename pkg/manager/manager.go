@@ -35,7 +35,7 @@ var log = logging.GetLogger("manager")
 var mgr Manager
 
 // NewManager initializes the RAN subsystem.
-func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
+func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption) (*Manager, error) {
 	log.Info("Creating Manager")
 
 	updatesStore, err := updates.NewDistributedStore()
@@ -67,6 +67,7 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		telemetryStore:     telemetryStore,
 		deviceChangesStore: deviceChangeStore,
 		SbSessions:         make(map[sb.ECGI]*southbound.Session),
+		enableMetrics:      enableMetrics,
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
@@ -81,6 +82,7 @@ type Manager struct {
 	deviceChangesStore device.Store
 	SbSessions         map[sb.ECGI]*southbound.Session
 	topoMonitor        monitor.TopoMonitor
+	enableMetrics      bool
 }
 
 // StoreControlUpdate - put the control update in the atomix store
@@ -198,6 +200,7 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 			if session != nil {
 				session.ControlUpdateHandlerFunc = m.StoreControlUpdate
 				session.TelemetryUpdateHandlerFunc = m.StoreTelemetry
+				session.EnableMetrics = m.enableMetrics
 				m.SbSessions[ecgi] = session
 				session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials())
 			} else {

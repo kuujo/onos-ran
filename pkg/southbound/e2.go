@@ -16,6 +16,8 @@ package southbound
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -29,6 +31,15 @@ import (
 )
 
 var log = logging.GetLogger("southbound")
+
+//MapHOEventMeasuredRIC ...
+var MapHOEventMeasuredRIC map[string]HOEventMeasuredRIC
+
+// MutexMapHOEventMeasuredRIC ...
+var MutexMapHOEventMeasuredRIC sync.RWMutex
+
+//ChanHOEvent ...
+var ChanHOEvent chan HOEventMeasuredRIC
 
 // TelemetryUpdateHandler - a function for the session to write back to manager without the import cycle
 type TelemetryUpdateHandler = func(sb.TelemetryMessage)
@@ -50,6 +61,7 @@ type Session struct {
 
 	ControlUpdateHandlerFunc   ControlUpdateHandler
 	TelemetryUpdateHandlerFunc TelemetryUpdateHandler
+	EnableMetrics              bool
 }
 
 // HOEventMeasuredRIC is struct including UE ID and its eNB ID
@@ -77,6 +89,7 @@ func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
 
 // Run starts the southbound control loop.
 func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials) {
+	MapHOEventMeasuredRIC = make(map[string]HOEventMeasuredRIC)
 	go s.manageConnections(tls, creds)
 	go s.recvTelemetryUpdates()
 	go s.recvUpdates()
@@ -96,6 +109,16 @@ func (s *Session) recvUpdates() {
 
 // SendRicControlRequest sends the specified RicControlRequest on the control channel
 func (s *Session) SendRicControlRequest(req e2ap.RicControlRequest) error {
+
+	switch req.GetHdr().GetMessageType() {
+	case sb.MessageType_HO_REQUEST:
+		if s.EnableMetrics {
+			tC := time.Now()
+			go s.updateHOEventMeasuredRIC(req, tC)
+		}
+	default:
+	}
+
 	s.ricControlRequestChan <- req
 	return nil
 }
@@ -266,8 +289,61 @@ func (s *Session) handleTelemetry(errors chan error) {
 func (s *Session) processTelemetryUpdate(update *sb.TelemetryMessage) {
 	switch x := update.S.(type) {
 	case *sb.TelemetryMessage_RadioMeasReportPerUE:
+		if s.EnableMetrics {
+			tT := time.Now()
+			go s.addReceivedHOEventMeasuredRIC(update, tT) // to monitor HO delay]
+		}
 	default:
 		log.Fatalf("%s Telemetry update has unexpected type %T", s.EndPoint, x)
 	}
 	s.telemetryUpdates <- *update
+}
+
+func (s *Session) addReceivedHOEventMeasuredRIC(update *sb.TelemetryMessage, tT time.Time) {
+	servStationID := update.GetRadioMeasReportPerUE().GetEcgi()
+	numNeighborCells := len(update.GetRadioMeasReportPerUE().GetRadioReportServCells())
+	bestStationID := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetEcgi()
+	bestCQI := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetCqiHist()[0]
+
+	for i := 1; i < numNeighborCells; i++ {
+		tmpCQI := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetCqiHist()[0]
+		if bestCQI < tmpCQI {
+			bestStationID = update.GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetEcgi()
+			bestCQI = tmpCQI
+		}
+	}
+
+	if servStationID.GetEcid() != bestStationID.GetEcid() || servStationID.GetPlmnId() != bestStationID.GetPlmnId() {
+		tmpHOEventMeasuredRIC := HOEventMeasuredRIC{
+			Timestamp:  tT,
+			Crnti:      update.GetRadioMeasReportPerUE().GetCrnti(),
+			DestPlmnID: bestStationID.GetPlmnId(),
+			DestECID:   bestStationID.GetEcid(),
+		}
+		key := fmt.Sprintf("%s:%s:%s:%s:%s", update.GetRadioMeasReportPerUE().GetCrnti(), servStationID.GetPlmnId(), servStationID.GetEcid(), bestStationID.GetPlmnId(), bestStationID.GetEcid())
+		MutexMapHOEventMeasuredRIC.Lock()
+		_, f := MapHOEventMeasuredRIC[key]
+		if !f {
+			MapHOEventMeasuredRIC[key] = tmpHOEventMeasuredRIC
+		}
+		MutexMapHOEventMeasuredRIC.Unlock()
+	}
+}
+
+func (s *Session) updateHOEventMeasuredRIC(req e2ap.RicControlRequest, tC time.Time) {
+	key := fmt.Sprintf("%s:%s:%s:%s:%s", req.GetMsg().GetHORequest().GetCrnti(),
+		req.GetMsg().GetHORequest().GetEcgiS().GetPlmnId(),
+		req.GetMsg().GetHORequest().GetEcgiS().GetEcid(),
+		req.GetMsg().GetHORequest().GetEcgiT().GetPlmnId(),
+		req.GetMsg().GetHORequest().GetEcgiT().GetEcid())
+	MutexMapHOEventMeasuredRIC.Lock()
+	v, f := MapHOEventMeasuredRIC[key]
+	if !f {
+		log.Warnf("Telemetry message is missing when calculating HO latency - %s", key)
+	} else {
+		v.ElapsedTime = tC.Sub(v.Timestamp).Microseconds()
+		ChanHOEvent <- v
+		delete(MapHOEventMeasuredRIC, key)
+	}
+	MutexMapHOEventMeasuredRIC.Unlock()
 }

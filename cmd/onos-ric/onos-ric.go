@@ -30,6 +30,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/onosproject/onos-ric/pkg/exporter"
 
 	"github.com/onosproject/onos-lib-go/pkg/certs"
@@ -59,7 +60,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mgr, err := manager.NewManager(*topoEndpoint, opts)
+	mgr, err := manager.NewManager(*topoEndpoint, *enableMetrics, opts)
 
 	if *enableMetrics {
 		log.Info("Starting ONOS-RIC Exposer")
