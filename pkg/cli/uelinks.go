@@ -99,7 +99,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	request := nb.UELinkListRequest{Subscribe: subscribe}
 	if subscribe {
 		// TODO: indicate watch semantics in the request
-		Output("Watching list of UE links\n")
+		cli.Output("Watching list of UE links\n")
 	}
 
 	// Populate optional ECGI qualifier
@@ -118,7 +118,6 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 
 	stream, err := client.ListUELinks(context.Background(), &request)
 	if err != nil {
-		Output("list error %s", err.Error())
 		return err
 	}
 	towerKeys := make([]string, 0)
@@ -133,7 +132,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			Output("rcv error %s", err.Error())
+			cli.Output("recv error")
 			return err
 		}
 		ecids := make([]string, 0)
@@ -146,7 +145,7 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 		qualID := fmt.Sprintf("%s:%s:%s", response.Ecgi.Plmnid, response.Ecgi.Ecid, response.Crnti)
 		if subscribe {
 			if len(towerKeys) > formerLen {
-				_ = tmplCellsList.Execute(GetOutput(), towerKeys)
+				_ = tmplCellsList.Execute(cli.GetOutput(), towerKeys)
 			}
 			printQualMap(qualID, response.Imsi, response.Ecgi.Ecid, response.ChannelQualities, towerKeys, tmplUesList, true)
 		} else {
@@ -160,9 +159,9 @@ func runUeLinksCommand(cmd *cobra.Command, args []string) error {
 	}
 	if !subscribe {
 		if !noHeaders {
-			Output("Cqi for UE-Cell links:    UEs: %4d      Cells %4d   (*=serving cell)\n", len(qualityMap), len(towerKeys))
+			cli.Output("Cqi for UE-Cell links:    UEs: %4d      Cells %4d   (*=serving cell)\n", len(qualityMap), len(towerKeys))
 		}
-		_ = tmplCellsList.Execute(GetOutput(), towerKeys)
+		_ = tmplCellsList.Execute(cli.GetOutput(), towerKeys)
 		if !sortImsi {
 			sort.Slice(qualKeys, func(i, j int) bool {
 				return qualKeys[i] < qualKeys[j]
@@ -199,7 +198,7 @@ func printQualMap(qualid string, imsi string, serving string, qualities []*nb.Ch
 		}
 	}
 	qualSet := QualSet{Ue: qualid, Imsi: imsi, UeQual: qualTable, PrintTime: printTime, Time: time.Now().Format("15:04:05.0")}
-	_ = tmplUesList.Execute(GetOutput(), qualSet)
+	_ = tmplUesList.Execute(cli.GetOutput(), qualSet)
 }
 
 func addTowerKeys(existing []string, towerIds ...string) []string {

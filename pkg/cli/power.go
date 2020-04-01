@@ -16,6 +16,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/cli"
@@ -42,8 +43,7 @@ func runSetPowerCommand(cmd *cobra.Command, args []string) error {
 
 	offset, ok := nb.StationPowerOffset_value[args[1]]
 	if !ok {
-		log.Error("Unsupported power offset ", args[1])
-		return err
+		return fmt.Errorf("unsupported power offset %s", args[1])
 	}
 
 	request := nb.RadioPowerRequest{Ecgi: &nb.ECGI{Ecid: args[0]}, Offset: nb.StationPowerOffset(offset)}
@@ -53,11 +53,10 @@ func runSetPowerCommand(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	response, err := client.SetRadioPower(ctx, &request)
 	if err != nil {
-		log.Error("set power error ", err)
 		return err
 	}
 	if !response.Success {
-		log.Error("Failed to set power")
+		return fmt.Errorf("failed to set power")
 	}
 
 	return nil

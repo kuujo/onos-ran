@@ -15,16 +15,19 @@
 package cli
 
 import (
+	"github.com/onosproject/onos-lib-go/pkg/cli"
 	loglib "github.com/onosproject/onos-lib-go/pkg/logging/cli"
 	"github.com/spf13/cobra"
-	viperapi "github.com/spf13/viper"
 )
 
-var viper = viperapi.New()
+const (
+	configName     = "ric"
+	defaultAddress = "onos-ric:5150"
+)
 
 // init initializes the command line
 func init() {
-	initConfig()
+	cli.InitConfig(configName)
 }
 
 // Init is a hook called after cobra initialization
@@ -39,8 +42,8 @@ func GetCommand() *cobra.Command {
 		Short: "ONOS ric subsystem commands",
 	}
 
-	addConfigFlags(cmd)
-	cmd.AddCommand(getConfigCommand())
+	cli.AddConfigFlags(cmd, defaultAddress)
+	cmd.AddCommand(cli.GetConfigCommand())
 	cmd.AddCommand(getGetCommand())
 	cmd.AddCommand(getWatchCommand())
 	cmd.AddCommand(getSetCommand())

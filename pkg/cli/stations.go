@@ -61,7 +61,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer conn.Close()
-	outputWriter := GetOutput()
+	outputWriter := cli.GetOutput()
 
 	request := nb.StationListRequest{Subscribe: subscribe}
 
@@ -77,7 +77,6 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	stream, err := client.ListStations(ctx, &request)
 	if err != nil {
-		log.Error("list error ", err)
 		return err
 	}
 	writer := new(tabwriter.Writer)
@@ -92,7 +91,7 @@ func runStationsCommand(cmd *cobra.Command, args []string) error {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Error("rcv error ", err)
+			cli.Output("recv error")
 			return err
 		}
 

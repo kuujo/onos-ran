@@ -56,7 +56,7 @@ func runStationLinksCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer conn.Close()
-	outputWriter := GetOutput()
+	outputWriter := cli.GetOutput()
 
 	request := nb.StationLinkListRequest{Subscribe: subscribe}
 
@@ -72,7 +72,6 @@ func runStationLinksCommand(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	stream, err := client.ListStationLinks(ctx, &request)
 	if err != nil {
-		log.Error("list error ", err)
 		return err
 	}
 	writer := new(tabwriter.Writer)
@@ -87,7 +86,7 @@ func runStationLinksCommand(cmd *cobra.Command, args []string) error {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Error("rcv error ", err)
+			cli.Output("rcv error")
 			return err
 		}
 

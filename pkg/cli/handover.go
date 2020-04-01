@@ -16,6 +16,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/cli"
@@ -24,7 +25,7 @@ import (
 )
 
 // TestPlmnID - the default PlmnID
-const TestPlmnID = "001001"
+const TestPlmnID = "315010"
 
 func getHandOverCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -52,11 +53,11 @@ func runHandOverCommand(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	response, err := client.TriggerHandOver(ctx, &request)
 	if err != nil {
-		log.Errorf("handover error %s", err.Error())
+		cli.Output("handover error")
 		return err
 	}
 	if !response.Success {
-		log.Error("Handover failed")
+		return fmt.Errorf("handover failed")
 	}
 
 	return nil
