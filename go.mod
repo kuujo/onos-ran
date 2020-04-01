@@ -7,7 +7,8 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onosproject/helmit v0.0.0-20200327211207-6ee099c52d08
-	github.com/onosproject/onos-lib-go v0.0.0-20200311221003-fad88142208e
+	github.com/onosproject/onos-lib-go v0.0.0-20200326231039-c3be4036032a
+	github.com/onosproject/onos-test v0.0.0-20200317133500-bc8ce404e274
 	github.com/onosproject/onos-topo v0.0.0-20200218171206-55029b503689
 	github.com/prometheus/client_golang v1.4.1
 	github.com/spf13/cobra v0.0.6

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-ric/pkg/config"
 	"io"
 	"time"
 
@@ -39,7 +40,12 @@ const primitiveName = "telemetry"
 // NewDistributedStore creates a new distributed telemetry store
 func NewDistributedStore() (Store, error) {
 	log.Info("Creating distributed telemetry store")
-	database, err := atomix.GetAtomixDatabase()
+	ricConfig, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	database, err := atomix.GetDatabase(ricConfig.Atomix, ricConfig.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
+
 	if err != nil {
 		return nil, err
 	}
