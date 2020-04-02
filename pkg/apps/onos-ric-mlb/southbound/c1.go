@@ -16,6 +16,7 @@ package mlbappsouthbound
 
 import (
 	"context"
+	"github.com/atomix/go-client/pkg/client/util"
 	"io"
 	"reflect"
 	"sync"
@@ -60,7 +61,10 @@ func (m *MLBSessions) manageConnections() {
 
 	for {
 		// Attempt to create connection to the RIC
-		conn, err := southbound.Connect(context.Background(), *m.ONOSRICAddr, "", "")
+		opts := []grpc.DialOption{
+			grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100 * time.Millisecond)),
+		}
+		conn, err := southbound.Connect(context.Background(), *m.ONOSRICAddr, "", "", opts...)
 		if err != nil {
 			log.Errorf("Failed to connect: %s", err)
 			continue
