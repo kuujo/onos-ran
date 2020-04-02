@@ -17,10 +17,10 @@ package device
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
 	"io"
 	"time"
 
-	"github.com/atomix/go-client/pkg/client/util"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 )
@@ -45,7 +45,7 @@ func NewTopoStore(topoEndpoint string, opts ...grpc.DialOption) (Store, error) {
 	if len(opts) == 0 {
 		return nil, fmt.Errorf("no opts given when creating topo store")
 	}
-	opts = append(opts, grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100*time.Millisecond)))
+	opts = append(opts, grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100*time.Millisecond)))
 	conn, err := getTopoConn(topoEndpoint, opts...)
 
 	if err != nil {

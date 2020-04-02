@@ -17,7 +17,6 @@ package southbound
 import (
 	"context"
 	"fmt"
-	"github.com/atomix/go-client/pkg/client/util"
 	"sync"
 	"time"
 
@@ -129,7 +128,7 @@ func (s *Session) manageConnections(tls topodevice.TlsConfig, creds topodevice.C
 		// Attempt to create connection to the simulator
 		log.Infof("Connecting to simulator...%s with context", s.EndPoint)
 		opts := []grpc.DialOption{
-			grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(100 * time.Millisecond)),
+			grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100 * time.Millisecond)),
 		}
 		connection, err := southbound.Connect(context.Background(), string(s.EndPoint), tls.GetCert(), tls.GetKey(), opts...)
 		if err == nil {
