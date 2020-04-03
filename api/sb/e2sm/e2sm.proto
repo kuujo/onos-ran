@@ -53,6 +53,8 @@ message RicIndicationHeader {
 message RicIndicationMessage {
     oneof s {
         interface.e2.RadioMeasReportPerUE radioMeasReportPerUE = 1;
+        interface.e2.UEAdmissionRequest uEAdmissionRequest = 2;
+        interface.e2.UEReleaseInd uEReleaseInd = 3;
     }
 }
 
@@ -69,6 +71,7 @@ message RicControlMessage {
     oneof s {
         interface.e2.RRMConfig rRMConfig = 1;
         interface.e2.HORequest hORequest = 2;
+        interface.e2.CellConfigRequest cellConfigRequest = 3;
     }
 }
 
@@ -83,5 +86,6 @@ message RicControlOutcome {
     oneof s {
         interface.e2.HOComplete hOComplete = 1;
         interface.e2.HOFailure hOFailure = 2;
+        interface.e2.RRMConfigStatus rRMConfigStatus = 3;
     }
 }

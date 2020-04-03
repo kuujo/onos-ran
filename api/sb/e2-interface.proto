@@ -73,18 +73,11 @@ message ControlResponse {
         // 1. CellConfigRequest
         CellConfigRequest cellConfigRequest = 2;
 
-        // 3. RRMConfig
-        RRMConfig rRMConfig = 3;
-
         // 12. UEAdmissionResponse
         UEAdmissionResponse uEAdmissionResponse = 5;
 
         // 22. BearerAdmissionResponse
         BearerAdmissionResponse bearerAdmissionResponse = 6;
-
-        // 31a. HORequest         (srcENodeB UE)
-        // 31b. HORequest         (dstENodeB UE)
-        HORequest hORequest = 7;
     }
 }
 
