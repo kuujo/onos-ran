@@ -17,6 +17,7 @@ package time
 import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
+	"io"
 	"sync"
 )
 
@@ -35,6 +36,8 @@ type Key string
 
 // Store is a store for managing logical clocks
 type Store interface {
+	io.Closer
+
 	// GetLogicalClock gets a mastership based logical clock
 	GetLogicalClock(Key) (LogicalClock, error)
 }
@@ -64,6 +67,10 @@ func (s *store) GetLogicalClock(key Key) (LogicalClock, error) {
 		}
 	}
 	return clock, nil
+}
+
+func (s *store) Close() error {
+	return nil
 }
 
 var _ Store = &store{}
