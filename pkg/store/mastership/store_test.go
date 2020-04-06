@@ -50,10 +50,10 @@ func TestMastershipStore(t *testing.T) {
 	store3election1, err := store3.GetElection(key1)
 	assert.NoError(t, err)
 
-	store1election2, err := store1.GetElection(key2)
+	store2election2, err := store2.GetElection(key2)
 	assert.NoError(t, err)
 
-	store2election2, err := store2.GetElection(key2)
+	store1election2, err := store1.GetElection(key2)
 	assert.NoError(t, err)
 
 	store3election2, err := store3.GetElection(key2)
