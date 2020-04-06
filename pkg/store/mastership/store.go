@@ -15,11 +15,11 @@
 package mastership
 
 import (
+	"github.com/DataDog/mmh3"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/cluster"
-	"github.com/spaolacci/murmur3"
 	"io"
 	"sync"
 )
@@ -32,7 +32,7 @@ type Key string
 
 // Hash returns the mastership election key as a hash
 func (k Key) Hash() uint32 {
-	return murmur3.Sum32([]byte(k))
+	return mmh3.Hash32([]byte(k))
 }
 
 // PartitionID is the partition identifier
