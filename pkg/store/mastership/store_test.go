@@ -104,7 +104,7 @@ func TestMastershipStore(t *testing.T) {
 
 	// node2 should now be the master for key1
 	mastership := <-store2Ch1
-	assert.Equal(t, key1, mastership.PartitionID)
+	assert.Equal(t, getPartitionFor(key1, 16), mastership.PartitionID)
 	assert.Equal(t, node2, mastership.Master)
 
 	master, err = store2.IsMaster(key1)
@@ -113,7 +113,7 @@ func TestMastershipStore(t *testing.T) {
 
 	// node3 should not be the master for key1
 	mastership = <-store3Ch1
-	assert.Equal(t, key1, mastership.PartitionID)
+	assert.Equal(t, getPartitionFor(key1, 16), mastership.PartitionID)
 	assert.Equal(t, node2, mastership.Master)
 
 	master, err = store3.IsMaster(key1)
@@ -126,7 +126,7 @@ func TestMastershipStore(t *testing.T) {
 
 	// node3 should now be the master for key1
 	mastership = <-store3Ch1
-	assert.Equal(t, key1, mastership.PartitionID)
+	assert.Equal(t, getPartitionFor(key1, 16), mastership.PartitionID)
 	assert.Equal(t, node3, mastership.Master)
 
 	master, err = store3.IsMaster(key1)
@@ -135,7 +135,7 @@ func TestMastershipStore(t *testing.T) {
 
 	// node3 should also be the master for device2
 	mastership = <-store3Ch2
-	assert.Equal(t, key2, mastership.PartitionID)
+	assert.Equal(t, getPartitionFor(key2, 16), mastership.PartitionID)
 	assert.Equal(t, node3, mastership.Master)
 
 	master, err = store3.IsMaster(key2)

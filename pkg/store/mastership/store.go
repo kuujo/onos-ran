@@ -126,9 +126,14 @@ type distributedStore struct {
 	mu          sync.RWMutex
 }
 
+// getPartitionFor gets the partition for the given key
+func getPartitionFor(key Key, partitions int) PartitionID {
+	return PartitionID(key.Hash() % uint32(partitions))
+}
+
 // getElection gets the mastership election for the given partition
 func (s *distributedStore) getElection(key Key) (mastershipElection, error) {
-	partitionID := PartitionID(key.Hash() % uint32(s.partitions))
+	partitionID := getPartitionFor(key, s.partitions)
 	s.mu.RLock()
 	election, ok := s.elections[partitionID]
 	s.mu.RUnlock()

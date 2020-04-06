@@ -107,8 +107,8 @@ func (s *distributedEntryStore) get(revision Revision) (*sb.TelemetryMessage, er
 	// If the entry term is greater than the requested term or the terms are equal and the entry timestamp
 	// is greater than or equal to the requested timestamp, the entry is up to date.
 	if telemetryEntry != nil &&
-		Term(telemetryEntry.Term) > revision.Term ||
-		(Term(telemetryEntry.Term) == revision.Term && Timestamp(telemetryEntry.Timestamp) >= revision.Timestamp) {
+		(Term(telemetryEntry.Term) > revision.Term ||
+		(Term(telemetryEntry.Term) == revision.Term && Timestamp(telemetryEntry.Timestamp) >= revision.Timestamp)) {
 		return telemetryEntry.Message, nil
 	}
 

@@ -15,6 +15,7 @@
 package telemetry
 
 import (
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"testing"
 	"time"
 
@@ -23,7 +24,8 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	testStore, err := NewLocalStore()
+	mastershipStore, err := mastership.NewLocalStore("test", "1")
+	testStore, err := NewLocalStore(mastershipStore)
 	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
 	defer testStore.Close()
@@ -162,12 +164,12 @@ func TestStore(t *testing.T) {
 		t.Fail()
 	}
 
-	err = testStore.Delete(telemetry1)
+	err = testStore.Delete(newID(telemetry1))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(telemetry2)
+	err = testStore.Delete(newID(telemetry2))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(telemetry3)
+	err = testStore.Delete(newID(telemetry3))
 	assert.Nil(t, err)
 }
