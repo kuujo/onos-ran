@@ -44,13 +44,9 @@ const retryInterval = time.Second
 const primitiveName = "telemetry"
 
 // NewDistributedStore creates a new distributed telemetry store
-func NewDistributedStore(mastershipStore mastership.Store) (Store, error) {
+func NewDistributedStore(config config.Config, mastershipStore mastership.Store) (Store, error) {
 	log.Info("Creating distributed telemetry store")
-	ricConfig, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	database, err := atomix.GetDatabase(ricConfig.Atomix, ricConfig.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 
 	if err != nil {
 		return nil, err

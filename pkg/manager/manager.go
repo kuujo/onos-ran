@@ -18,9 +18,11 @@ package manager
 import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
+	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/southbound"
 	"github.com/onosproject/onos-ric/pkg/southbound/monitor"
 	"github.com/onosproject/onos-ric/pkg/store/device"
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
 	"github.com/onosproject/onos-ric/pkg/store/updates"
 	topodevice "github.com/onosproject/onos-topo/api/device"
@@ -45,7 +47,17 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		log.Error("Error clearing Updates store %s", err.Error())
 	}
 
-	telemetryStore, err := telemetry.NewDistributedStore()
+	config, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	mastershipStore, err := mastership.NewDistributedStore(config)
+	if err != nil {
+		return nil, err
+	}
+
+	telemetryStore, err := telemetry.NewDistributedStore(config, mastershipStore)
 	if err != nil {
 		return nil, err
 	}
@@ -281,8 +293,8 @@ func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) erro
 		Ecid:        ecid,
 		Crnti:       crnti,
 		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
-	}.String()
-	if err := m.telemetryStore.DeleteWithKey(id); err != nil {
+	}
+	if err := m.telemetryStore.Delete(id); err != nil {
 		log.Infof("Error deleting Telemetry, key=%s", id)
 		return err
 	}
