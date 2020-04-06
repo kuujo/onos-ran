@@ -74,7 +74,7 @@ func TestMastershipStore(t *testing.T) {
 	assert.False(t, master)
 
 	// Verify that listening for events for a device enters a node into the device mastership election
-	store2Ch2 := make(chan MastershipState)
+	store2Ch2 := make(chan State)
 	err = store2election2.Watch(store2Ch2)
 	assert.NoError(t, err)
 
@@ -92,7 +92,7 @@ func TestMastershipStore(t *testing.T) {
 	assert.False(t, master)
 
 	// Watch device2 mastership on an additional node and verify that it does not cause a mastership change
-	store3Ch2 := make(chan MastershipState)
+	store3Ch2 := make(chan State)
 	err = store3election2.Watch(store3Ch2)
 	assert.NoError(t, err)
 
@@ -101,10 +101,10 @@ func TestMastershipStore(t *testing.T) {
 	assert.False(t, master)
 
 	// Listen for key1 events on remaining nodes
-	store2Ch1 := make(chan MastershipState)
+	store2Ch1 := make(chan State)
 	err = store2election1.Watch(store2Ch1)
 	assert.NoError(t, err)
-	store3Ch1 := make(chan MastershipState)
+	store3Ch1 := make(chan State)
 	err = store3election1.Watch(store3Ch1)
 	assert.NoError(t, err)
 

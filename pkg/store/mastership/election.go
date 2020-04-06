@@ -63,12 +63,24 @@ func newMastershipElection(partitionID PartitionID, election election.Election) 
 	mastershipElection := &distributedMastershipElection{
 		partitionID: partitionID,
 		election:    election,
-		watchers:    make([]chan<- MastershipState, 0, 1),
+		watchers:    make([]chan<- State, 0, 1),
 	}
 	if err := mastershipElection.enter(); err != nil {
 		return nil, err
 	}
 	return mastershipElection, nil
+}
+
+// State contains information about a mastership term
+type State struct {
+	// PartitionID is the mastership partition identifier
+	PartitionID PartitionID
+
+	// Term is the mastership term
+	Term Term
+
+	// Master is the NodeID of the master for the key
+	Master cluster.NodeID
 }
 
 // Election is an election for a single device mastership
@@ -82,21 +94,21 @@ type Election interface {
 	PartitionID() PartitionID
 
 	// GetState returns the mastership state
-	GetState() (*MastershipState, error)
+	GetState() (*State, error)
 
 	// IsMaster returns a bool indicating whether the local node is the master for the device
 	IsMaster() (bool, error)
 
 	// Watch watches the election for changes
-	Watch(ch chan<- MastershipState) error
+	Watch(ch chan<- State) error
 }
 
 // distributedMastershipElection is a persistent device mastership election
 type distributedMastershipElection struct {
 	partitionID PartitionID
 	election    election.Election
-	mastership  *MastershipState
-	watchers    []chan<- MastershipState
+	mastership  *State
+	watchers    []chan<- State
 	mu          sync.RWMutex
 }
 
@@ -126,7 +138,7 @@ func (e *distributedMastershipElection) enter() error {
 
 	// Set the mastership term
 	e.mu.Lock()
-	e.mastership = &MastershipState{
+	e.mastership = &State{
 		PartitionID: e.partitionID,
 		Master:      cluster.NodeID(term.Leader),
 		Term:        Term(term.ID),
@@ -148,10 +160,10 @@ func (e *distributedMastershipElection) enter() error {
 // watchElection watches the election events and updates mastership info
 func (e *distributedMastershipElection) watchElection(ch <-chan *election.Event) {
 	for event := range ch {
-		var mastership *MastershipState
+		var mastership *State
 		e.mu.Lock()
 		if uint64(e.mastership.Term) != event.Term.ID {
-			mastership = &MastershipState{
+			mastership = &State{
 				PartitionID: e.partitionID,
 				Term:        Term(event.Term.ID),
 				Master:      cluster.NodeID(event.Term.Leader),
@@ -170,7 +182,7 @@ func (e *distributedMastershipElection) watchElection(ch <-chan *election.Event)
 	}
 }
 
-func (e *distributedMastershipElection) GetState() (*MastershipState, error) {
+func (e *distributedMastershipElection) GetState() (*State, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	return e.mastership, nil
@@ -185,7 +197,7 @@ func (e *distributedMastershipElection) IsMaster() (bool, error) {
 	return true, nil
 }
 
-func (e *distributedMastershipElection) Watch(ch chan<- MastershipState) error {
+func (e *distributedMastershipElection) Watch(ch chan<- State) error {
 	e.mu.Lock()
 	e.watchers = append(e.watchers, ch)
 	e.mu.Unlock()

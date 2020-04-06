@@ -15,13 +15,10 @@
 package time
 
 import (
-	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"io"
 	"sync"
 )
-
-var log = logging.GetLogger("store", "time")
 
 // NewStore creates a new time store
 func NewStore(mastershipStore mastership.Store) (Store, error) {

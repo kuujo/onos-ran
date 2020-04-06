@@ -49,18 +49,6 @@ type Store interface {
 	GetElection(key Key) (Election, error)
 }
 
-// MastershipState contains information about a mastership term
-type MastershipState struct {
-	// PartitionID is the mastership partition identifier
-	PartitionID PartitionID
-
-	// Term is the mastership term
-	Term Term
-
-	// Master is the NodeID of the master for the key
-	Master cluster.NodeID
-}
-
 // NewDistributedStore returns a new distributed Store
 func NewDistributedStore(config config.Config) (Store, error) {
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
