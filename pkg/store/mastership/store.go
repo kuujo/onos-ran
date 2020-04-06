@@ -55,15 +55,18 @@ type Store interface {
 	// NodeID returns the local node identifier used in mastership elections
 	NodeID() cluster.NodeID
 
+	// GetState gets the mastership state for the given key
+	GetState(key Key) (*MastershipState, error)
+
 	// IsMaster returns a boolean indicating whether the local node is the master for the given key
 	IsMaster(key Key) (bool, error)
 
 	// Watch watches the store for mastership changes
-	Watch(Key, chan<- Mastership) error
+	Watch(Key, chan<- MastershipState) error
 }
 
-// Mastership contains information about a mastership epoch
-type Mastership struct {
+// MastershipState contains information about a mastership term
+type MastershipState struct {
 	// PartitionID is the mastership partition identifier
 	PartitionID PartitionID
 
@@ -150,6 +153,14 @@ func (s *distributedStore) NodeID() cluster.NodeID {
 	return s.nodeID
 }
 
+func (s *distributedStore) GetState(key Key) (*MastershipState, error) {
+	election, err := s.getElection(key)
+	if err != nil {
+		return nil, err
+	}
+	return election.getState()
+}
+
 func (s *distributedStore) IsMaster(key Key) (bool, error) {
 	election, err := s.getElection(key)
 	if err != nil {
@@ -158,7 +169,7 @@ func (s *distributedStore) IsMaster(key Key) (bool, error) {
 	return election.isMaster()
 }
 
-func (s *distributedStore) Watch(key Key, ch chan<- Mastership) error {
+func (s *distributedStore) Watch(key Key, ch chan<- MastershipState) error {
 	election, err := s.getElection(key)
 	if err != nil {
 		return err

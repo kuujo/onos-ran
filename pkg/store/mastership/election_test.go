@@ -30,14 +30,14 @@ func TestMastershipElection(t *testing.T) {
 	store2, err := newLocalElection(1, "b", address)
 	assert.NoError(t, err)
 
-	store2Ch := make(chan Mastership)
+	store2Ch := make(chan MastershipState)
 	err = store2.watch(store2Ch)
 	assert.NoError(t, err)
 
 	store3, err := newLocalElection(1, "c", address)
 	assert.NoError(t, err)
 
-	store3Ch := make(chan Mastership)
+	store3Ch := make(chan MastershipState)
 	err = store3.watch(store3Ch)
 	assert.NoError(t, err)
 
