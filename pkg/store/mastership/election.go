@@ -29,7 +29,7 @@ import (
 )
 
 // newDistributedElection returns a new distributed device mastership election
-func newDistributedElection(partitionID PartitionID, database *client.Database) (mastershipElection, error) {
+func newDistributedElection(partitionID PartitionID, database *client.Database) (Election, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%d", partitionID), election.WithID(string(cluster.GetNodeID())))
 	cancel()
@@ -40,7 +40,7 @@ func newDistributedElection(partitionID PartitionID, database *client.Database) 
 }
 
 // newLocalElection returns a new local device mastership election
-func newLocalElection(partitionID PartitionID, nodeID cluster.NodeID, address net.Address) (mastershipElection, error) {
+func newLocalElection(partitionID PartitionID, nodeID cluster.NodeID, address net.Address) (Election, error) {
 	name := primitive.Name{
 		Namespace: "local",
 		Name:      fmt.Sprintf("mastership-%d", partitionID),
@@ -59,7 +59,7 @@ func newLocalElection(partitionID PartitionID, nodeID cluster.NodeID, address ne
 }
 
 // newDeviceMastershipElection creates and enters a new device mastership election
-func newMastershipElection(partitionID PartitionID, election election.Election) (mastershipElection, error) {
+func newMastershipElection(partitionID PartitionID, election election.Election) (Election, error) {
 	mastershipElection := &distributedMastershipElection{
 		partitionID: partitionID,
 		election:    election,
@@ -71,8 +71,8 @@ func newMastershipElection(partitionID PartitionID, election election.Election) 
 	return mastershipElection, nil
 }
 
-// mastershipElection is an election for a single device mastership
-type mastershipElection interface {
+// Election is an election for a single device mastership
+type Election interface {
 	io.Closer
 
 	// NodeID returns the local node identifier used in the election
@@ -81,14 +81,14 @@ type mastershipElection interface {
 	// PartitionID returns the mastership election partition identifier
 	PartitionID() PartitionID
 
-	// getState returns the mastership state
-	getState() (*MastershipState, error)
+	// GetState returns the mastership state
+	GetState() (*MastershipState, error)
 
-	// isMaster returns a bool indicating whether the local node is the master for the device
-	isMaster() (bool, error)
+	// IsMaster returns a bool indicating whether the local node is the master for the device
+	IsMaster() (bool, error)
 
-	// watch watches the election for changes
-	watch(ch chan<- MastershipState) error
+	// Watch watches the election for changes
+	Watch(ch chan<- MastershipState) error
 }
 
 // distributedMastershipElection is a persistent device mastership election
@@ -170,13 +170,13 @@ func (e *distributedMastershipElection) watchElection(ch <-chan *election.Event)
 	}
 }
 
-func (e *distributedMastershipElection) getState() (*MastershipState, error) {
+func (e *distributedMastershipElection) GetState() (*MastershipState, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	return e.mastership, nil
 }
 
-func (e *distributedMastershipElection) isMaster() (bool, error) {
+func (e *distributedMastershipElection) IsMaster() (bool, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	if e.mastership == nil || string(e.mastership.Master) != e.election.ID() {
@@ -185,7 +185,7 @@ func (e *distributedMastershipElection) isMaster() (bool, error) {
 	return true, nil
 }
 
-func (e *distributedMastershipElection) watch(ch chan<- MastershipState) error {
+func (e *distributedMastershipElection) Watch(ch chan<- MastershipState) error {
 	e.mu.Lock()
 	e.watchers = append(e.watchers, ch)
 	e.mu.Unlock()
@@ -196,4 +196,4 @@ func (e *distributedMastershipElection) Close() error {
 	return e.election.Close(context.Background())
 }
 
-var _ mastershipElection = &distributedMastershipElection{}
+var _ Election = &distributedMastershipElection{}

@@ -20,7 +20,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-ric/api/store/telemetry"
 	"github.com/onosproject/onos-ric/pkg/config"
-	"github.com/onosproject/onos-ric/pkg/store/mastership"
+	timestore "github.com/onosproject/onos-ric/pkg/store/time"
 	"io"
 	"strconv"
 	"strings"
@@ -44,7 +44,7 @@ const retryInterval = time.Second
 const primitiveName = "telemetry"
 
 // NewDistributedStore creates a new distributed telemetry store
-func NewDistributedStore(config config.Config, mastershipStore mastership.Store) (Store, error) {
+func NewDistributedStore(config config.Config, timeStore timestore.Store) (Store, error) {
 	log.Info("Creating distributed telemetry store")
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 
@@ -58,9 +58,9 @@ func NewDistributedStore(config config.Config, mastershipStore mastership.Store)
 		return nil, err
 	}
 	store := &distributedStore{
-		dist:       telemetry,
-		entries:    make(map[ID]entryStore),
-		mastership: mastershipStore,
+		dist:    telemetry,
+		entries: make(map[ID]entryStore),
+		time:    timeStore,
 	}
 	if err := store.open(); err != nil {
 		return nil, err
@@ -69,13 +69,13 @@ func NewDistributedStore(config config.Config, mastershipStore mastership.Store)
 }
 
 // NewLocalStore returns a new local telemetry store
-func NewLocalStore(mastershipStore mastership.Store) (Store, error) {
+func NewLocalStore(timeStore timestore.Store) (Store, error) {
 	_, address := atomix.StartLocalNode()
-	return newLocalStore(address, mastershipStore)
+	return newLocalStore(address, timeStore)
 }
 
 // newLocalStore creates a new local telemetry store
-func newLocalStore(address net.Address, mastershipStore mastership.Store) (Store, error) {
+func newLocalStore(address net.Address, timeStore timestore.Store) (Store, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
@@ -92,9 +92,9 @@ func newLocalStore(address net.Address, mastershipStore mastership.Store) (Store
 	}
 
 	return &distributedStore{
-		dist:       telemetry,
-		entries:    make(map[ID]entryStore),
-		mastership: mastershipStore,
+		dist:    telemetry,
+		entries: make(map[ID]entryStore),
+		time:    timeStore,
 	}, nil
 }
 
@@ -155,10 +155,10 @@ func (o *watchReplayOption) apply(options *watchOptions) {
 
 // distributedStore is an Atomix based store
 type distributedStore struct {
-	dist       _map.Map
-	entries    map[ID]entryStore
-	mastership mastership.Store
-	mu         sync.RWMutex
+	dist    _map.Map
+	entries map[ID]entryStore
+	time    timestore.Store
+	mu      sync.RWMutex
 }
 
 // open opens the store
@@ -193,7 +193,7 @@ func (s *distributedStore) getEntryStore(id ID) entryStore {
 		s.mu.Lock()
 		store, ok = s.entries[id]
 		if !ok {
-			store = newEntryStore(s.dist, s.mastership)
+			store = newEntryStore(s.dist)
 			s.entries[id] = store
 		}
 		s.mu.Unlock()
@@ -202,19 +202,39 @@ func (s *distributedStore) getEntryStore(id ID) entryStore {
 }
 
 func (s *distributedStore) Get(id ID) (*sb.TelemetryMessage, error) {
-	return s.getEntryStore(id).get(Revision{ID: id})
+	return s.GetRevision(Revision{ID: id})
 }
 
 func (s *distributedStore) GetRevision(revision Revision) (*sb.TelemetryMessage, error) {
-	return s.getEntryStore(revision.ID).get(revision)
+	entry, err := s.getEntryStore(revision.ID).get(revision)
+	if err != nil {
+		return nil, err
+	} else if entry == nil {
+		return nil, nil
+	}
+	return entry.Message, nil
 }
 
-func (s *distributedStore) Put(telemetry *sb.TelemetryMessage) error {
-	return s.getEntryStore(newID(telemetry)).put(telemetry)
+func (s *distributedStore) Put(message *sb.TelemetryMessage) error {
+	id := newID(message)
+	clock, err := s.time.GetLogicalClock(timestore.Key(id.String()))
+	if err != nil {
+		return err
+	}
+	timestamp, err := clock.GetTimestamp()
+	if err != nil {
+		return err
+	}
+	entry := &telemetry.TelemetryEntry{
+		Term:      uint64(timestamp.Epoch),
+		Timestamp: uint64(timestamp.LogicalTime),
+		Message:   message,
+	}
+	return s.getEntryStore(id).put(entry)
 }
 
 func (s *distributedStore) Delete(id ID) error {
-	return s.getEntryStore(id).delete(Revision{ID: id})
+	return s.DeleteRevision(Revision{ID: id})
 }
 
 func (s *distributedStore) DeleteRevision(revision Revision) error {

@@ -31,25 +31,25 @@ func TestMastershipElection(t *testing.T) {
 	assert.NoError(t, err)
 
 	store2Ch := make(chan MastershipState)
-	err = store2.watch(store2Ch)
+	err = store2.Watch(store2Ch)
 	assert.NoError(t, err)
 
 	store3, err := newLocalElection(1, "c", address)
 	assert.NoError(t, err)
 
 	store3Ch := make(chan MastershipState)
-	err = store3.watch(store3Ch)
+	err = store3.Watch(store3Ch)
 	assert.NoError(t, err)
 
-	master, err := store1.isMaster()
+	master, err := store1.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 
-	master, err = store2.isMaster()
+	master, err = store2.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
-	master, err = store3.isMaster()
+	master, err = store3.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
@@ -59,14 +59,14 @@ func TestMastershipElection(t *testing.T) {
 	mastership := <-store2Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
-	master, err = store2.isMaster()
+	master, err = store2.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
 
-	master, err = store3.isMaster()
+	master, err = store3.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
@@ -76,7 +76,7 @@ func TestMastershipElection(t *testing.T) {
 	mastership = <-store3Ch
 	assert.Equal(t, cluster.NodeID("c"), mastership.Master)
 
-	master, err = store3.isMaster()
+	master, err = store3.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 

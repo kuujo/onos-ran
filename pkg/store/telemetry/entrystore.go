@@ -21,21 +21,15 @@ import (
 	"fmt"
 	"github.com/atomix/go-client/pkg/client/map"
 	"github.com/gogo/protobuf/proto"
-	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/store/telemetry"
-	"github.com/onosproject/onos-ric/pkg/store/cluster"
-	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"sync"
 	"time"
 )
 
-var nodeID = cluster.GetNodeID()
-
-func newEntryStore(dist _map.Map, mastershipStore mastership.Store) entryStore {
+func newEntryStore(dist _map.Map) entryStore {
 	return &distributedEntryStore{
-		dist:       dist,
-		mastership: mastershipStore,
-		waiters:    list.New(),
+		dist:    dist,
+		waiters: list.New(),
 	}
 }
 
@@ -45,10 +39,10 @@ type entryStore interface {
 	update(updatedEntry *telemetry.TelemetryEntry, tombstone bool)
 
 	// get gets a telemetry message from the store
-	get(revision Revision) (*sb.TelemetryMessage, error)
+	get(revision Revision) (*telemetry.TelemetryEntry, error)
 
 	// put puts a telemetry message in the store
-	put(telemetry *sb.TelemetryMessage) error
+	put(entry *telemetry.TelemetryEntry) error
 
 	// delete deletes a telemetry message from the store
 	delete(revision Revision) error
@@ -56,13 +50,10 @@ type entryStore interface {
 
 // distributedEntryStore is an implementation of the entryStore interface
 type distributedEntryStore struct {
-	dist       _map.Map
-	mastership mastership.Store
-	term       Term
-	timestamp  Timestamp
-	cache      *telemetry.TelemetryEntry
-	waiters    *list.List
-	mu         sync.RWMutex
+	dist    _map.Map
+	cache   *telemetry.TelemetryEntry
+	waiters *list.List
+	mu      sync.RWMutex
 }
 
 func (s *distributedEntryStore) update(updatedEntry *telemetry.TelemetryEntry, tombstone bool) {
@@ -98,7 +89,7 @@ func (s *distributedEntryStore) update(updatedEntry *telemetry.TelemetryEntry, t
 	}
 }
 
-func (s *distributedEntryStore) get(revision Revision) (*sb.TelemetryMessage, error) {
+func (s *distributedEntryStore) get(revision Revision) (*telemetry.TelemetryEntry, error) {
 	// Read the entry from the cache
 	s.mu.RLock()
 	telemetryEntry := s.cache
@@ -108,8 +99,8 @@ func (s *distributedEntryStore) get(revision Revision) (*sb.TelemetryMessage, er
 	// is greater than or equal to the requested timestamp, the entry is up to date.
 	if telemetryEntry != nil &&
 		(Term(telemetryEntry.Term) > revision.Term ||
-		(Term(telemetryEntry.Term) == revision.Term && Timestamp(telemetryEntry.Timestamp) >= revision.Timestamp)) {
-		return telemetryEntry.Message, nil
+			(Term(telemetryEntry.Term) == revision.Term && Timestamp(telemetryEntry.Timestamp) >= revision.Timestamp)) {
+		return telemetryEntry, nil
 	}
 
 	// If the key is not present in the cache or is older than the requested key, read it from the distributed store.
@@ -135,7 +126,7 @@ func (s *distributedEntryStore) get(revision Revision) (*sb.TelemetryMessage, er
 		s.mu.Lock()
 		s.cache = telemetryEntry
 		s.mu.Unlock()
-		return telemetryEntry.Message, nil
+		return telemetryEntry, nil
 	}
 
 	// If the entry is not up to date, enqueue a waiter to wait for the update to be propagated
@@ -164,98 +155,39 @@ func (s *distributedEntryStore) get(revision Revision) (*sb.TelemetryMessage, er
 
 	select {
 	case e := <-ch:
-		return e.Message, nil
+		return e, nil
 	case <-time.After(requestTimeout):
 		return nil, errors.New("telemetry get timed out")
 	}
 }
 
-func (s *distributedEntryStore) put(update *sb.TelemetryMessage) error {
-	id := newID(update)
-
-	// Get the mastership election state from the mastership store
-	mastershipKey := mastership.Key{
-		PlmnID: id.PlmnID,
-		Ecid:   id.Ecid,
-		Crnti:  id.Crnti,
-	}
-	mastershipState, err := s.mastership.GetState(mastershipKey)
-	if err != nil {
-		return err
-	}
-
+func (s *distributedEntryStore) put(update *telemetry.TelemetryEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// If the mastership term has changed, reset the timestamp
-	term := Term(mastershipState.Term)
-	if term > s.term {
-		s.term = term
-		s.timestamp = Timestamp(0)
-	}
-	timestamp := s.timestamp + 1
-	s.timestamp = timestamp
-
-	// If this node is not the master for the current term, reject the update.
-	if mastershipState.Master != nodeID {
-		return fmt.Errorf("node %s is not the master for telemetry %s", nodeID, id.String())
-	}
-
-	// Create a timestamped entry for the store
-	entry := &telemetry.TelemetryEntry{
-		Term:      uint64(term),
-		Timestamp: uint64(timestamp),
-		Message:   update,
-	}
-
 	// Store the update in the local cache
-	s.cache = entry
+	s.cache = update
 
 	// Propagate the change to the store asynchronously
-	s.enqueuePut(entry)
+	s.enqueuePut(update)
 	return nil
 }
 
 func (s *distributedEntryStore) delete(revision Revision) error {
-	// Get the mastership election state from the mastership store
-	mastershipKey := mastership.Key{
-		PlmnID: revision.PlmnID,
-		Ecid:   revision.Ecid,
-		Crnti:  revision.Crnti,
-	}
-	mastershipState, err := s.mastership.GetState(mastershipKey)
-	if err != nil {
-		return err
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// If the mastership term has changed, reset the timestamp
-	term := Term(mastershipState.Term)
-	if term > s.term {
-		s.term = term
-		s.timestamp = Timestamp(0)
-	}
-	timestamp := s.timestamp + 1
-	s.timestamp = timestamp
-
-	// If this node is not the master for the current term, reject the update.
-	if mastershipState.Master != nodeID {
-		return fmt.Errorf("node %s is not the master for telemetry %s", nodeID, revision.ID.String())
-	}
-
 	// Create a timestamped entry for the store
 	entry := &telemetry.TelemetryEntry{
-		Term:      uint64(term),
-		Timestamp: uint64(timestamp),
+		Term:      uint64(revision.Term),
+		Timestamp: uint64(revision.Timestamp),
 	}
 
 	// Store the update in the local cache
 	s.cache = entry
 
 	// Enqueue the update to be written to the distributed store
-	s.enqueueDelete(entry)
+	s.enqueueDelete(revision)
 	return nil
 }
 
@@ -320,26 +252,24 @@ func (s *distributedEntryStore) writePut(update *telemetry.TelemetryEntry) {
 	}
 }
 
-func (s *distributedEntryStore) enqueueDelete(entry *telemetry.TelemetryEntry) {
-	go s.writeDelete(entry)
+func (s *distributedEntryStore) enqueueDelete(revision Revision) {
+	go s.writeDelete(revision)
 }
 
-func (s *distributedEntryStore) requeueDelete(update *telemetry.TelemetryEntry) {
+func (s *distributedEntryStore) requeueDelete(revision Revision) {
 	time.AfterFunc(retryInterval, func() {
-		s.writeDelete(update)
+		s.writeDelete(revision)
 	})
 }
 
-func (s *distributedEntryStore) writeDelete(update *telemetry.TelemetryEntry) {
-	id := newID(update.Message)
-
+func (s *distributedEntryStore) writeDelete(revision Revision) {
 	// Get the current entry from the store
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	entry, err := s.dist.Get(ctx, id.String())
+	entry, err := s.dist.Get(ctx, revision.ID.String())
 	cancel()
 	if err != nil {
 		fmt.Println(err)
-		s.requeueDelete(update)
+		s.requeueDelete(revision)
 		return
 	}
 
@@ -356,18 +286,18 @@ func (s *distributedEntryStore) writeDelete(update *telemetry.TelemetryEntry) {
 	}
 
 	// If the current entry is newer than the update entry, ignore the update
-	if current.Term > update.Term || (current.Term == update.Term && current.Timestamp > update.Timestamp) {
+	if Term(current.Term) > revision.Term || (Term(current.Term) == revision.Term && Timestamp(current.Timestamp) > revision.Timestamp) {
 		return
 	}
 
 	// Remove the stored entry using an optimistic lock
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	_, err = s.dist.Remove(ctx, id.String(), _map.IfVersion(entry.Version))
+	_, err = s.dist.Remove(ctx, revision.ID.String(), _map.IfVersion(entry.Version))
 
 	// If the remove failed, requeue it
 	if err != nil {
-		s.requeueDelete(update)
+		s.requeueDelete(revision)
 		return
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
+	"github.com/onosproject/onos-ric/pkg/store/time"
 	"github.com/onosproject/onos-ric/pkg/store/updates"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
@@ -57,7 +58,12 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		return nil, err
 	}
 
-	telemetryStore, err := telemetry.NewDistributedStore(config, mastershipStore)
+	timeStore, err := time.NewStore(mastershipStore)
+	if err != nil {
+		return nil, err
+	}
+
+	telemetryStore, err := telemetry.NewDistributedStore(config, timeStore)
 	if err != nil {
 		return nil, err
 	}

@@ -15,7 +15,6 @@
 package mastership
 
 import (
-	"fmt"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-ric/pkg/config"
@@ -29,24 +28,15 @@ import (
 type Term uint64
 
 // Key is a mastership election key
-type Key struct {
-	PlmnID string
-	Ecid   string
-	Crnti  string
+type Key string
+
+// Hash returns the mastership election key as a hash
+func (k Key) Hash() uint32 {
+	return murmur3.Sum32([]byte(k))
 }
 
 // PartitionID is the partition identifier
 type PartitionID uint32
-
-// String returns the mastership election key as a string
-func (k Key) String() string {
-	return fmt.Sprintf("%s:%s:%s", k.PlmnID, k.Ecid, k.Crnti)
-}
-
-// Hash returns the mastership election key as a hash
-func (k Key) Hash() uint32 {
-	return murmur3.Sum32([]byte(k.String()))
-}
 
 // Store is the mastership store
 type Store interface {
@@ -55,14 +45,8 @@ type Store interface {
 	// NodeID returns the local node identifier used in mastership elections
 	NodeID() cluster.NodeID
 
-	// GetState gets the mastership state for the given key
-	GetState(key Key) (*MastershipState, error)
-
-	// IsMaster returns a boolean indicating whether the local node is the master for the given key
-	IsMaster(key Key) (bool, error)
-
-	// Watch watches the store for mastership changes
-	Watch(Key, chan<- MastershipState) error
+	// GetElection gets the mastership election for the given key
+	GetElection(key Key) (Election, error)
 }
 
 // MastershipState contains information about a mastership term
@@ -86,10 +70,10 @@ func NewDistributedStore(config config.Config) (Store, error) {
 	return &distributedStore{
 		nodeID:     cluster.GetNodeID(),
 		partitions: config.Mastership.GetPartitions(),
-		newElection: func(id PartitionID) (mastershipElection, error) {
+		newElection: func(id PartitionID) (Election, error) {
 			return newDistributedElection(id, database)
 		},
-		elections: make(map[PartitionID]mastershipElection),
+		elections: make(map[PartitionID]Election),
 	}, nil
 }
 
@@ -110,10 +94,10 @@ func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 	return &distributedStore{
 		nodeID:     nodeID,
 		partitions: 16,
-		newElection: func(id PartitionID) (mastershipElection, error) {
+		newElection: func(id PartitionID) (Election, error) {
 			return newLocalElection(id, nodeID, address)
 		},
-		elections: make(map[PartitionID]mastershipElection),
+		elections: make(map[PartitionID]Election),
 	}, nil
 }
 
@@ -121,8 +105,8 @@ func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 type distributedStore struct {
 	nodeID      cluster.NodeID
 	partitions  int
-	newElection func(PartitionID) (mastershipElection, error)
-	elections   map[PartitionID]mastershipElection
+	newElection func(PartitionID) (Election, error)
+	elections   map[PartitionID]Election
 	mu          sync.RWMutex
 }
 
@@ -131,8 +115,8 @@ func getPartitionFor(key Key, partitions int) PartitionID {
 	return PartitionID(key.Hash() % uint32(partitions))
 }
 
-// getElection gets the mastership election for the given partition
-func (s *distributedStore) getElection(key Key) (mastershipElection, error) {
+// GetElection gets the mastership election for the given key
+func (s *distributedStore) GetElection(key Key) (Election, error) {
 	partitionID := getPartitionFor(key, s.partitions)
 	s.mu.RLock()
 	election, ok := s.elections[partitionID]
@@ -156,30 +140,6 @@ func (s *distributedStore) getElection(key Key) (mastershipElection, error) {
 
 func (s *distributedStore) NodeID() cluster.NodeID {
 	return s.nodeID
-}
-
-func (s *distributedStore) GetState(key Key) (*MastershipState, error) {
-	election, err := s.getElection(key)
-	if err != nil {
-		return nil, err
-	}
-	return election.getState()
-}
-
-func (s *distributedStore) IsMaster(key Key) (bool, error) {
-	election, err := s.getElection(key)
-	if err != nil {
-		return false, err
-	}
-	return election.isMaster()
-}
-
-func (s *distributedStore) Watch(key Key, ch chan<- MastershipState) error {
-	election, err := s.getElection(key)
-	if err != nil {
-		return err
-	}
-	return election.watch(ch)
 }
 
 func (s *distributedStore) Close() error {

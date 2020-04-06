@@ -28,16 +28,8 @@ func TestMastershipStore(t *testing.T) {
 	node2 := cluster.NodeID("node2")
 	node3 := cluster.NodeID("node3")
 
-	key1 := Key{
-		PlmnID: "a",
-		Ecid:   "b",
-		Crnti:  "c",
-	}
-	key2 := Key{
-		PlmnID: "d",
-		Ecid:   "e",
-		Crnti:  "f",
-	}
+	var key1 Key = "a"
+	var key2 Key = "b"
 
 	// Create three stores for three different nodes
 	store1, err := newLocalStore(node1, address)
@@ -49,53 +41,71 @@ func TestMastershipStore(t *testing.T) {
 	store3, err := newLocalStore(node3, address)
 	assert.NoError(t, err)
 
+	store1election1, err := store1.GetElection(key1)
+	assert.NoError(t, err)
+
+	store2election1, err := store2.GetElection(key1)
+	assert.NoError(t, err)
+
+	store3election1, err := store3.GetElection(key1)
+	assert.NoError(t, err)
+
+	store1election2, err := store1.GetElection(key2)
+	assert.NoError(t, err)
+
+	store2election2, err := store2.GetElection(key2)
+	assert.NoError(t, err)
+
+	store3election2, err := store3.GetElection(key2)
+	assert.NoError(t, err)
+
 	// Verify that the first node that checks mastership for a device wins the election
 	// and no other node believes itself to be the master
-	master, err := store1.IsMaster(key1)
+	master, err := store1election1.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 
-	master, err = store2.IsMaster(key1)
+	master, err = store2election1.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
-	master, err = store3.IsMaster(key1)
+	master, err = store3election1.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
 	// Verify that listening for events for a device enters a node into the device mastership election
 	store2Ch2 := make(chan MastershipState)
-	err = store2.Watch(key2, store2Ch2)
+	err = store2election2.Watch(store2Ch2)
 	assert.NoError(t, err)
 
 	// Verify that the watching node is the master
-	master, err = store2.IsMaster(key2)
+	master, err = store2election2.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 
-	master, err = store1.IsMaster(key2)
+	master, err = store1election2.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
-	master, err = store3.IsMaster(key2)
+	master, err = store3election2.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
 	// Watch device2 mastership on an additional node and verify that it does not cause a mastership change
 	store3Ch2 := make(chan MastershipState)
-	err = store3.Watch(key2, store3Ch2)
+	err = store3election2.Watch(store3Ch2)
 	assert.NoError(t, err)
 
-	master, err = store3.IsMaster(key1)
+	master, err = store3election1.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
 	// Listen for key1 events on remaining nodes
 	store2Ch1 := make(chan MastershipState)
-	err = store2.Watch(key1, store2Ch1)
+	err = store2election1.Watch(store2Ch1)
 	assert.NoError(t, err)
 	store3Ch1 := make(chan MastershipState)
-	err = store3.Watch(key1, store3Ch1)
+	err = store3election1.Watch(store3Ch1)
 	assert.NoError(t, err)
 
 	// Close node 1 (the master for device 1) and verify a mastership change occurs on nodes 2 and 3
@@ -107,7 +117,7 @@ func TestMastershipStore(t *testing.T) {
 	assert.Equal(t, getPartitionFor(key1, 16), mastership.PartitionID)
 	assert.Equal(t, node2, mastership.Master)
 
-	master, err = store2.IsMaster(key1)
+	master, err = store2election1.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 
@@ -116,7 +126,7 @@ func TestMastershipStore(t *testing.T) {
 	assert.Equal(t, getPartitionFor(key1, 16), mastership.PartitionID)
 	assert.Equal(t, node2, mastership.Master)
 
-	master, err = store3.IsMaster(key1)
+	master, err = store3election1.IsMaster()
 	assert.NoError(t, err)
 	assert.False(t, master)
 
@@ -129,7 +139,7 @@ func TestMastershipStore(t *testing.T) {
 	assert.Equal(t, getPartitionFor(key1, 16), mastership.PartitionID)
 	assert.Equal(t, node3, mastership.Master)
 
-	master, err = store3.IsMaster(key1)
+	master, err = store3election1.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 
@@ -138,7 +148,7 @@ func TestMastershipStore(t *testing.T) {
 	assert.Equal(t, getPartitionFor(key2, 16), mastership.PartitionID)
 	assert.Equal(t, node3, mastership.Master)
 
-	master, err = store3.IsMaster(key2)
+	master, err = store3election2.IsMaster()
 	assert.NoError(t, err)
 	assert.True(t, master)
 
