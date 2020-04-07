@@ -15,6 +15,8 @@
 package updates
 
 import (
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
+	timestore "github.com/onosproject/onos-ric/pkg/store/time"
 	"testing"
 
 	"github.com/onosproject/onos-ric/api/sb"
@@ -22,9 +24,16 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	testStore, err := NewLocalStore()
+	mastershipStore, err := mastership.NewLocalStore("test", "1")
+	assert.NoError(t, err)
+	timeStore, err := timestore.NewStore(mastershipStore)
+	assert.NoError(t, err)
+	testStore, err := NewLocalStore(timeStore)
 	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
+
+	defer testStore.Close()
+	defer timeStore.Close()
 	defer testStore.Close()
 
 	watchCh1 := make(chan sb.ControlUpdate)
@@ -141,13 +150,13 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
 
-	err = testStore.Delete(controlUpdate1)
+	err = testStore.Delete(getID(controlUpdate1))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(controlUpdate2)
+	err = testStore.Delete(getID(controlUpdate2))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(controlUpdate3)
+	err = testStore.Delete(getID(controlUpdate3))
 	assert.Nil(t, err)
 
 }

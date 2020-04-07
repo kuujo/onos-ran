@@ -1,0 +1,49 @@
+/*
+Copyright 2020-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+syntax = "proto3";
+
+package onos.ric.store.message;
+
+import "github.com/onosproject/onos-ric/api/sb/e2-interface.proto";
+
+// MessageId is a message identifier
+message MessageId {
+    interface.e2.MessageType type = 1;
+    string plmn_id = 2;
+    string ecid = 3;
+    string crnti = 4;
+}
+
+// MessageEntry is a message store entry
+message MessageEntry {
+    // 'key' is the message key
+    string key = 1;
+
+    // 'term' is the entry term
+    uint64 term = 2;
+
+    // 'timestamp' is the entry timestamp
+    uint64 timestamp = 3;
+
+    // 'message' is the stored message
+    oneof message {
+        // 'telemetry' is a telemetry message
+        interface.e2.TelemetryMessage telemetry = 4;
+
+        // 'update' is a control update message
+        interface.e2.ControlUpdate control_update = 5;
+    }
+}

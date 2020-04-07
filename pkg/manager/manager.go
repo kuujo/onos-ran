@@ -40,14 +40,6 @@ var mgr Manager
 func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption) (*Manager, error) {
 	log.Info("Creating Manager")
 
-	updatesStore, err := updates.NewDistributedStore()
-	if err != nil {
-		return nil, err
-	}
-	if err = updatesStore.Clear(); err != nil {
-		log.Error("Error clearing Updates store %s", err.Error())
-	}
-
 	config, err := config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -66,6 +58,14 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 	telemetryStore, err := telemetry.NewDistributedStore(config, timeStore)
 	if err != nil {
 		return nil, err
+	}
+
+	updatesStore, err := updates.NewDistributedStore(config, timeStore)
+	if err != nil {
+		return nil, err
+	}
+	if err = updatesStore.Clear(); err != nil {
+		log.Error("Error clearing Updates store %s", err.Error())
 	}
 
 	// Should always clear out the stores on startup because it will be out of sync with ran-simulator
@@ -123,10 +123,7 @@ func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
 		if err != nil {
 			log.Errorf("%s", err)
 		}
-		err = m.DeleteUEAdmissionRequest(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
-		if err != nil {
-			log.Errorf("%s", err)
-		}
+		go m.DeleteUEAdmissionRequest(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
 	default:
 		log.Fatalf("ControlReport has unexpected type %T", x)
 	}
@@ -314,8 +311,8 @@ func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti str
 		Ecid:        ecid,
 		Crnti:       crnti,
 		MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
-	}.String()
-	if err := m.updatesStore.DeleteWithKey(id); err != nil {
+	}
+	if err := m.updatesStore.Delete(id); err != nil {
 		log.Infof("Error deleting UEAdmissionRequest, key=%s", id)
 		return err
 	}

@@ -171,12 +171,12 @@ func TestStore(t *testing.T) {
 		t.Fail()
 	}
 
-	err = testStore.Delete(newID(telemetry1))
+	err = testStore.Delete(getID(telemetry1))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(newID(telemetry2))
+	err = testStore.Delete(getID(telemetry2))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(newID(telemetry3))
+	err = testStore.Delete(getID(telemetry3))
 	assert.Nil(t, err)
 }

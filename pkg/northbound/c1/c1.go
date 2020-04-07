@@ -311,10 +311,7 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 	if err != nil {
 		return nil, err
 	}
-	err = manager.GetManager().DeleteUEAdmissionRequest(src.GetPlmnid(), src.GetEcid(), crnti)
-	if err != nil {
-		return nil, err
-	}
+	go manager.GetManager().DeleteUEAdmissionRequest(src.GetPlmnid(), src.GetEcid(), crnti)
 
 	return &nb.HandOverResponse{Success: true}, nil
 }

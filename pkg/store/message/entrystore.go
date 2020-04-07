@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetry
+package message
 
 import (
 	"container/list"
@@ -21,14 +21,15 @@ import (
 	"fmt"
 	"github.com/atomix/go-client/pkg/client/map"
 	"github.com/gogo/protobuf/proto"
-	"github.com/onosproject/onos-ric/api/store/telemetry"
+	"github.com/onosproject/onos-ric/api/store/message"
 	"sync"
 	"time"
 )
 
-func newEntryStore(dist _map.Map) entryStore {
+func newEntryStore(dist _map.Map, key Key) entryStore {
 	return &distributedEntryStore{
 		dist:    dist,
+		key:     key,
 		waiters: list.New(),
 	}
 }
@@ -36,13 +37,13 @@ func newEntryStore(dist _map.Map) entryStore {
 // entryStore is a store for a single telemetry entry
 type entryStore interface {
 	// update updates an entry in the store
-	update(updatedEntry *telemetry.TelemetryEntry, tombstone bool)
+	update(updatedEntry *message.MessageEntry, tombstone bool)
 
 	// get gets a telemetry message from the store
-	get(revision Revision) (*telemetry.TelemetryEntry, error)
+	get(revision Revision) (*message.MessageEntry, error)
 
 	// put puts a telemetry message in the store
-	put(entry *telemetry.TelemetryEntry) error
+	put(entry *message.MessageEntry) error
 
 	// delete deletes a telemetry message from the store
 	delete(revision Revision) error
@@ -51,12 +52,13 @@ type entryStore interface {
 // distributedEntryStore is an implementation of the entryStore interface
 type distributedEntryStore struct {
 	dist    _map.Map
-	cache   *telemetry.TelemetryEntry
+	key     Key
+	cache   *message.MessageEntry
 	waiters *list.List
 	mu      sync.RWMutex
 }
 
-func (s *distributedEntryStore) update(updatedEntry *telemetry.TelemetryEntry, tombstone bool) {
+func (s *distributedEntryStore) update(updatedEntry *message.MessageEntry, tombstone bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -89,7 +91,7 @@ func (s *distributedEntryStore) update(updatedEntry *telemetry.TelemetryEntry, t
 	}
 }
 
-func (s *distributedEntryStore) get(revision Revision) (*telemetry.TelemetryEntry, error) {
+func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, error) {
 	// Read the entry from the cache
 	s.mu.RLock()
 	telemetryEntry := s.cache
@@ -105,7 +107,7 @@ func (s *distributedEntryStore) get(revision Revision) (*telemetry.TelemetryEntr
 
 	// If the key is not present in the cache or is older than the requested key, read it from the distributed store.
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	entry, err := s.dist.Get(ctx, revision.ID.String())
+	entry, err := s.dist.Get(ctx, s.key.String())
 	cancel()
 	if err != nil {
 		return nil, err
@@ -130,7 +132,7 @@ func (s *distributedEntryStore) get(revision Revision) (*telemetry.TelemetryEntr
 	}
 
 	// If the entry is not up to date, enqueue a waiter to wait for the update to be propagated
-	ch := make(chan *telemetry.TelemetryEntry)
+	ch := make(chan *message.MessageEntry)
 	waiter := &waiterContext{
 		term:      revision.Term,
 		timestamp: revision.Timestamp,
@@ -161,7 +163,7 @@ func (s *distributedEntryStore) get(revision Revision) (*telemetry.TelemetryEntr
 	}
 }
 
-func (s *distributedEntryStore) put(update *telemetry.TelemetryEntry) error {
+func (s *distributedEntryStore) put(update *message.MessageEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -178,7 +180,7 @@ func (s *distributedEntryStore) delete(revision Revision) error {
 	defer s.mu.Unlock()
 
 	// Create a timestamped entry for the store
-	entry := &telemetry.TelemetryEntry{
+	entry := &message.MessageEntry{
 		Term:      uint64(revision.Term),
 		Timestamp: uint64(revision.Timestamp),
 	}
@@ -191,22 +193,20 @@ func (s *distributedEntryStore) delete(revision Revision) error {
 	return nil
 }
 
-func (s *distributedEntryStore) enqueuePut(entry *telemetry.TelemetryEntry) {
+func (s *distributedEntryStore) enqueuePut(entry *message.MessageEntry) {
 	go s.writePut(entry)
 }
 
-func (s *distributedEntryStore) requeuePut(update *telemetry.TelemetryEntry) {
+func (s *distributedEntryStore) requeuePut(update *message.MessageEntry) {
 	time.AfterFunc(retryInterval, func() {
 		s.writePut(update)
 	})
 }
 
-func (s *distributedEntryStore) writePut(update *telemetry.TelemetryEntry) {
-	id := newID(update.Message)
-
+func (s *distributedEntryStore) writePut(update *message.MessageEntry) {
 	// Get the current entry from the store
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	entry, err := s.dist.Get(ctx, id.String())
+	entry, err := s.dist.Get(ctx, s.key.String())
 	cancel()
 	if err != nil {
 		fmt.Println(err)
@@ -240,9 +240,9 @@ func (s *distributedEntryStore) writePut(update *telemetry.TelemetryEntry) {
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	if entry == nil {
-		_, err = s.dist.Put(ctx, id.String(), bytes, _map.IfNotSet())
+		_, err = s.dist.Put(ctx, s.key.String(), bytes, _map.IfNotSet())
 	} else {
-		_, err = s.dist.Put(ctx, id.String(), bytes, _map.IfVersion(entry.Version))
+		_, err = s.dist.Put(ctx, s.key.String(), bytes, _map.IfVersion(entry.Version))
 	}
 
 	// If the update failed, requeue it
@@ -265,7 +265,7 @@ func (s *distributedEntryStore) requeueDelete(revision Revision) {
 func (s *distributedEntryStore) writeDelete(revision Revision) {
 	// Get the current entry from the store
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	entry, err := s.dist.Get(ctx, revision.ID.String())
+	entry, err := s.dist.Get(ctx, s.key.String())
 	cancel()
 	if err != nil {
 		fmt.Println(err)
@@ -293,7 +293,7 @@ func (s *distributedEntryStore) writeDelete(revision Revision) {
 	// Remove the stored entry using an optimistic lock
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	_, err = s.dist.Remove(ctx, revision.ID.String(), _map.IfVersion(entry.Version))
+	_, err = s.dist.Remove(ctx, s.key.String(), _map.IfVersion(entry.Version))
 
 	// If the remove failed, requeue it
 	if err != nil {
@@ -302,14 +302,20 @@ func (s *distributedEntryStore) writeDelete(revision Revision) {
 	}
 }
 
-func decodeEntry(entry *_map.Entry) (*telemetry.TelemetryEntry, error) {
-	telemetryEntry := &telemetry.TelemetryEntry{}
-	if err := proto.Unmarshal(entry.Value, telemetryEntry); err != nil {
+func decodeEntry(entry *_map.Entry) (*message.MessageEntry, error) {
+	messageEntry := &message.MessageEntry{}
+	if err := proto.Unmarshal(entry.Value, messageEntry); err != nil {
 		return nil, err
 	}
-	return telemetryEntry, nil
+	return messageEntry, nil
 }
 
-func encodeEntry(entry *telemetry.TelemetryEntry) ([]byte, error) {
+func encodeEntry(entry *message.MessageEntry) ([]byte, error) {
 	return proto.Marshal(entry)
+}
+
+type waiterContext struct {
+	term      Term
+	timestamp Timestamp
+	ch        chan *message.MessageEntry
 }

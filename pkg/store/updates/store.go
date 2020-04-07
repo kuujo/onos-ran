@@ -15,240 +15,212 @@
 package updates
 
 import (
-	"context"
 	"fmt"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"io"
-	"time"
-
-	"github.com/onosproject/onos-lib-go/pkg/logging"
-
-	_map "github.com/atomix/go-client/pkg/client/map"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/gogo/protobuf/proto"
 
 	"github.com/onosproject/onos-ric/api/sb"
 )
 
+import (
+	"github.com/onosproject/onos-ric/api/store/message"
+	messagestore "github.com/onosproject/onos-ric/pkg/store/message"
+	timestore "github.com/onosproject/onos-ric/pkg/store/time"
+)
+
 var log = logging.GetLogger("store", "updates")
 
-const timeout = 15 * time.Second
 const primitiveName = "control-updates"
 
-// NewDistributedStore creates a new distributed control updates store
-func NewDistributedStore() (Store, error) {
-	log.Info("Creating distributed control updates store")
-	ricConfig, err := config.GetConfig()
+const keySep = ":"
+
+// ID is a updates store identifier
+type ID struct {
+	MessageType sb.MessageType
+	PlmnID      string
+	Ecid        string
+	Crnti       string
+}
+
+func (i ID) String() string {
+	return fmt.Sprintf("%d%s%s%s%s%s%s", i.MessageType, keySep, i.PlmnID, keySep, i.Ecid, keySep, i.Crnti)
+}
+
+// Revision is a update message revision
+type Revision struct {
+	// Term is the term in which the revision was created
+	Term Term
+	// Timestamp is the timestamp at which the revision was created
+	Timestamp Timestamp
+}
+
+// Term is a updates store term
+type Term messagestore.Term
+
+// Timestamp is a updates store timestamp
+type Timestamp messagestore.Timestamp
+
+// NewDistributedStore creates a new distributed updates store
+func NewDistributedStore(config config.Config, timeStore timestore.Store) (Store, error) {
+	log.Info("Creating distributed updates store")
+	messageStore, err := messagestore.NewDistributedStore(primitiveName, config, timeStore)
 	if err != nil {
 		return nil, err
 	}
-	database, err := atomix.GetDatabase(ricConfig.Atomix, ricConfig.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
-	if err != nil {
-		return nil, err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	updates, err := database.GetMap(ctx, primitiveName)
-	if err != nil {
-		return nil, err
-	}
-	return &atomixStore{
-		updates: updates,
+	return &distributedStore{
+		messageStore: messageStore,
 	}, nil
 }
 
-// NewLocalStore returns a new local control updates store
-func NewLocalStore() (Store, error) {
-	_, address := atomix.StartLocalNode()
-	return newLocalStore(address)
-}
-
-// newLocalStore creates a new local control updates store
-func newLocalStore(address net.Address) (Store, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+// NewLocalStore returns a new local updates store
+func NewLocalStore(timeStore timestore.Store) (Store, error) {
+	messageStore, err := messagestore.NewLocalStore(primitiveName, timeStore)
 	if err != nil {
 		return nil, err
 	}
-	updatesName := primitive.Name{
-		Namespace: "local",
-		Name:      primitiveName,
-	}
-	updates, err := _map.New(context.Background(), updatesName, []*primitive.Session{session})
-	if err != nil {
-		return nil, err
-	}
-	return &atomixStore{
-		updates: updates,
+	return &distributedStore{
+		messageStore: messageStore,
 	}, nil
 }
 
-// Store is ran store
+// Store is interface for updates store
 type Store interface {
 	io.Closer
 
-	// Gets a control update message based on a given ID
-	Get(ID) (*sb.ControlUpdate, error)
+	// Gets a updates message based on a given ID
+	Get(ID, ...GetOption) (*sb.ControlUpdate, error)
 
-	// Puts a control update message to the store
+	// Puts a updates message to the store
 	Put(*sb.ControlUpdate) error
 
-	// Deletes a control update message from the store
-	Delete(*sb.ControlUpdate) error
+	// Removes a updates message from the store
+	Delete(ID, ...DeleteOption) error
 
-	// Deletes a control update message from store using key
-	DeleteWithKey(key string) error
-
-	// List all of the last up to date control update messages
+	// List all of the last up to date updates messages
 	List(ch chan<- sb.ControlUpdate) error
 
-	// Watch watches the store for control update messages
+	// Watch watches updates updates
 	Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error
 
 	// Clear deletes all entries from the store
 	Clear() error
 }
 
-// WatchOption is a RAN store watch option
-type WatchOption interface {
-	apply(options *watchOptions)
+// GetOption is a message store get option
+type GetOption messagestore.GetOption
+
+// getOptions is a struct of message get options
+type getOptions struct {
+	revision Revision
 }
 
-// watchOptions is a struct of RAN store watch options
-type watchOptions struct {
-	replay bool
+// WithRevision returns a GetOption that ensures the retrieved entry is newer than the given revision
+func WithRevision(revision Revision) GetOption {
+	return messagestore.WithRevision(toMessageRevision(revision))
 }
 
-// WithReplay returns a watch option that replays existing updates
+// DeleteOption is a message store delete option
+type DeleteOption messagestore.DeleteOption
+
+// IfRevision returns a delete option that deletes the message only if its revision matches the given revision
+func IfRevision(revision Revision) DeleteOption {
+	return messagestore.IfRevision(toMessageRevision(revision))
+}
+
+// WatchOption is a telemetry store watch option
+type WatchOption messagestore.WatchOption
+
+// WithReplay returns a watch option that replays existing telemetry
 func WithReplay() WatchOption {
-	return &watchReplayOption{
-		replay: true,
+	return messagestore.WithReplay()
+}
+
+// distributedStore is an Atomix based store
+type distributedStore struct {
+	messageStore messagestore.Store
+}
+
+func (s *distributedStore) Get(id ID, opts ...GetOption) (*sb.ControlUpdate, error) {
+	messageOpts := make([]messagestore.GetOption, len(opts))
+	for i, opt := range opts {
+		messageOpts[i] = opt
 	}
-}
-
-// watchReplayOption is an option for configuring whether to replay updates on watch calls
-type watchReplayOption struct {
-	replay bool
-}
-
-func (o *watchReplayOption) apply(options *watchOptions) {
-	options.replay = o.replay
-}
-
-// atomixStore is an Atomix based store
-type atomixStore struct {
-	updates _map.Map
-}
-
-func (s *atomixStore) Get(id ID) (*sb.ControlUpdate, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	entry, err := s.updates.Get(ctx, id.String())
+	entry, err := s.messageStore.Get(messagestore.Key(id.String()), messageOpts...)
 	if err != nil {
 		return nil, err
-	} else if entry == nil || entry.Value == nil {
+	} else if entry == nil {
 		return nil, nil
 	}
-	update := &sb.ControlUpdate{}
-	if err := proto.Unmarshal(entry.Value, update); err != nil {
-		return nil, err
-	}
-	return update, nil
+	return entry.GetControlUpdate(), nil
 }
 
-func (s *atomixStore) Put(update *sb.ControlUpdate) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	bytes, err := proto.Marshal(update)
-	if err != nil {
-		return err
+func (s *distributedStore) Put(update *sb.ControlUpdate) error {
+	entry := &message.MessageEntry{
+		Message: &message.MessageEntry_ControlUpdate{
+			ControlUpdate: update,
+		},
 	}
-	_, err = s.updates.Put(ctx, getKey(update).String(), bytes)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.messageStore.Put(getKey(update), entry)
 }
 
-func (s *atomixStore) Delete(update *sb.ControlUpdate) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	_, err := s.updates.Remove(ctx, getKey(update).String())
-	if err != nil {
-		return err
+func (s *distributedStore) Delete(id ID, opts ...DeleteOption) error {
+	messageOpts := make([]messagestore.DeleteOption, len(opts))
+	for i, opt := range opts {
+		messageOpts[i] = opt
 	}
-	return nil
+	return s.messageStore.Delete(messagestore.Key(id.String()), messageOpts...)
 }
 
-func (s *atomixStore) DeleteWithKey(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	_, err := s.updates.Remove(ctx, key)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *atomixStore) List(ch chan<- sb.ControlUpdate) error {
-	entryCh := make(chan *_map.Entry)
-	if err := s.updates.Entries(context.Background(), entryCh); err != nil {
+func (s *distributedStore) List(ch chan<- sb.ControlUpdate) error {
+	entryCh := make(chan message.MessageEntry)
+	if err := s.messageStore.List(entryCh); err != nil {
 		return err
 	}
 	go func() {
 		defer close(ch)
 		for entry := range entryCh {
-			update := &sb.ControlUpdate{}
-			if err := proto.Unmarshal(entry.Value, update); err == nil {
-				ch <- *update
-			}
+			ch <- *entry.GetControlUpdate()
 		}
 	}()
 	return nil
 }
 
-func (s *atomixStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error {
-	options := &watchOptions{}
-	for _, opt := range opts {
-		opt.apply(options)
-	}
-	watchOptions := []_map.WatchOption{}
-	if options.replay {
-		watchOptions = append(watchOptions, _map.WithReplay())
+func (s *distributedStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error {
+	messageOpts := make([]messagestore.WatchOption, len(opts))
+	for i, opt := range opts {
+		messageOpts[i] = opt
 	}
 
-	watchCh := make(chan *_map.Event)
-	if err := s.updates.Watch(context.Background(), watchCh, watchOptions...); err != nil {
+	watchCh := make(chan message.MessageEntry)
+	if err := s.messageStore.Watch(watchCh, messageOpts...); err != nil {
 		return err
 	}
 	go func() {
 		defer close(ch)
-		for event := range watchCh {
-			if event.Type != _map.EventRemoved {
-				update := &sb.ControlUpdate{}
-				if err := proto.Unmarshal(event.Entry.Value, update); err == nil {
-					ch <- *update
-				}
-			}
+		for entry := range watchCh {
+			ch <- *entry.GetControlUpdate()
 		}
 	}()
 	return nil
 }
 
-func (s *atomixStore) Clear() error {
-	return s.updates.Clear(context.Background())
+func (s *distributedStore) Clear() error {
+	return s.messageStore.Clear()
 }
 
-func (s *atomixStore) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	return s.updates.Close(ctx)
+func (s *distributedStore) Close() error {
+	return s.messageStore.Close()
 }
 
-func getKey(update *sb.ControlUpdate) ID {
+func toMessageRevision(revision Revision) messagestore.Revision {
+	return messagestore.Revision{
+		Term:      messagestore.Term(revision.Term),
+		Timestamp: messagestore.Timestamp(revision.Timestamp),
+	}
+}
+
+func getID(update *sb.ControlUpdate) ID {
 	var ecgi sb.ECGI
 	var crnti string
 	switch update.MessageType {
@@ -272,23 +244,14 @@ func getKey(update *sb.ControlUpdate) ID {
 		ecgi = *update.GetBearerAdmissionStatus().GetEcgi()
 		crnti = update.GetBearerAdmissionStatus().GetCrnti()
 	}
-	id := ID{
+	return ID{
 		PlmnID:      ecgi.PlmnId,
 		Ecid:        ecgi.Ecid,
 		Crnti:       crnti,
 		MessageType: update.GetMessageType(),
 	}
-	return id
 }
 
-// ID store id
-type ID struct {
-	MessageType sb.MessageType
-	PlmnID      string
-	Ecid        string
-	Crnti       string
-}
-
-func (i ID) String() string {
-	return fmt.Sprintf("%d:%s:%s:%s", i.MessageType, i.PlmnID, i.Ecid, i.Crnti)
+func getKey(update *sb.ControlUpdate) messagestore.Key {
+	return messagestore.Key(getID(update).String())
 }
