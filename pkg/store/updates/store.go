@@ -110,11 +110,6 @@ type Store interface {
 // GetOption is a message store get option
 type GetOption messagestore.GetOption
 
-// getOptions is a struct of message get options
-type getOptions struct {
-	revision Revision
-}
-
 // WithRevision returns a GetOption that ensures the retrieved entry is newer than the given revision
 func WithRevision(revision Revision) GetOption {
 	return messagestore.WithRevision(toMessageRevision(revision))

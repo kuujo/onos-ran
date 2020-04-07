@@ -123,7 +123,10 @@ func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
 		if err != nil {
 			log.Errorf("%s", err)
 		}
-		go m.DeleteUEAdmissionRequest(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		err = m.DeleteUEAdmissionRequest(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		if err != nil {
+			log.Errorf("%s", err)
+		}
 	default:
 		log.Fatalf("ControlReport has unexpected type %T", x)
 	}
