@@ -1,49 +1,37 @@
-# onos-ric
-RAN subsystem for ONOS (µONOS Architecture)
+# Near real time RAN Intelligent Controller (RIC)
 
-Presently, this is just a skeletal project established to provide support for the
-Feb 2020 MWC demonstration.
-However, we expected to start evolving quickly towards the long-term architecture.
+**onos-ric** is the near real time RAN Intelligent Controller subsystem for ONOS (µONOS Architecture)
+following the [O-RAN] Architecture.
+
+It is built as a [Cloud Native] micro service to be deployed on [Kubernetes], and provides a C1 interface northbound and an
+E2 interface southbound.
+
+> It is a work in progress and follows developments in the O-RAN working groups.
 
 ## Interfaces
-`onos-ric` presents a gRPC Northbound interface **c1**
-and
-it relies on a gRPC southbound interface **e2** which is provided by `ran-simulator`.
+**onos-ric** presents a streaming [gRPC] Northbound interface [**c1**](api/c1-interface.md)
+which is accessed by apps such as:
+
+* onos-ran-ho - a [Handover](handover.md) application packaged as a Cloud Native micro service
+* onos-ran-mlb - a [Load Balancing](loadbalancer.md) application packaged as a Cloud Native micro service
+* onos-cli - the [command line](https://docs.onosproject.org/onos-cli/docs/cli/onos/) interface of µONOS
+* onos-gui - the [Web](https://docs.onosproject.org/onos-gui/docs/ran-gui/) based interface of µONOS
+
+On the southbound it relies on gRPC connections to:
+
+* An interface [**e2ap**](api/e2ap.md) for [O-RAN] Access Protocol provided by `ran-simulator`.
+* An interface [**e2sm**](api/e2sm.md) for [O-RAN] Service Model provided by `ran-simulator`.
+* An interface [**e2**](api/e2-interface.md) for older X-RAN commands provided by `ran-simulator`.
+* onos-topo - the µONOS [Topology Service](https://docs.onosproject.org/onos-topo/docs/api/device/)
+
+**onos-ric** also gathers metrics using the [Prometheus] API, which can be used to track KPIs during operation.
 
 ## Running
-`onos-ric` can be run as:
+`onos-ric` can be run only as a micro service in Kubernetes and is deployed by a [Helm] [Chart](deployment.md)
 
-* a standalone application `onos-ric --simulator <ip-address:port>`
-* alongside `ran-simulator` and `sd-ran-gui` by using [docker-compose](../../ran-simulator/docs/docker-compose.md)
-* in Kubernetes when deployed by a [Helm Chart](deployment.md)
-
-# Applications
-When running, `onos-ric` is accessed through its **c1** Interface. Future
-applications include a Handover application and a MLB app. 
-
-The [onos-cli](https://docs.onosproject.org/onos-cli/docs/setup/) application has
-been extended to access some of the services provided by this interface
-
-```bash
-> go run github.com/onosproject/onos-cli/cmd/onos ran get --help
-Get RAN resources
-
-Usage:
-  onos ran get [command]
-
-Available Commands:
-  stationlinks Get Station Links
-  stations     Get Stations
-  uelinks      Get UE Links
-
-Flags:
-  -h, --help   help for get
-
-Global Flags:
-      --no-tls                   if present, do not use TLS
-      --service-address string   the onos-ric service address (default "onos-ric:5150")
-      --tls-cert-path string     the path to the TLS certificate
-      --tls-key-path string      the path to the TLS key
-
-Use "onos ran get [command] --help" for more information about a command.
-```
+[O-RAN]: https://www.o-ran.org/
+[Kubernetes]: https://kubernetes.io/
+[Helm]: https://helm.sh/
+[gRPC]: https://grpc.io/
+[Cloud Native]: https://github.com/cncf/toc/blob/master/DEFINITION.md
+[Prometheus]: https://prometheus.io/
