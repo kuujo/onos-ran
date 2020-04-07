@@ -34,18 +34,18 @@ func newEntryStore(dist _map.Map, key Key) entryStore {
 	}
 }
 
-// entryStore is a store for a single telemetry entry
+// entryStore is a store for a single message entry
 type entryStore interface {
 	// update updates an entry in the store
 	update(updatedEntry *message.MessageEntry, tombstone bool)
 
-	// get gets a telemetry message from the store
+	// get gets a message from the store
 	get(revision Revision) (*message.MessageEntry, error)
 
-	// put puts a telemetry message in the store
+	// put puts a message in the store
 	put(entry *message.MessageEntry) error
 
-	// delete deletes a telemetry message from the store
+	// delete deletes a message from the store
 	delete(revision Revision) error
 }
 
@@ -94,15 +94,15 @@ func (s *distributedEntryStore) update(updatedEntry *message.MessageEntry, tombs
 func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, error) {
 	// Read the entry from the cache
 	s.mu.RLock()
-	telemetryEntry := s.cache
+	messageEntry := s.cache
 	s.mu.RUnlock()
 
 	// If the entry term is greater than the requested term or the terms are equal and the entry timestamp
 	// is greater than or equal to the requested timestamp, the entry is up to date.
-	if telemetryEntry != nil &&
-		(Term(telemetryEntry.Term) > revision.Term ||
-			(Term(telemetryEntry.Term) == revision.Term && Timestamp(telemetryEntry.Timestamp) >= revision.Timestamp)) {
-		return telemetryEntry, nil
+	if messageEntry != nil &&
+		(Term(messageEntry.Term) > revision.Term ||
+			(Term(messageEntry.Term) == revision.Term && Timestamp(messageEntry.Timestamp) >= revision.Timestamp)) {
+		return messageEntry, nil
 	}
 
 	// If the key is not present in the cache or is older than the requested key, read it from the distributed store.
@@ -116,19 +116,19 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 	}
 
 	// Decode the stored entry
-	telemetryEntry, err = decodeEntry(entry)
+	messageEntry, err = decodeEntry(entry)
 	if err != nil {
 		return nil, err
 	}
 
-	// Again, determine whether the telemetry entry meets the requested revision info.
-	if Term(telemetryEntry.Term) > revision.Term ||
-		(Term(telemetryEntry.Term) == revision.Term && Timestamp(telemetryEntry.Timestamp) >= revision.Timestamp) {
+	// Again, determine whether the message entry meets the requested revision info.
+	if Term(messageEntry.Term) > revision.Term ||
+		(Term(messageEntry.Term) == revision.Term && Timestamp(messageEntry.Timestamp) >= revision.Timestamp) {
 		// Cache the entry if it's up-to-date.
 		s.mu.Lock()
-		s.cache = telemetryEntry
+		s.cache = messageEntry
 		s.mu.Unlock()
-		return telemetryEntry, nil
+		return messageEntry, nil
 	}
 
 	// If the entry is not up to date, enqueue a waiter to wait for the update to be propagated
@@ -159,7 +159,7 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 	case e := <-ch:
 		return e, nil
 	case <-time.After(requestTimeout):
-		return nil, errors.New("telemetry get timed out")
+		return nil, errors.New("message get timed out")
 	}
 }
 

@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-// newDistributedElection returns a new distributed device mastership election
+// newDistributedElection returns a new distributed mastership election
 func newDistributedElection(partitionID PartitionID, database *client.Database) (Election, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%d", partitionID), election.WithID(string(cluster.GetNodeID())))
@@ -39,7 +39,7 @@ func newDistributedElection(partitionID PartitionID, database *client.Database) 
 	return newMastershipElection(partitionID, election)
 }
 
-// newLocalElection returns a new local device mastership election
+// newLocalElection returns a new local mastership election
 func newLocalElection(partitionID PartitionID, nodeID cluster.NodeID, address net.Address) (Election, error) {
 	name := primitive.Name{
 		Namespace: "local",
@@ -58,7 +58,7 @@ func newLocalElection(partitionID PartitionID, nodeID cluster.NodeID, address ne
 	return newMastershipElection(partitionID, election)
 }
 
-// newDeviceMastershipElection creates and enters a new device mastership election
+// newDeviceMastershipElection creates and enters a new mastership election
 func newMastershipElection(partitionID PartitionID, election election.Election) (Election, error) {
 	mastershipElection := &distributedMastershipElection{
 		partitionID: partitionID,
@@ -83,7 +83,7 @@ type State struct {
 	Master cluster.NodeID
 }
 
-// Election is an election for a single device mastership
+// Election is an election for a single mastership
 type Election interface {
 	io.Closer
 
@@ -103,7 +103,7 @@ type Election interface {
 	Watch(ch chan<- State) error
 }
 
-// distributedMastershipElection is a persistent device mastership election
+// distributedMastershipElection is a persistent mastership election
 type distributedMastershipElection struct {
 	partitionID PartitionID
 	election    election.Election
