@@ -19,14 +19,6 @@ package onos.ric.store.message;
 
 import "github.com/onosproject/onos-ric/api/sb/e2-interface.proto";
 
-// MessageId is a message identifier
-message MessageId {
-    interface.e2.MessageType type = 1;
-    string plmn_id = 2;
-    string ecid = 3;
-    string crnti = 4;
-}
-
 // MessageEntry is a message store entry
 message MessageEntry {
     // 'key' is the message key
