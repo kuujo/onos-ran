@@ -16,7 +16,7 @@ var log = logging.GetLogger("store", "updates")
 
 func NewDistributedStore(config config.Config, timeStore timestore.Store) (Store, error) {
 	log.Info("Creating distributed store")
-	messageStore, err := messagestore.NewDistributedStore("updates", config, "Cache", timeStore)
+	messageStore, err := messagestore.NewDistributedStore("updates", config, "cache", timeStore)
 	if err != nil {
 		return nil, err
 	}
