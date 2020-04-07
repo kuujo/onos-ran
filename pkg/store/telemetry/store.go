@@ -15,75 +15,69 @@
 package telemetry
 
 import (
-	"context"
 	"fmt"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"github.com/onosproject/onos-ric/pkg/config"
-	"io"
-	"time"
-
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-
-	_map "github.com/atomix/go-client/pkg/client/map"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/gogo/protobuf/proto"
+	"github.com/onosproject/onos-ric/api/store/message"
+	"github.com/onosproject/onos-ric/pkg/config"
+	messagestore "github.com/onosproject/onos-ric/pkg/store/message"
+	timestore "github.com/onosproject/onos-ric/pkg/store/time"
+	"io"
 
 	"github.com/onosproject/onos-ric/api/sb"
 )
 
 var log = logging.GetLogger("store", "telemetry")
 
-const timeout = 15 * time.Second
 const primitiveName = "telemetry"
 
-// NewDistributedStore creates a new distributed telemetry store
-func NewDistributedStore() (Store, error) {
-	log.Info("Creating distributed telemetry store")
-	ricConfig, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	database, err := atomix.GetDatabase(ricConfig.Atomix, ricConfig.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
+const keySep = ":"
 
+// ID is a telemetry store identifier
+type ID struct {
+	MessageType sb.MessageType
+	PlmnID      string
+	Ecid        string
+	Crnti       string
+}
+
+func (i ID) String() string {
+	return fmt.Sprintf("%d%s%s%s%s%s%s", i.MessageType, keySep, i.PlmnID, keySep, i.Ecid, keySep, i.Crnti)
+}
+
+// Revision is a telemetry message revision
+type Revision struct {
+	// Term is the term in which the revision was created
+	Term Term
+	// Timestamp is the timestamp at which the revision was created
+	Timestamp Timestamp
+}
+
+// Term is a telemetry store term
+type Term uint64
+
+// Timestamp is a telemetry store timestamp
+type Timestamp uint64
+
+// NewDistributedStore creates a new distributed telemetry store
+func NewDistributedStore(config config.Config, timeStore timestore.Store) (Store, error) {
+	log.Info("Creating distributed telemetry store")
+	messageStore, err := messagestore.NewDistributedStore(primitiveName, config, timeStore)
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	telemetry, err := database.GetMap(ctx, primitiveName)
-	if err != nil {
-		return nil, err
-	}
-	return &atomixStore{
-		telemetry: telemetry,
+	return &distributedStore{
+		messageStore: messageStore,
 	}, nil
 }
 
 // NewLocalStore returns a new local telemetry store
-func NewLocalStore() (Store, error) {
-	_, address := atomix.StartLocalNode()
-	return newLocalStore(address)
-}
-
-// newLocalStore creates a new local telemetry store
-func newLocalStore(address net.Address) (Store, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
+func NewLocalStore(timeStore timestore.Store) (Store, error) {
+	messageStore, err := messagestore.NewLocalStore(primitiveName, timeStore)
 	if err != nil {
 		return nil, err
 	}
-	telemetryName := primitive.Name{
-		Namespace: "local",
-		Name:      primitiveName,
-	}
-	telemetry, err := _map.New(context.Background(), telemetryName, []*primitive.Session{session})
-	if err != nil {
-		return nil, err
-	}
-	return &atomixStore{
-		telemetry: telemetry,
+	return &distributedStore{
+		messageStore: messageStore,
 	}, nil
 }
 
@@ -92,16 +86,13 @@ type Store interface {
 	io.Closer
 
 	// Gets a telemetry message based on a given ID
-	Get(ID) (*sb.TelemetryMessage, error)
+	Get(ID, ...GetOption) (*sb.TelemetryMessage, error)
 
 	// Puts a telemetry message to the store
 	Put(*sb.TelemetryMessage) error
 
 	// Removes a telemetry message from the store
-	Delete(*sb.TelemetryMessage) error
-
-	// Removes a telemetry message from the store using key
-	DeleteWithKey(key string) error
+	Delete(ID, ...DeleteOption) error
 
 	// List all of the last up to date telemetry messages
 	List(ch chan<- sb.TelemetryMessage) error
@@ -113,158 +104,115 @@ type Store interface {
 	Clear() error
 }
 
-// WatchOption is a telemetry store watch option
-type WatchOption interface {
-	apply(options *watchOptions)
+// GetOption is a message store get option
+type GetOption messagestore.GetOption
+
+// WithRevision returns a GetOption that ensures the retrieved entry is newer than the given revision
+func WithRevision(revision Revision) GetOption {
+	return messagestore.WithRevision(toMessageRevision(revision))
 }
 
-// watchOptions is a struct of telemetry store watch options
-type watchOptions struct {
-	replay bool
+// DeleteOption is a message store delete option
+type DeleteOption messagestore.DeleteOption
+
+// IfRevision returns a delete option that deletes the message only if its revision matches the given revision
+func IfRevision(revision Revision) DeleteOption {
+	return messagestore.IfRevision(toMessageRevision(revision))
 }
+
+// WatchOption is a telemetry store watch option
+type WatchOption messagestore.WatchOption
 
 // WithReplay returns a watch option that replays existing telemetry
 func WithReplay() WatchOption {
-	return &watchReplayOption{
-		replay: true,
+	return messagestore.WithReplay()
+}
+
+// distributedStore is an Atomix based store
+type distributedStore struct {
+	messageStore messagestore.Store
+}
+
+func (s *distributedStore) Get(id ID, opts ...GetOption) (*sb.TelemetryMessage, error) {
+	messageOpts := make([]messagestore.GetOption, len(opts))
+	for i, opt := range opts {
+		messageOpts[i] = opt
 	}
-}
-
-// watchReplayOption is an option for configuring whether to replay telemetry on watch calls
-type watchReplayOption struct {
-	replay bool
-}
-
-func (o *watchReplayOption) apply(options *watchOptions) {
-	options.replay = o.replay
-}
-
-// atomixStore is an Atomix based store
-type atomixStore struct {
-	telemetry _map.Map
-}
-
-func (s *atomixStore) Get(id ID) (*sb.TelemetryMessage, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	entry, err := s.telemetry.Get(ctx, id.String())
+	entry, err := s.messageStore.Get(messagestore.Key(id.String()), messageOpts...)
 	if err != nil {
 		return nil, err
-	} else if entry == nil || entry.Value == nil {
+	} else if entry == nil {
 		return nil, nil
 	}
-	telemetry := &sb.TelemetryMessage{}
-	if err := proto.Unmarshal(entry.Value, telemetry); err != nil {
-		return nil, err
-	}
-	return telemetry, nil
+	return entry.GetTelemetry(), nil
 }
 
-func (s *atomixStore) Put(telemetry *sb.TelemetryMessage) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	bytes, err := proto.Marshal(telemetry)
-	if err != nil {
-		return err
+func (s *distributedStore) Put(telemetry *sb.TelemetryMessage) error {
+	entry := &message.MessageEntry{
+		Message: &message.MessageEntry_Telemetry{
+			Telemetry: telemetry,
+		},
 	}
-	before := time.Now()
-	_, err = s.telemetry.Put(ctx, getKey(telemetry).String(), bytes)
-	after := time.Now()
-	log.Infof("Time to Put in Atomix %d µs", after.Sub(before).Microseconds())
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.messageStore.Put(getKey(telemetry), entry)
 }
 
-func (s *atomixStore) Delete(telemetry *sb.TelemetryMessage) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	_, err := s.telemetry.Remove(ctx, getKey(telemetry).String())
-	if err != nil {
-		return err
+func (s *distributedStore) Delete(id ID, opts ...DeleteOption) error {
+	messageOpts := make([]messagestore.DeleteOption, len(opts))
+	for i, opt := range opts {
+		messageOpts[i] = opt
 	}
-	return nil
+	return s.messageStore.Delete(messagestore.Key(id.String()), messageOpts...)
 }
 
-func (s *atomixStore) DeleteWithKey(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	_, err := s.telemetry.Remove(ctx, key)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *atomixStore) List(ch chan<- sb.TelemetryMessage) error {
-	entryCh := make(chan *_map.Entry)
-	if err := s.telemetry.Entries(context.Background(), entryCh); err != nil {
+func (s *distributedStore) List(ch chan<- sb.TelemetryMessage) error {
+	entryCh := make(chan message.MessageEntry)
+	if err := s.messageStore.List(entryCh); err != nil {
 		return err
 	}
 	go func() {
 		defer close(ch)
 		for entry := range entryCh {
-			telemetry := &sb.TelemetryMessage{}
-			if err := proto.Unmarshal(entry.Value, telemetry); err == nil {
-				ch <- *telemetry
-			}
+			ch <- *entry.GetTelemetry()
 		}
 	}()
 	return nil
 }
 
-func (s *atomixStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error {
-	options := &watchOptions{}
-	for _, opt := range opts {
-		opt.apply(options)
-	}
-	watchOptions := []_map.WatchOption{}
-	if options.replay {
-		watchOptions = append(watchOptions, _map.WithReplay())
+func (s *distributedStore) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error {
+	messageOpts := make([]messagestore.WatchOption, len(opts))
+	for i, opt := range opts {
+		messageOpts[i] = opt
 	}
 
-	watchCh := make(chan *_map.Event)
-	if err := s.telemetry.Watch(context.Background(), watchCh, watchOptions...); err != nil {
+	watchCh := make(chan message.MessageEntry)
+	if err := s.messageStore.Watch(watchCh, messageOpts...); err != nil {
 		return err
 	}
 	go func() {
 		defer close(ch)
-		for event := range watchCh {
-			if event.Type != _map.EventRemoved {
-				telemetry := &sb.TelemetryMessage{}
-				if err := proto.Unmarshal(event.Entry.Value, telemetry); err == nil {
-					ch <- *telemetry
-				}
-			}
+		for entry := range watchCh {
+			ch <- *entry.GetTelemetry()
 		}
 	}()
 	return nil
 }
 
-func (s *atomixStore) Clear() error {
-	return s.telemetry.Clear(context.Background())
+func (s *distributedStore) Clear() error {
+	return s.messageStore.Clear()
 }
 
-func (s *atomixStore) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	return s.telemetry.Close(ctx)
+func (s *distributedStore) Close() error {
+	return s.messageStore.Close()
 }
 
-// ID store id
-type ID struct {
-	MessageType sb.MessageType
-	PlmnID      string
-	Ecid        string
-	Crnti       string
+func toMessageRevision(revision Revision) messagestore.Revision {
+	return messagestore.Revision{
+		Term:      messagestore.Term(revision.Term),
+		Timestamp: messagestore.Timestamp(revision.Timestamp),
+	}
 }
 
-func (i ID) String() string {
-	return fmt.Sprintf("%d:%s:%s:%s", i.MessageType, i.PlmnID, i.Ecid, i.Crnti)
-}
-
-func getKey(telemetry *sb.TelemetryMessage) ID {
+func getID(telemetry *sb.TelemetryMessage) ID {
 	var ecgi sb.ECGI
 	var crnti string
 	switch telemetry.MessageType {
@@ -277,11 +225,14 @@ func getKey(telemetry *sb.TelemetryMessage) ID {
 	case sb.MessageType_SCHED_MEAS_REPORT_PER_CELL:
 		ecgi = *telemetry.GetSchedMeasReportPerCell().GetEcgi()
 	}
-	id := ID{
+	return ID{
 		PlmnID:      ecgi.PlmnId,
 		Ecid:        ecgi.Ecid,
 		Crnti:       crnti,
 		MessageType: telemetry.GetMessageType(),
 	}
-	return id
+}
+
+func getKey(telemetry *sb.TelemetryMessage) messagestore.Key {
+	return messagestore.Key(getID(telemetry).String())
 }

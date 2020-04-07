@@ -15,6 +15,8 @@
 package telemetry
 
 import (
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
+	timestore "github.com/onosproject/onos-ric/pkg/store/time"
 	"testing"
 	"time"
 
@@ -23,10 +25,17 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	testStore, err := NewLocalStore()
+	mastershipStore, err := mastership.NewLocalStore("test", "1")
+	assert.NoError(t, err)
+	timeStore, err := timestore.NewStore(mastershipStore)
+	assert.NoError(t, err)
+	testStore, err := NewLocalStore(timeStore)
 	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
+
 	defer testStore.Close()
+	defer timeStore.Close()
+	defer mastershipStore.Close()
 
 	watchCh1 := make(chan sb.TelemetryMessage)
 	err = testStore.Watch(watchCh1)
@@ -162,12 +171,12 @@ func TestStore(t *testing.T) {
 		t.Fail()
 	}
 
-	err = testStore.Delete(telemetry1)
+	err = testStore.Delete(getID(telemetry1))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(telemetry2)
+	err = testStore.Delete(getID(telemetry2))
 	assert.Nil(t, err)
 
-	err = testStore.Delete(telemetry3)
+	err = testStore.Delete(getID(telemetry3))
 	assert.Nil(t, err)
 }

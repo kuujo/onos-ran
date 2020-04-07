@@ -20,14 +20,33 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
+const defaultPartitions = 16
+
 var config *Config
 
 // Config is the onos-config configuration
 type Config struct {
+	// Mastership is the mastership configuration
+	Mastership MastershipConfig `yaml:"mastership,omitempty"`
 	// Atomix is the Atomix configuration
 	Atomix atomix.Config `yaml:"atomix,omitempty"`
 	// Logging is the logging configuration
 	Logging logging.Config `yaml:"logging,omitempty"`
+}
+
+// MastershipConfig is the configuration for store mastership
+type MastershipConfig struct {
+	// Partitions is the number of store partitions
+	Partitions int `yaml:"partitions,omitempty"`
+}
+
+// GetPartitions returns the number of store partitions
+func (c MastershipConfig) GetPartitions() int {
+	partitions := c.Partitions
+	if partitions == 0 {
+		partitions = defaultPartitions
+	}
+	return partitions
 }
 
 // GetConfig gets the onos-config configuration

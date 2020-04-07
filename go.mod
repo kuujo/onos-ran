@@ -3,6 +3,7 @@ module github.com/onosproject/onos-ric
 go 1.13
 
 require (
+	github.com/DataDog/mmh3 v0.0.0-20200316233529-f5b682d8c981
 	github.com/atomix/go-client v0.0.0-20200307025134-f638fa3fb644
 	github.com/gogo/protobuf v1.3.1
 	github.com/onosproject/helmit v0.0.0-20200327211207-6ee099c52d08
