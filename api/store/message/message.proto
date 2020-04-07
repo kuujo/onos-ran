@@ -18,6 +18,7 @@ syntax = "proto3";
 package onos.ric.store.message;
 
 import "github.com/onosproject/onos-ric/api/sb/e2-interface.proto";
+import "github.com/onosproject/onos-ric/api/sb/e2ap/e2ap.proto";
 
 // MessageEntry is a message store entry
 message MessageEntry {
@@ -37,5 +38,7 @@ message MessageEntry {
 
         // 'update' is a control update message
         interface.e2.ControlUpdate control_update = 5;
+
+        interface.e2ap.RicControlResponse control_response = 6;
     }
 }

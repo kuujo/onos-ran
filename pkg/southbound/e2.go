@@ -27,6 +27,7 @@ import (
 
 	"github.com/onosproject/onos-ric/api/sb"
 	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"google.golang.org/grpc"
 )
 
@@ -44,6 +45,9 @@ var ChanHOEvent chan HOEventMeasuredRIC
 // TelemetryUpdateHandler - a function for the session to write back to manager without the import cycle
 type TelemetryUpdateHandler = func(sb.TelemetryMessage)
 
+// RicControlResponseHandler - ricControlResponse messages to manager without the import cycle
+type RicControlResponseHandler = func(e2ap.RicControlResponse)
+
 // ControlUpdateHandler - a function for the session to write back to manager without the import cycle
 type ControlUpdateHandler = func(sb.ControlUpdate)
 
@@ -53,15 +57,17 @@ type Session struct {
 	Ecgi     sb.ECGI
 	client   e2ap.E2APClient
 
-	ricControlRequestChan chan e2ap.RicControlRequest
-	controlResponses      chan sb.ControlResponse
-	controlUpdates        chan sb.ControlUpdate
+	ricControlRequestChan  chan e2ap.RicControlRequest
+	ricControlResponseChan chan e2ap.RicControlResponse
+	controlResponses       chan sb.ControlResponse
+	controlUpdates         chan sb.ControlUpdate
 
 	telemetryUpdates chan sb.TelemetryMessage
 
-	ControlUpdateHandlerFunc   ControlUpdateHandler
-	TelemetryUpdateHandlerFunc TelemetryUpdateHandler
-	EnableMetrics              bool
+	RicControlResponseHandlerFunc RicControlResponseHandler
+	ControlUpdateHandlerFunc      ControlUpdateHandler
+	TelemetryUpdateHandlerFunc    TelemetryUpdateHandler
+	EnableMetrics                 bool
 }
 
 // HOEventMeasuredRIC is struct including UE ID and its eNB ID
@@ -78,12 +84,13 @@ func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
 	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
 
 	return &Session{
-		EndPoint:              endPoint,
-		Ecgi:                  ecgi,
-		ricControlRequestChan: make(chan e2ap.RicControlRequest),
-		controlResponses:      make(chan sb.ControlResponse),
-		controlUpdates:        make(chan sb.ControlUpdate),
-		telemetryUpdates:      make(chan sb.TelemetryMessage),
+		EndPoint:               endPoint,
+		Ecgi:                   ecgi,
+		ricControlRequestChan:  make(chan e2ap.RicControlRequest),
+		ricControlResponseChan: make(chan e2ap.RicControlResponse),
+		controlResponses:       make(chan sb.ControlResponse),
+		controlUpdates:         make(chan sb.ControlUpdate),
+		telemetryUpdates:       make(chan sb.TelemetryMessage),
 	}, nil
 }
 
@@ -176,21 +183,43 @@ func (s *Session) ricControl(errors chan error) {
 		errors <- err
 		return
 	}
-	//	waitc := make(chan error)
-	//	go func() {
-	//		for {
-	//			resp, err := stream.Recv()
-	//			if err != nil {
-	//				close(waitc)
-	//				return
-	//			}
-	//			log.Infof("Got messageType %d from %s", resp.Hdr.MessageType, s.EndPoint)
-	//			s.ricControlResponse(resp)
-	//		}
-	//	}()
+	waitc := make(chan error)
+	go func() {
+		for {
+			resp, err := stream.Recv()
+			if err != nil {
+				close(waitc)
+				return
+			}
+			//log.Infof("Got ricControlResponse messageType %d from %s", resp.Hdr.MessageType, s.EndPoint)
+			s.ricControlResponse(resp)
+		}
+	}()
+
+	cellConfigReq := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_CELL_CONFIG_REQUEST,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_CellConfigRequest{
+				CellConfigRequest: &sb.CellConfigRequest{
+					Ecgi: &sb.ECGI{
+						PlmnId: s.Ecgi.GetPlmnId(),
+						Ecid:   s.Ecgi.GetEcid()},
+				},
+			},
+		},
+	}
+
+	err = stream.Send(&cellConfigReq)
+	if err != nil {
+		waitc <- err
+		return
+	}
+
 	for {
 		req := <-s.ricControlRequestChan
-		err := stream.Send(&req)
+		err = stream.Send(&req)
 		if err != nil {
 			errors <- err
 			return
@@ -199,16 +228,6 @@ func (s *Session) ricControl(errors chan error) {
 }
 
 func (s *Session) handleControl(errors chan error) {
-
-	cellConfigRequest := &sb.ControlResponse{
-		MessageType: sb.MessageType_CELL_CONFIG_REQUEST,
-		S: &sb.ControlResponse_CellConfigRequest{
-			CellConfigRequest: &sb.CellConfigRequest{
-				Ecgi: &sb.ECGI{PlmnId: "test", Ecid: "test"},
-			},
-		},
-	}
-
 	stream, err := s.client.SendControl(context.Background())
 	if err != nil {
 		errors <- err
@@ -228,10 +247,6 @@ func (s *Session) handleControl(errors chan error) {
 		}
 	}()
 
-	if err := stream.Send(cellConfigRequest); err != nil {
-		log.Fatalf("Failed to send a note: %v", err)
-	}
-
 	go s.ricControl(errors)
 
 	for {
@@ -244,16 +259,20 @@ func (s *Session) handleControl(errors chan error) {
 	}
 }
 
-/*
 func (s *Session) ricControlResponse(update *e2ap.RicControlResponse) {
-	// Nothing to do here yet
+	msgType := update.GetHdr().GetMessageType()
+	switch msgType {
+	case sb.MessageType_CELL_CONFIG_REPORT:
+		msg := update.GetMsg().GetCellConfigReport()
+		log.Infof("%s CellConfigReport plmnid:%s, ecid:%s", s.EndPoint, msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid())
+	default:
+		log.Fatalf("%s ControlResponse has unexpected type %d", msgType)
+	}
+	s.ricControlResponseChan <- *update
 }
-*/
 
 func (s *Session) processControlUpdate(update *sb.ControlUpdate) {
 	switch x := update.S.(type) {
-	case *sb.ControlUpdate_CellConfigReport:
-		log.Infof("%s CellConfigReport plmnid:%s, ecid:%s", s.EndPoint, x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
 	case *sb.ControlUpdate_UEAdmissionRequest:
 		log.Infof("%s UEAdmissionRequest plmnid:%s, ecid:%s, crnti:%s, imsi:%d", s.EndPoint, x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti, x.UEAdmissionRequest.Imsi)
 	case *sb.ControlUpdate_UEReleaseInd:

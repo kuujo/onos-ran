@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package updates
+package control
 
 import (
 	"fmt"
@@ -22,6 +22,7 @@ import (
 	"github.com/onosproject/onos-ric/pkg/config"
 
 	"github.com/onosproject/onos-ric/api/sb"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/message"
 
 	messagestore "github.com/onosproject/onos-ric/pkg/store/message"
@@ -29,13 +30,13 @@ import (
 	timestore "github.com/onosproject/onos-ric/pkg/store/time"
 )
 
-var log = logging.GetLogger("store", "updates")
+var log = logging.GetLogger("store", "control")
 
-const primitiveName = "control-updates"
+const primitiveName = "control-response"
 
 const keySep = ":"
 
-// ID is a updates store identifier
+// ID is a control store identifier
 type ID struct {
 	MessageType sb.MessageType
 	PlmnID      string
@@ -55,15 +56,15 @@ type Revision struct {
 	Timestamp Timestamp
 }
 
-// Term is a updates store term
+// Term is a control store term
 type Term messagestore.Term
 
-// Timestamp is a updates store timestamp
+// Timestamp is a control store timestamp
 type Timestamp messagestore.Timestamp
 
-// NewDistributedStore creates a new distributed updates store
+// NewDistributedStore creates a new distributed control store
 func NewDistributedStore(config config.Config, timeStore timestore.Store) (Store, error) {
-	log.Info("Creating distributed updates store")
+	log.Info("Creating distributed control store")
 	messageStore, err := messagestore.NewDistributedStore(primitiveName, config, timeStore)
 	if err != nil {
 		return nil, err
@@ -73,7 +74,7 @@ func NewDistributedStore(config config.Config, timeStore timestore.Store) (Store
 	}, nil
 }
 
-// NewLocalStore returns a new local updates store
+// NewLocalStore returns a new local control store
 func NewLocalStore(timeStore timestore.Store) (Store, error) {
 	messageStore, err := messagestore.NewLocalStore(primitiveName, timeStore)
 	if err != nil {
@@ -84,24 +85,24 @@ func NewLocalStore(timeStore timestore.Store) (Store, error) {
 	}, nil
 }
 
-// Store is interface for updates store
+// Store is interface for control store
 type Store interface {
 	io.Closer
 
-	// Gets a updates message based on a given ID
-	Get(ID, ...GetOption) (*sb.ControlUpdate, error)
+	// Gets a control message based on a given ID
+	Get(ID, ...GetOption) (*e2ap.RicControlResponse, error)
 
-	// Puts a updates message to the store
-	Put(*sb.ControlUpdate) error
+	// Puts a control message to the store
+	Put(*e2ap.RicControlResponse) error
 
-	// Removes a updates message from the store
+	// Removes a control message from the store
 	Delete(ID, ...DeleteOption) error
 
-	// List all of the last up to date updates messages
-	List(ch chan<- sb.ControlUpdate) error
+	// List all of the last up to date control messages
+	List(ch chan<- e2ap.RicControlResponse) error
 
-	// Watch watches updates updates
-	Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error
+	// Watch watches control updates
+	Watch(ch chan<- e2ap.RicControlResponse, opts ...WatchOption) error
 
 	// Clear deletes all entries from the store
 	Clear() error
@@ -136,7 +137,7 @@ type distributedStore struct {
 	messageStore messagestore.Store
 }
 
-func (s *distributedStore) Get(id ID, opts ...GetOption) (*sb.ControlUpdate, error) {
+func (s *distributedStore) Get(id ID, opts ...GetOption) (*e2ap.RicControlResponse, error) {
 	messageOpts := make([]messagestore.GetOption, len(opts))
 	for i, opt := range opts {
 		messageOpts[i] = opt
@@ -147,13 +148,13 @@ func (s *distributedStore) Get(id ID, opts ...GetOption) (*sb.ControlUpdate, err
 	} else if entry == nil {
 		return nil, nil
 	}
-	return entry.GetControlUpdate(), nil
+	return entry.GetControlResponse(), nil
 }
 
-func (s *distributedStore) Put(update *sb.ControlUpdate) error {
+func (s *distributedStore) Put(update *e2ap.RicControlResponse) error {
 	entry := &message.MessageEntry{
-		Message: &message.MessageEntry_ControlUpdate{
-			ControlUpdate: update,
+		Message: &message.MessageEntry_ControlResponse{
+			ControlResponse: update,
 		},
 	}
 	return s.messageStore.Put(getKey(update), entry)
@@ -167,7 +168,7 @@ func (s *distributedStore) Delete(id ID, opts ...DeleteOption) error {
 	return s.messageStore.Delete(messagestore.Key(id.String()), messageOpts...)
 }
 
-func (s *distributedStore) List(ch chan<- sb.ControlUpdate) error {
+func (s *distributedStore) List(ch chan<- e2ap.RicControlResponse) error {
 	entryCh := make(chan message.MessageEntry)
 	if err := s.messageStore.List(entryCh); err != nil {
 		return err
@@ -175,13 +176,13 @@ func (s *distributedStore) List(ch chan<- sb.ControlUpdate) error {
 	go func() {
 		defer close(ch)
 		for entry := range entryCh {
-			ch <- *entry.GetControlUpdate()
+			ch <- *entry.GetControlResponse()
 		}
 	}()
 	return nil
 }
 
-func (s *distributedStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption) error {
+func (s *distributedStore) Watch(ch chan<- e2ap.RicControlResponse, opts ...WatchOption) error {
 	messageOpts := make([]messagestore.WatchOption, len(opts))
 	for i, opt := range opts {
 		messageOpts[i] = opt
@@ -194,7 +195,7 @@ func (s *distributedStore) Watch(ch chan<- sb.ControlUpdate, opts ...WatchOption
 	go func() {
 		defer close(ch)
 		for entry := range watchCh {
-			ch <- *entry.GetControlUpdate()
+			ch <- *entry.GetControlResponse()
 		}
 	}()
 	return nil
@@ -215,36 +216,22 @@ func toMessageRevision(revision Revision) messagestore.Revision {
 	}
 }
 
-func getID(update *sb.ControlUpdate) ID {
+func getID(update *e2ap.RicControlResponse) ID {
 	var ecgi sb.ECGI
 	var crnti string
-	switch update.MessageType {
-	case sb.MessageType_RRM_CONFIG_STATUS:
-		ecgi = *update.GetRRMConfigStatus().GetEcgi()
-	case sb.MessageType_UE_ADMISSION_REQUEST:
-		ecgi = *update.GetUEAdmissionRequest().GetEcgi()
-		crnti = update.GetUEAdmissionRequest().GetCrnti()
-	case sb.MessageType_UE_ADMISSION_STATUS:
-		ecgi = *update.GetUEAdmissionStatus().GetEcgi()
-		crnti = update.GetUEAdmissionStatus().GetCrnti()
-	case sb.MessageType_UE_CONTEXT_UPDATE:
-		ecgi = *update.GetUEContextUpdate().GetEcgi()
-		crnti = update.GetUEContextUpdate().GetCrnti()
-	case sb.MessageType_BEARER_ADMISSION_REQUEST:
-		ecgi = *update.GetBearerAdmissionRequest().GetEcgi()
-		crnti = update.GetBearerAdmissionStatus().GetCrnti()
-	case sb.MessageType_BEARER_ADMISSION_STATUS:
-		ecgi = *update.GetBearerAdmissionStatus().GetEcgi()
-		crnti = update.GetBearerAdmissionStatus().GetCrnti()
+	msgType := update.GetHdr().GetMessageType()
+	switch msgType {
+	case sb.MessageType_CELL_CONFIG_REPORT:
+		ecgi = *update.GetMsg().GetCellConfigReport().GetEcgi()
 	}
 	return ID{
 		PlmnID:      ecgi.PlmnId,
 		Ecid:        ecgi.Ecid,
 		Crnti:       crnti,
-		MessageType: update.GetMessageType(),
+		MessageType: update.GetHdr().GetMessageType(),
 	}
 }
 
-func getKey(update *sb.ControlUpdate) messagestore.Key {
+func getKey(update *e2ap.RicControlResponse) messagestore.Key {
 	return messagestore.Key(getID(update).String())
 }

@@ -16,11 +16,15 @@
 package manager
 
 import (
+	"strings"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/southbound"
 	"github.com/onosproject/onos-ric/pkg/southbound/monitor"
+	"github.com/onosproject/onos-ric/pkg/store/control"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
@@ -28,7 +32,6 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/updates"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
-	"strings"
 )
 
 const ranSimulatorType = topodevice.Type("RanSimulator")
@@ -68,6 +71,14 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		log.Error("Error clearing Updates store %s", err.Error())
 	}
 
+	ricControlResponseStore, err := control.NewDistributedStore(config, timeStore)
+	if err != nil {
+		return nil, err
+	}
+	if err = ricControlResponseStore.Clear(); err != nil {
+		log.Error("Error clearing Updates store %s", err.Error())
+	}
+
 	// Should always clear out the stores on startup because it will be out of sync with ran-simulator
 	if err = telemetryStore.Clear(); err != nil {
 		log.Error("Error clearing Telemetry store %s", err.Error())
@@ -80,11 +91,12 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 	}
 
 	mgr = Manager{
-		updatesStore:       updatesStore,
-		telemetryStore:     telemetryStore,
-		deviceChangesStore: deviceChangeStore,
-		SbSessions:         make(map[sb.ECGI]*southbound.Session),
-		enableMetrics:      enableMetrics,
+		ricControlResponseStore: ricControlResponseStore,
+		updatesStore:            updatesStore,
+		telemetryStore:          telemetryStore,
+		deviceChangesStore:      deviceChangeStore,
+		SbSessions:              make(map[sb.ECGI]*southbound.Session),
+		enableMetrics:           enableMetrics,
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
@@ -96,23 +108,32 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 
 // Manager single point of entry for the RAN system.
 type Manager struct {
-	updatesStore       updates.Store
-	telemetryStore     telemetry.Store
-	deviceChangesStore device.Store
-	SbSessions         map[sb.ECGI]*southbound.Session
-	topoMonitor        monitor.TopoMonitor
-	enableMetrics      bool
-	dispatcher         *Dispatcher
-	telemetryChannel   chan Event
+	ricControlResponseStore control.Store
+	updatesStore            updates.Store
+	telemetryStore          telemetry.Store
+	deviceChangesStore      device.Store
+	SbSessions              map[sb.ECGI]*southbound.Session
+	topoMonitor             monitor.TopoMonitor
+	enableMetrics           bool
+	dispatcher              *Dispatcher
+	telemetryChannel        chan Event
+}
+
+// StoreRicControlResponse - write the RicControlResponse to store
+func (m *Manager) StoreRicControlResponse(update e2ap.RicControlResponse) {
+	msgType := update.GetHdr().GetMessageType()
+	switch msgType {
+	case sb.MessageType_CELL_CONFIG_REQUEST:
+		_ = m.ricControlResponseStore.Put(&update)
+	default:
+		log.Fatalf("RicControlResponse has unexpected type %d", msgType)
+	}
 }
 
 // StoreControlUpdate - put the control update in the atomix store
 func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
 	log.Infof("Got messageType %s", update.MessageType)
 	switch x := update.S.(type) {
-	case *sb.ControlUpdate_CellConfigReport:
-		log.Infof("plmnid:%s, ecid:%s", x.CellConfigReport.Ecgi.PlmnId, x.CellConfigReport.Ecgi.Ecid)
-		_ = m.updatesStore.Put(&update)
 	case *sb.ControlUpdate_UEAdmissionRequest:
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti, x.UEAdmissionRequest.Imsi)
 		_ = m.updatesStore.Put(&update)

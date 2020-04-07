@@ -15,9 +15,10 @@
 package updates
 
 import (
+	"testing"
+
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	timestore "github.com/onosproject/onos-ric/pkg/store/time"
-	"testing"
 
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/stretchr/testify/assert"
@@ -36,82 +37,9 @@ func TestStore(t *testing.T) {
 	defer timeStore.Close()
 	defer testStore.Close()
 
-	watchCh1 := make(chan sb.ControlUpdate)
-	err = testStore.Watch(watchCh1)
-	assert.NoError(t, err)
-
-	controlUpdate1 := &sb.ControlUpdate{
-		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
-		S: &sb.ControlUpdate_CellConfigReport{
-			CellConfigReport: &sb.CellConfigReport{
-				Ecgi: &sb.ECGI{
-					Ecid:   "test-ecid",
-					PlmnId: "test-plmnid",
-				},
-			},
-		},
-	}
-	err = testStore.Put(controlUpdate1)
-	assert.Nil(t, err)
-	ecigTest1 := sb.ECGI{
-		Ecid:   "test-ecid",
-		PlmnId: "test-plmnid",
-	}
-	id1 := ID{
-		Ecid:        ecigTest1.GetEcid(),
-		PlmnID:      ecigTest1.GetPlmnId(),
-		MessageType: controlUpdate1.GetMessageType(),
-	}
-	value1, err := testStore.Get(id1)
-	assert.Nil(t, err)
-	assert.Equal(t, value1.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
-
-	event := <-watchCh1
-	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid", event.GetCellConfigReport().Ecgi.PlmnId)
-
 	watchCh2 := make(chan sb.ControlUpdate)
 	err = testStore.Watch(watchCh2, WithReplay())
 	assert.NoError(t, err)
-
-	event = <-watchCh2
-	assert.Equal(t, "test-ecid", event.GetCellConfigReport().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid", event.GetCellConfigReport().Ecgi.PlmnId)
-
-	controlUpdate2 := &sb.ControlUpdate{
-		MessageType: sb.MessageType_CELL_CONFIG_REPORT,
-		S: &sb.ControlUpdate_CellConfigReport{
-			CellConfigReport: &sb.CellConfigReport{
-				Ecgi: &sb.ECGI{
-					Ecid:   "test-ecid-2",
-					PlmnId: "test-plmnid-2",
-				},
-			},
-		},
-	}
-	err = testStore.Put(controlUpdate2)
-	assert.Nil(t, err)
-
-	ecigTest2 := sb.ECGI{
-		Ecid:   "test-ecid-2",
-		PlmnId: "test-plmnid-2",
-	}
-	id2 := ID{
-		Ecid:        ecigTest2.GetEcid(),
-		PlmnID:      ecigTest2.GetPlmnId(),
-		MessageType: controlUpdate2.GetMessageType(),
-	}
-	value2, err := testStore.Get(id2)
-	assert.Nil(t, err)
-	assert.Equal(t, value2.MessageType.String(), sb.MessageType_CELL_CONFIG_REPORT.String())
-
-	event = <-watchCh1
-	assert.Equal(t, "test-ecid-2", event.GetCellConfigReport().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-2", event.GetCellConfigReport().Ecgi.PlmnId)
-
-	event = <-watchCh2
-	assert.Equal(t, "test-ecid-2", event.GetCellConfigReport().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-2", event.GetCellConfigReport().Ecgi.PlmnId)
 
 	controlUpdate3 := &sb.ControlUpdate{
 		MessageType: sb.MessageType_UE_ADMISSION_STATUS,
@@ -142,19 +70,9 @@ func TestStore(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, value3.MessageType.String(), sb.MessageType_UE_ADMISSION_STATUS.String())
 
-	event = <-watchCh1
+	event := <-watchCh2
 	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
-
-	event = <-watchCh2
-	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
-
-	err = testStore.Delete(getID(controlUpdate1))
-	assert.Nil(t, err)
-
-	err = testStore.Delete(getID(controlUpdate2))
-	assert.Nil(t, err)
 
 	err = testStore.Delete(getID(controlUpdate3))
 	assert.Nil(t, err)

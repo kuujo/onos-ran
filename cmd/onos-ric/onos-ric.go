@@ -71,6 +71,7 @@ func main() {
 
 	log.SetLevel(initialLogLevel)
 	logging.GetLogger("manager").SetLevel(initialLogLevel)
+	logging.GetLogger("store", "control").SetLevel(initialLogLevel)
 	logging.GetLogger("store", "updates").SetLevel(initialLogLevel)
 	logging.GetLogger("store", "telemetry").SetLevel(initialLogLevel)
 	logging.GetLogger("northbound").SetLevel(initialLogLevel)
