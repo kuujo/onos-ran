@@ -24,6 +24,10 @@ build-debug:
 build-plugins: # @HELP build plugin binaries
 build-plugins: $(MODELPLUGINS)
 
+generate: # @HELP generate store interfaces and implementations
+generate:
+	go run github.com/onosproject/onos-ric/cmd/onos-ric-generate ./build/generate/stores.yaml
+
 test: # @HELP run the unit tests and source code validation
 test: build deps linters
 	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ric/pkg/...

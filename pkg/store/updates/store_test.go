@@ -60,12 +60,7 @@ func TestStore(t *testing.T) {
 		Ecid:   "test-ecid-3",
 		PlmnId: "test-plmnid-3",
 	}
-	id3 := ID{
-		Ecid:        ecigTest3.GetEcid(),
-		PlmnID:      ecigTest3.GetPlmnId(),
-		Crnti:       "test-crnti-3",
-		MessageType: controlUpdate3.GetMessageType(),
-	}
+	id3 := ID(sb.NewID(controlUpdate3.GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3"))
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
 	assert.Equal(t, value3.MessageType.String(), sb.MessageType_UE_ADMISSION_STATUS.String())
@@ -74,7 +69,7 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
 
-	err = testStore.Delete(getID(controlUpdate3))
+	err = testStore.Delete(id3)
 	assert.Nil(t, err)
 
 }

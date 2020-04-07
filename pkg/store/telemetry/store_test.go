@@ -58,11 +58,7 @@ func TestStore(t *testing.T) {
 		Ecid:   "test-ecid",
 		PlmnId: "test-plmnid",
 	}
-	id1 := ID{
-		Ecid:        ecigTest1.GetEcid(),
-		PlmnID:      ecigTest1.GetPlmnId(),
-		MessageType: telemetry1.GetMessageType(),
-	}
+	id1 := ID(sb.NewID(telemetry1.GetMessageType(), ecigTest1.GetPlmnId(), ecigTest1.GetEcid(), ""))
 	value1, err := testStore.Get(id1)
 	assert.Nil(t, err)
 	assert.Equal(t, value1.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
@@ -97,11 +93,7 @@ func TestStore(t *testing.T) {
 		Ecid:   "test-ecid-2",
 		PlmnId: "test-plmnid-2",
 	}
-	id2 := ID{
-		Ecid:        ecigTest2.GetEcid(),
-		PlmnID:      ecigTest2.GetPlmnId(),
-		MessageType: telemetry2.GetMessageType(),
-	}
+	id2 := ID(sb.NewID(telemetry2.GetMessageType(), ecigTest2.GetPlmnId(), ecigTest2.GetEcid(), ""))
 	value2, err := testStore.Get(id2)
 	assert.Nil(t, err)
 	assert.Equal(t, value2.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
@@ -133,12 +125,7 @@ func TestStore(t *testing.T) {
 		Ecid:   "test-ecid-3",
 		PlmnId: "test-plmnid-3",
 	}
-	id3 := ID{
-		Ecid:        ecigTest3.GetEcid(),
-		PlmnID:      ecigTest3.GetPlmnId(),
-		Crnti:       "test-crnti-3",
-		MessageType: telemetry3.GetMessageType(),
-	}
+	id3 := ID(sb.NewID(telemetry3.GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3"))
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
 	assert.Equal(t, value3.MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_UE.String())
@@ -171,12 +158,12 @@ func TestStore(t *testing.T) {
 		t.Fail()
 	}
 
-	err = testStore.Delete(getID(telemetry1))
+	err = testStore.Delete(id1)
 	assert.Nil(t, err)
 
-	err = testStore.Delete(getID(telemetry2))
+	err = testStore.Delete(id2)
 	assert.Nil(t, err)
 
-	err = testStore.Delete(getID(telemetry3))
+	err = testStore.Delete(id3)
 	assert.Nil(t, err)
 }

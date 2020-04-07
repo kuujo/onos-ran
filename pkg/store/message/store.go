@@ -36,20 +36,17 @@ var log = logging.GetLogger("store", "message")
 const requestTimeout = 15 * time.Second
 const retryInterval = time.Second
 
-// Type is a stored message type
-type Type string
-
 // NewDistributedStore creates a new distributed message store
-func NewDistributedStore(messageType Type, config config.Config, timeStore timestore.Store) (Store, error) {
+func NewDistributedStore(name string, config config.Config, db atomix.DatabaseType, timeStore timestore.Store) (Store, error) {
 	log.Info("Creating distributed message store")
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
+	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(db))
 
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	messages, err := database.GetMap(ctx, string(messageType))
+	messages, err := database.GetMap(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +62,13 @@ func NewDistributedStore(messageType Type, config config.Config, timeStore times
 }
 
 // NewLocalStore returns a new local message store
-func NewLocalStore(messageType Type, timeStore timestore.Store) (Store, error) {
+func NewLocalStore(name string, timeStore timestore.Store) (Store, error) {
 	_, address := atomix.StartLocalNode()
-	return newLocalStore(address, messageType, timeStore)
+	return newLocalStore(address, name, timeStore)
 }
 
 // newLocalStore creates a new local message store
-func newLocalStore(address net.Address, messageType Type, timeStore timestore.Store) (Store, error) {
+func newLocalStore(address net.Address, name string, timeStore timestore.Store) (Store, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
@@ -80,7 +77,7 @@ func newLocalStore(address net.Address, messageType Type, timeStore timestore.St
 	}
 	primitiveName := primitive.Name{
 		Namespace: "local",
-		Name:      string(messageType),
+		Name:      name,
 	}
 	messages, err := _map.New(context.Background(), primitiveName, []*primitive.Session{session})
 	if err != nil {

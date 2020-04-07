@@ -17,9 +17,6 @@ syntax = "proto3";
 
 package onos.ric.store.message;
 
-import "github.com/onosproject/onos-ric/api/sb/e2-interface.proto";
-import "github.com/onosproject/onos-ric/api/sb/e2ap/e2ap.proto";
-
 // MessageEntry is a message store entry
 message MessageEntry {
     // 'key' is the message key
@@ -31,14 +28,6 @@ message MessageEntry {
     // 'timestamp' is the entry timestamp
     uint64 timestamp = 3;
 
-    // 'message' is the stored message
-    oneof message {
-        // 'telemetry' is a telemetry message
-        interface.e2.TelemetryMessage telemetry = 4;
-
-        // 'update' is a control update message
-        interface.e2.ControlUpdate control_update = 5;
-
-        interface.e2ap.RicControlResponse control_response = 6;
-    }
+    // 'bytes' is the message bytes
+    bytes bytes = 4;
 }

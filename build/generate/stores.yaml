@@ -1,0 +1,35 @@
+package: github.com/onosproject/onos-ric/pkg/store
+stores:
+  - name: telemetry
+    message:
+      type:
+        package: github.com/onosproject/onos-ric/api/sb
+        name: TelemetryMessage
+    storage:
+      type: Cache
+      name: telemetry
+      cached: true
+    target:
+      package: github.com/onosproject/onos-ric/pkg/store/telemetry
+  - name: control
+    message:
+      type:
+        package: github.com/onosproject/onos-ric/api/sb/e2ap
+        name: RicControlResponse
+    storage:
+      type: Cache
+      name: control
+      cached: true
+    target:
+      package: github.com/onosproject/onos-ric/pkg/store/control
+  - name: updates
+    message:
+      type:
+        package: github.com/onosproject/onos-ric/api/sb
+        name: ControlUpdate
+    storage:
+      type: Cache
+      name: updates
+      cached: true
+    target:
+      package: github.com/onosproject/onos-ric/pkg/store/updates

@@ -6,8 +6,6 @@ package message
 import (
 	fmt "fmt"
 	proto "github.com/gogo/protobuf/proto"
-	sb "github.com/onosproject/onos-ric/api/sb"
-	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -32,13 +30,8 @@ type MessageEntry struct {
 	Term uint64 `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
 	// 'timestamp' is the entry timestamp
 	Timestamp uint64 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	// 'message' is the stored message
-	//
-	// Types that are valid to be assigned to Message:
-	//	*MessageEntry_Telemetry
-	//	*MessageEntry_ControlUpdate
-	//	*MessageEntry_ControlResponse
-	Message isMessageEntry_Message `protobuf_oneof:"message"`
+	// 'bytes' is the message bytes
+	Bytes []byte `protobuf:"bytes,4,opt,name=bytes,proto3" json:"bytes,omitempty"`
 }
 
 func (m *MessageEntry) Reset()         { *m = MessageEntry{} }
@@ -74,33 +67,6 @@ func (m *MessageEntry) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MessageEntry proto.InternalMessageInfo
 
-type isMessageEntry_Message interface {
-	isMessageEntry_Message()
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type MessageEntry_Telemetry struct {
-	Telemetry *sb.TelemetryMessage `protobuf:"bytes,4,opt,name=telemetry,proto3,oneof" json:"telemetry,omitempty"`
-}
-type MessageEntry_ControlUpdate struct {
-	ControlUpdate *sb.ControlUpdate `protobuf:"bytes,5,opt,name=control_update,json=controlUpdate,proto3,oneof" json:"control_update,omitempty"`
-}
-type MessageEntry_ControlResponse struct {
-	ControlResponse *e2ap.RicControlResponse `protobuf:"bytes,6,opt,name=control_response,json=controlResponse,proto3,oneof" json:"control_response,omitempty"`
-}
-
-func (*MessageEntry_Telemetry) isMessageEntry_Message()       {}
-func (*MessageEntry_ControlUpdate) isMessageEntry_Message()   {}
-func (*MessageEntry_ControlResponse) isMessageEntry_Message() {}
-
-func (m *MessageEntry) GetMessage() isMessageEntry_Message {
-	if m != nil {
-		return m.Message
-	}
-	return nil
-}
-
 func (m *MessageEntry) GetKey() string {
 	if m != nil {
 		return m.Key
@@ -122,34 +88,11 @@ func (m *MessageEntry) GetTimestamp() uint64 {
 	return 0
 }
 
-func (m *MessageEntry) GetTelemetry() *sb.TelemetryMessage {
-	if x, ok := m.GetMessage().(*MessageEntry_Telemetry); ok {
-		return x.Telemetry
+func (m *MessageEntry) GetBytes() []byte {
+	if m != nil {
+		return m.Bytes
 	}
 	return nil
-}
-
-func (m *MessageEntry) GetControlUpdate() *sb.ControlUpdate {
-	if x, ok := m.GetMessage().(*MessageEntry_ControlUpdate); ok {
-		return x.ControlUpdate
-	}
-	return nil
-}
-
-func (m *MessageEntry) GetControlResponse() *e2ap.RicControlResponse {
-	if x, ok := m.GetMessage().(*MessageEntry_ControlResponse); ok {
-		return x.ControlResponse
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*MessageEntry) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*MessageEntry_Telemetry)(nil),
-		(*MessageEntry_ControlUpdate)(nil),
-		(*MessageEntry_ControlResponse)(nil),
-	}
 }
 
 func init() {
@@ -159,28 +102,19 @@ func init() {
 func init() { proto.RegisterFile("api/store/message/message.proto", fileDescriptor_9f303d1c9557996c) }
 
 var fileDescriptor_9f303d1c9557996c = []byte{
-	// 329 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0x3f, 0x4f, 0x3a, 0x31,
-	0x18, 0xc7, 0xaf, 0xc0, 0x8f, 0x5f, 0xae, 0xfe, 0x23, 0x1d, 0x4c, 0x83, 0xa6, 0x12, 0x26, 0x16,
-	0x7a, 0x09, 0x26, 0x26, 0x2e, 0x0e, 0xa8, 0x09, 0x8b, 0x31, 0x69, 0x74, 0x36, 0xa5, 0x3e, 0x62,
-	0x95, 0xbb, 0x36, 0x6d, 0x19, 0x78, 0x17, 0xbe, 0x18, 0x5f, 0x84, 0x23, 0xa3, 0xa3, 0x81, 0x37,
-	0x62, 0x28, 0x87, 0xc8, 0xe6, 0x72, 0xf7, 0xe4, 0xfb, 0xe7, 0xf3, 0x34, 0x2d, 0x3e, 0x91, 0x56,
-	0x67, 0x3e, 0x18, 0x07, 0x59, 0x0e, 0xde, 0xcb, 0xd1, 0xcf, 0x9f, 0x5b, 0x67, 0x82, 0x21, 0x87,
-	0xa6, 0x30, 0x9e, 0x3b, 0xad, 0x78, 0x4c, 0xf1, 0xd2, 0x6d, 0x9e, 0x8f, 0x74, 0x78, 0x9e, 0x0c,
-	0xb9, 0x32, 0x79, 0xb6, 0x8c, 0x58, 0x67, 0x5e, 0x40, 0x85, 0x38, 0x77, 0x9d, 0x56, 0x59, 0x04,
-	0x0f, 0x33, 0xe8, 0x75, 0x75, 0x11, 0xc0, 0x3d, 0x49, 0x55, 0x22, 0x9b, 0x67, 0x7f, 0xae, 0x4a,
-	0x1b, 0x3f, 0xab, 0x5e, 0xfb, 0xbd, 0x82, 0x77, 0x6f, 0x56, 0xeb, 0xaf, 0x8b, 0xe0, 0xa6, 0xa4,
-	0x81, 0xab, 0xaf, 0x30, 0xa5, 0xa8, 0x85, 0x3a, 0xa9, 0x58, 0x8e, 0x84, 0xe0, 0x5a, 0x00, 0x97,
-	0xd3, 0x4a, 0x0b, 0x75, 0x6a, 0x22, 0xce, 0xe4, 0x18, 0xa7, 0x41, 0xe7, 0xe0, 0x83, 0xcc, 0x2d,
-	0xad, 0x46, 0x63, 0x23, 0x90, 0x0b, 0x9c, 0x06, 0x18, 0x43, 0x0e, 0xc1, 0x4d, 0x69, 0xad, 0x85,
-	0x3a, 0x3b, 0x3d, 0xc6, 0x37, 0x27, 0x86, 0x1e, 0xbf, 0x5b, 0xdb, 0xe5, 0xee, 0x41, 0x22, 0x36,
-	0x15, 0x72, 0x85, 0xf7, 0x95, 0x29, 0x82, 0x33, 0xe3, 0x87, 0x89, 0x7d, 0x94, 0x01, 0xe8, 0xbf,
-	0x08, 0x39, 0xda, 0x86, 0x5c, 0xae, 0x32, 0xf7, 0x31, 0x32, 0x48, 0xc4, 0x9e, 0xfa, 0x2d, 0x90,
-	0x5b, 0xdc, 0x58, 0x53, 0x1c, 0x78, 0x6b, 0x0a, 0x0f, 0xb4, 0x1e, 0x39, 0xed, 0x2d, 0x8e, 0xb4,
-	0x5c, 0x68, 0x55, 0xc2, 0x44, 0x99, 0x1c, 0x24, 0xe2, 0x40, 0x6d, 0x4b, 0xfd, 0x14, 0xff, 0x2f,
-	0x5f, 0xaa, 0x4f, 0x3f, 0xe6, 0x0c, 0xcd, 0xe6, 0x0c, 0x7d, 0xcd, 0x19, 0x7a, 0x5b, 0xb0, 0x64,
-	0xb6, 0x60, 0xc9, 0xe7, 0x82, 0x25, 0xc3, 0x7a, 0xbc, 0xd7, 0xd3, 0xef, 0x00, 0x00, 0x00, 0xff,
-	0xff, 0xf7, 0x02, 0xed, 0x4c, 0x05, 0x02, 0x00, 0x00,
+	// 179 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4f, 0x2c, 0xc8, 0xd4,
+	0x2f, 0x2e, 0xc9, 0x2f, 0x4a, 0xd5, 0xcf, 0x4d, 0x2d, 0x2e, 0x4e, 0x4c, 0x87, 0xd3, 0x7a, 0x05,
+	0x45, 0xf9, 0x25, 0xf9, 0x42, 0x62, 0xf9, 0x79, 0xf9, 0xc5, 0x7a, 0x45, 0x99, 0xc9, 0x7a, 0x60,
+	0x55, 0x7a, 0x50, 0x59, 0xa5, 0x0c, 0x2e, 0x1e, 0x5f, 0x08, 0xd3, 0x35, 0xaf, 0xa4, 0xa8, 0x52,
+	0x48, 0x80, 0x8b, 0x39, 0x3b, 0xb5, 0x52, 0x82, 0x51, 0x81, 0x51, 0x83, 0x33, 0x08, 0xc4, 0x14,
+	0x12, 0xe2, 0x62, 0x29, 0x49, 0x2d, 0xca, 0x95, 0x60, 0x52, 0x60, 0xd4, 0x60, 0x09, 0x02, 0xb3,
+	0x85, 0x64, 0xb8, 0x38, 0x4b, 0x32, 0x73, 0x53, 0x8b, 0x4b, 0x12, 0x73, 0x0b, 0x24, 0x98, 0xc1,
+	0x12, 0x08, 0x01, 0x21, 0x11, 0x2e, 0xd6, 0xa4, 0xca, 0x92, 0xd4, 0x62, 0x09, 0x16, 0x05, 0x46,
+	0x0d, 0x9e, 0x20, 0x08, 0xc7, 0x49, 0xe2, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f,
+	0x3c, 0x92, 0x63, 0x9c, 0xf0, 0x58, 0x8e, 0xe1, 0xc2, 0x63, 0x39, 0x86, 0x1b, 0x8f, 0xe5, 0x18,
+	0x92, 0xd8, 0xc0, 0x4e, 0x34, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xef, 0x71, 0x59, 0xb5, 0xc5,
+	0x00, 0x00, 0x00,
 }
 
 func (m *MessageEntry) Marshal() (dAtA []byte, err error) {
@@ -203,14 +137,12 @@ func (m *MessageEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Message != nil {
-		{
-			size := m.Message.Size()
-			i -= size
-			if _, err := m.Message.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
+	if len(m.Bytes) > 0 {
+		i -= len(m.Bytes)
+		copy(dAtA[i:], m.Bytes)
+		i = encodeVarintMessage(dAtA, i, uint64(len(m.Bytes)))
+		i--
+		dAtA[i] = 0x22
 	}
 	if m.Timestamp != 0 {
 		i = encodeVarintMessage(dAtA, i, uint64(m.Timestamp))
@@ -232,69 +164,6 @@ func (m *MessageEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MessageEntry_Telemetry) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MessageEntry_Telemetry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.Telemetry != nil {
-		{
-			size, err := m.Telemetry.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessage(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	return len(dAtA) - i, nil
-}
-func (m *MessageEntry_ControlUpdate) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MessageEntry_ControlUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.ControlUpdate != nil {
-		{
-			size, err := m.ControlUpdate.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessage(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x2a
-	}
-	return len(dAtA) - i, nil
-}
-func (m *MessageEntry_ControlResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MessageEntry_ControlResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.ControlResponse != nil {
-		{
-			size, err := m.ControlResponse.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessage(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x32
-	}
-	return len(dAtA) - i, nil
-}
 func encodeVarintMessage(dAtA []byte, offset int, v uint64) int {
 	offset -= sovMessage(v)
 	base := offset
@@ -322,44 +191,8 @@ func (m *MessageEntry) Size() (n int) {
 	if m.Timestamp != 0 {
 		n += 1 + sovMessage(uint64(m.Timestamp))
 	}
-	if m.Message != nil {
-		n += m.Message.Size()
-	}
-	return n
-}
-
-func (m *MessageEntry_Telemetry) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Telemetry != nil {
-		l = m.Telemetry.Size()
-		n += 1 + l + sovMessage(uint64(l))
-	}
-	return n
-}
-func (m *MessageEntry_ControlUpdate) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ControlUpdate != nil {
-		l = m.ControlUpdate.Size()
-		n += 1 + l + sovMessage(uint64(l))
-	}
-	return n
-}
-func (m *MessageEntry_ControlResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ControlResponse != nil {
-		l = m.ControlResponse.Size()
+	l = len(m.Bytes)
+	if l > 0 {
 		n += 1 + l + sovMessage(uint64(l))
 	}
 	return n
@@ -472,9 +305,9 @@ func (m *MessageEntry) Unmarshal(dAtA []byte) error {
 			}
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Telemetry", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Bytes", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowMessage
@@ -484,96 +317,25 @@ func (m *MessageEntry) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthMessage
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthMessage
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &sb.TelemetryMessage{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+			m.Bytes = append(m.Bytes[:0], dAtA[iNdEx:postIndex]...)
+			if m.Bytes == nil {
+				m.Bytes = []byte{}
 			}
-			m.Message = &MessageEntry_Telemetry{v}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ControlUpdate", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessage
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &sb.ControlUpdate{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Message = &MessageEntry_ControlUpdate{v}
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ControlResponse", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessage
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessage
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessage
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &e2ap.RicControlResponse{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Message = &MessageEntry_ControlResponse{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

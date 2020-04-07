@@ -85,6 +85,7 @@ RICcontrolMessage ::= OCTET STRING
 | hOComplete | [interface.e2.HOComplete](#interface.e2.HOComplete) |  |  |
 | hOFailure | [interface.e2.HOFailure](#interface.e2.HOFailure) |  |  |
 | rRMConfigStatus | [interface.e2.RRMConfigStatus](#interface.e2.RRMConfigStatus) |  |  |
+| cellConfigReport | [interface.e2.CellConfigReport](#interface.e2.CellConfigReport) |  |  |
 
 
 

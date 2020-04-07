@@ -168,13 +168,8 @@ func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
 
 // GetUEAdmissionByID retrieve a single value from the updates store
 func (m *Manager) GetUEAdmissionByID(ecgi *sb.ECGI, crnti string) (*sb.ControlUpdate, error) {
-	id := updates.ID{
-		PlmnID:      ecgi.PlmnId,
-		Ecid:        ecgi.Ecid,
-		Crnti:       crnti,
-		MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
-	}
-	return m.updatesStore.Get(id)
+	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, ecgi.PlmnId, ecgi.Ecid, crnti)
+	return m.updatesStore.Get(updates.ID(id))
 }
 
 // ListControlUpdates lists control updates
@@ -315,13 +310,8 @@ func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
 
 // DeleteTelemetry deletes telemetry when a handover happens
 func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) error {
-	id := telemetry.ID{
-		PlmnID:      plmnid,
-		Ecid:        ecid,
-		Crnti:       crnti,
-		MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE,
-	}
-	if err := m.telemetryStore.Delete(id); err != nil {
+	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
+	if err := m.telemetryStore.Delete(telemetry.ID(id)); err != nil {
 		log.Infof("Error deleting Telemetry, key=%s", id)
 		return err
 	}
@@ -330,13 +320,8 @@ func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) erro
 
 // DeleteUEAdmissionRequest deletes UpdateControls
 func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti string) error {
-	id := updates.ID{
-		PlmnID:      plmnid,
-		Ecid:        ecid,
-		Crnti:       crnti,
-		MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
-	}
-	if err := m.updatesStore.Delete(id); err != nil {
+	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
+	if err := m.updatesStore.Delete(updates.ID(id)); err != nil {
 		log.Infof("Error deleting UEAdmissionRequest, key=%s", id)
 		return err
 	}
