@@ -107,7 +107,7 @@ type EventType string
 
 const (
 	// EventNone indicates an event that was not triggered but replayed
-	EventNone   EventType = ""
+	EventNone EventType = ""
 	// EventInsert indicates the message was inserted into the store
 	EventInsert EventType = "insert"
 	// EventUpdate indicates the message was updated in the store

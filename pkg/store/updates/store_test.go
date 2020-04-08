@@ -37,7 +37,7 @@ func TestStore(t *testing.T) {
 	defer timeStore.Close()
 	defer testStore.Close()
 
-	watchCh2 := make(chan sb.ControlUpdate)
+	watchCh2 := make(chan Event)
 	err = testStore.Watch(watchCh2, WithReplay())
 	assert.NoError(t, err)
 
@@ -66,8 +66,8 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, value3.MessageType.String(), sb.MessageType_UE_ADMISSION_STATUS.String())
 
 	event := <-watchCh2
-	assert.Equal(t, "test-ecid-3", event.GetUEAdmissionStatus().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-3", event.GetUEAdmissionStatus().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid-3", event.Message.GetUEAdmissionStatus().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.Message.GetUEAdmissionStatus().Ecgi.PlmnId)
 
 	err = testStore.Delete(id3)
 	assert.Nil(t, err)
