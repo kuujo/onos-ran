@@ -146,25 +146,9 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
-			streamID := fmt.Sprintf("ue-%p", stream)
-			telemetryChan, err := manager.GetManager().RegisterTelemetryListener(streamID)
-			if err != nil {
-				log.Fatalf("Unable to register for telemetry events %s: %v", streamID, err)
+			if err := manager.GetManager().SubscribeTelemetry(ch, !req.NoReplay); err != nil {
+				return err
 			}
-			defer manager.GetManager().UnregisterTelemetryListener(streamID)
-			go func() {
-				for event := range telemetryChan {
-					if event.Type == "RADIO_MEAS_REPORT_PER_UE" {
-						tm, ok := event.Object.(e2ap.RicIndication)
-						if !ok {
-							log.Fatal("Could not convert event to TelemetryMessage")
-						}
-						ch <- tm
-					} else {
-						log.Warnf("Unhandled message on telemetry channel %s", event.Type)
-					}
-				}
-			}()
 		} else {
 			if err := manager.GetManager().ListTelemetry(ch); err != nil {
 				return err

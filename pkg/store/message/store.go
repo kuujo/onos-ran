@@ -51,9 +51,10 @@ func NewDistributedStore(name string, config config.Config, db atomix.DatabaseTy
 		return nil, err
 	}
 	store := &distributedStore{
-		dist:    messages,
-		entries: make(map[Key]entryStore),
-		time:    timeStore,
+		dist:     messages,
+		entries:  make(map[Key]entryStore),
+		watchers: make([]chan<- message.MessageEntry, 0),
+		time:     timeStore,
 	}
 	if err := store.open(); err != nil {
 		return nil, err
@@ -192,10 +193,11 @@ func (o *watchReplayOption) apply(options *watchOptions) {
 
 // distributedStore is an Atomix based store
 type distributedStore struct {
-	dist    _map.Map
-	entries map[Key]entryStore
-	time    timestore.Store
-	mu      sync.RWMutex
+	dist     _map.Map
+	entries  map[Key]entryStore
+	watchers []chan<- message.MessageEntry
+	time     timestore.Store
+	mu       sync.RWMutex
 }
 
 // open opens the store
@@ -206,14 +208,9 @@ func (s *distributedStore) open() error {
 	}
 	go func() {
 		for event := range ch {
-			s.mu.RLock()
-			store, ok := s.entries[Key(event.Entry.Key)]
-			s.mu.RUnlock()
-			if ok {
-				if entry, err := decodeEntry(event.Entry); err == nil {
-					tombstone := event.Type == _map.EventRemoved
-					go store.update(entry, tombstone)
-				}
+			if entry, err := decodeEntry(event.Entry); err == nil {
+				store := s.getEntryStore(Key(event.Entry.Key))
+				go store.update(entry, event.Type == _map.EventRemoved)
 			}
 		}
 	}()
@@ -230,6 +227,9 @@ func (s *distributedStore) getEntryStore(key Key) entryStore {
 		store, ok = s.entries[key]
 		if !ok {
 			store = newEntryStore(s.dist, key)
+			for _, watcher := range s.watchers {
+				store.watch(watcher)
+			}
 			s.entries[key] = store
 		}
 		s.mu.Unlock()
@@ -302,11 +302,22 @@ func (s *distributedStore) Watch(ch chan<- message.MessageEntry, opts ...WatchOp
 	if err := s.dist.Watch(context.Background(), watchCh, watchOptions...); err != nil {
 		return err
 	}
+
+	// Add the watcher to all stores
+	s.mu.Lock()
+	s.watchers = append(s.watchers, ch)
+	for _, store := range s.entries {
+		store.watch(ch)
+	}
+	s.mu.Unlock()
+
 	go func() {
 		defer close(ch)
 		for event := range watchCh {
 			if event.Type != _map.EventRemoved {
 				if entry, err := decodeEntry(event.Entry); err == nil {
+					store := s.getEntryStore(Key(event.Entry.Key))
+					store.update(entry, event.Type == _map.EventRemoved)
 					ch <- *entry
 				}
 			}
@@ -345,4 +356,26 @@ type Revision struct {
 	Term Term
 	// Timestamp is the timestamp at which the revision was created
 	Timestamp Timestamp
+}
+
+// isEqualTo returns a bool indicating whether the revision is equal to the given revision
+func (r Revision) isEqualTo(revision Revision) bool {
+	return r.Term == revision.Term && r.Timestamp == revision.Timestamp
+}
+
+// isNewerThan returns a bool indicating whether the revision is newer than the given revision
+func (r Revision) isNewerThan(revision Revision) bool {
+	return r.Term > revision.Term || (r.Term == revision.Term && r.Timestamp > revision.Timestamp)
+}
+
+// isEqualToOrNewerThan returns a bool indicating whether the revision is equal to or newer than the given revision
+func (r Revision) isEqualToOrNewerThan(revision Revision) bool {
+	return r.Term > revision.Term || (r.Term == revision.Term && r.Timestamp >= revision.Timestamp)
+}
+
+func newRevision(term, timestamp uint64) Revision {
+	return Revision{
+		Term:      Term(term),
+		Timestamp: Timestamp(timestamp),
+	}
 }

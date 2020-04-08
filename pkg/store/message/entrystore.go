@@ -28,10 +28,17 @@ import (
 
 func newEntryStore(dist _map.Map, key Key) entryStore {
 	return &distributedEntryStore{
-		dist:    dist,
-		key:     key,
-		waiters: list.New(),
+		dist:     dist,
+		key:      key,
+		watchers: list.New(),
+		waiters:  list.New(),
 	}
+}
+
+// entryWatcher is a watcher for a single entry
+type entryWatcher struct {
+	ch       chan<- message.MessageEntry
+	revision Revision
 }
 
 // entryStore is a store for a single message entry
@@ -47,15 +54,19 @@ type entryStore interface {
 
 	// delete deletes a message from the store
 	delete(revision Revision) error
+
+	// watch watches the store
+	watch(ch chan<- message.MessageEntry)
 }
 
 // distributedEntryStore is an implementation of the entryStore interface
 type distributedEntryStore struct {
-	dist    _map.Map
-	key     Key
-	cache   *message.MessageEntry
-	waiters *list.List
-	mu      sync.RWMutex
+	dist     _map.Map
+	key      Key
+	cache    *message.MessageEntry
+	watchers *list.List
+	waiters  *list.List
+	mu       sync.RWMutex
 }
 
 func (s *distributedEntryStore) update(updatedEntry *message.MessageEntry, tombstone bool) {
@@ -65,20 +76,31 @@ func (s *distributedEntryStore) update(updatedEntry *message.MessageEntry, tombs
 	// Get the current entry from the cache
 	currentEntry := s.cache
 
-	// If the key is not present in the cache or the updated entry is newer, update the cache
-	// Otherwise, insert the entry into the cache.
-	if currentEntry == nil || updatedEntry.Term > currentEntry.Term ||
-		(updatedEntry.Term == currentEntry.Term &&
-			updatedEntry.Timestamp > currentEntry.Timestamp) {
+	// Compute the current and updated revision
+	var currentRevision Revision
+	if currentEntry != nil {
+		currentRevision = newRevision(currentEntry.Term, currentEntry.Timestamp)
+	}
+	updateRevision := newRevision(updatedEntry.Term, updatedEntry.Timestamp)
+
+	// If the updated revision is newer than the current revision, update the cache
+	if updateRevision.isNewerThan(currentRevision) {
 		s.cache = updatedEntry
+
+		// Trigger all watchers
+		element := s.watchers.Front()
+		for element != nil {
+			watcher := element.Value.(*entryWatcher)
+			watcher.ch <- *updatedEntry
+			watcher.revision = updateRevision
+			element = element.Next()
+		}
 
 		// Trigger any channels waiting for the entry.
 		waiter := s.waiters.Front()
 		for waiter != nil {
 			ctx := waiter.Value.(*waiterContext)
-			if Term(updatedEntry.Term) > ctx.term ||
-				(Term(updatedEntry.Term) == ctx.term &&
-					Timestamp(updatedEntry.Timestamp) > ctx.timestamp) {
+			if updateRevision.isEqualToOrNewerThan(ctx.revision) {
 				ctx.ch <- updatedEntry
 				close(ctx.ch)
 				next := waiter.Next()
@@ -87,6 +109,17 @@ func (s *distributedEntryStore) update(updatedEntry *message.MessageEntry, tombs
 			} else {
 				break
 			}
+		}
+	} else if currentRevision.isEqualTo(updateRevision) {
+		// Ensure all watchers have seen the revision
+		element := s.watchers.Front()
+		for element != nil {
+			watcher := element.Value.(*entryWatcher)
+			if updateRevision.isNewerThan(watcher.revision) {
+				watcher.ch <- *updatedEntry
+				watcher.revision = updateRevision
+			}
+			element = element.Next()
 		}
 	}
 }
@@ -122,8 +155,8 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 	}
 
 	// Again, determine whether the message entry meets the requested revision info.
-	if Term(messageEntry.Term) > revision.Term ||
-		(Term(messageEntry.Term) == revision.Term && Timestamp(messageEntry.Timestamp) >= revision.Timestamp) {
+	messageRevision := newRevision(messageEntry.Term, messageEntry.Timestamp)
+	if messageRevision.isEqualToOrNewerThan(revision) {
 		// Cache the entry if it's up-to-date.
 		s.mu.Lock()
 		s.cache = messageEntry
@@ -134,9 +167,8 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 	// If the entry is not up to date, enqueue a waiter to wait for the update to be propagated
 	ch := make(chan *message.MessageEntry)
 	waiter := &waiterContext{
-		term:      revision.Term,
-		timestamp: revision.Timestamp,
-		ch:        ch,
+		ch:       ch,
+		revision: revision,
 	}
 
 	// Add the waiter to the appropriate position in the queue and wait for the event.
@@ -145,7 +177,7 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 	pos := s.waiters.Front()
 	for pos != nil {
 		ctx := pos.Value.(*waiterContext)
-		if revision.Term > ctx.term || (revision.Term == ctx.term && revision.Timestamp >= ctx.timestamp) {
+		if ctx.revision.isNewerThan(revision) {
 			s.waiters.InsertBefore(waiter, pos)
 		} else if pos.Next() == nil {
 			s.waiters.PushBack(waiter)
@@ -223,8 +255,11 @@ func (s *distributedEntryStore) writePut(update *message.MessageEntry) {
 			return
 		}
 
+		currentRevision := newRevision(current.Term, current.Timestamp)
+		updateRevision := newRevision(update.Term, update.Timestamp)
+
 		// If the stored entry is newer, ignore the put
-		if current.Term > update.Term || (current.Term == update.Term && current.Timestamp > update.Timestamp) {
+		if currentRevision.isNewerThan(updateRevision) {
 			return
 		}
 	}
@@ -286,7 +321,8 @@ func (s *distributedEntryStore) writeDelete(revision Revision) {
 	}
 
 	// If the current entry is newer than the update entry, ignore the update
-	if Term(current.Term) > revision.Term || (Term(current.Term) == revision.Term && Timestamp(current.Timestamp) > revision.Timestamp) {
+	currentRevision := newRevision(current.Term, current.Timestamp)
+	if currentRevision.isNewerThan(revision) {
 		return
 	}
 
@@ -302,6 +338,14 @@ func (s *distributedEntryStore) writeDelete(revision Revision) {
 	}
 }
 
+func (s *distributedEntryStore) watch(ch chan<- message.MessageEntry) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.watchers.PushBack(&entryWatcher{
+		ch: ch,
+	})
+}
+
 func decodeEntry(entry *_map.Entry) (*message.MessageEntry, error) {
 	messageEntry := &message.MessageEntry{}
 	if err := proto.Unmarshal(entry.Value, messageEntry); err != nil {
@@ -315,7 +359,6 @@ func encodeEntry(entry *message.MessageEntry) ([]byte, error) {
 }
 
 type waiterContext struct {
-	term      Term
-	timestamp Timestamp
-	ch        chan *message.MessageEntry
+	ch       chan *message.MessageEntry
+	revision Revision
 }
