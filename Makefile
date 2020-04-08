@@ -87,6 +87,9 @@ all: build images
 publish: # @HELP publish version on github and dockerhub
 	./../build-tools/publish-version ${VERSION} onosproject/onos-ric onosproject/onos-ric-ho onosproject/onos-ric-mlb
 
+bumponosdeps: # @HELP update "onosproject" go dependencies and push patch to git. Add a version to dependency to make it different to $VERSION
+	./../build-tools/bump-onos-deps ${VERSION} onos-topo onos-lib-go helmit
+
 clean: # @HELP remove all the build artifacts
 	rm -rf ./build/_output ./vendor ./cmd/onos-ric/onos-ric ./cmd/onos/onos
 	go clean -testcache github.com/onosproject/onos-ric/...
