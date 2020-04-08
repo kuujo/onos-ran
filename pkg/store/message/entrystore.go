@@ -95,7 +95,7 @@ func (s *distributedEntryStore) update(lockRevision Revision, updateEntry *messa
 	if updateRevision.isNewerThan(currentRevision) {
 		s.cache = updateEntry
 		var eventType EventType
-		if currentRevision.isZero() {
+		if currentRevision.isZero() && !tombstone {
 			eventType = EventInsert
 		} else if tombstone {
 			eventType = EventDelete
