@@ -6,7 +6,6 @@ export GO111MODULE=on
 ONOS_RIC_VERSION := latest
 ONOS_RIC_HO_VERSION := latest
 ONOS_RIC_MLB_VERSION := latest
-ONOS_RIC_DEBUG_VERSION := debug
 ONOS_BUILD_VERSION := stable
 
 build: # @HELP build the Go binaries and run all validations (default)
@@ -14,15 +13,6 @@ build:
 	CGO_ENABLED=1 go build -o build/_output/onos-ric ./cmd/onos-ric
 	CGO_ENABLED=1 go build -o build/_output/apps/onos-ric-ho ./cmd/apps/onos-ric-ho
 	CGO_ENABLED=1 go build -o build/_output/apps/onos-ric-mlb ./cmd/apps/onos-ric-mlb
-
-build-debug: # @HELP build the Go binaries and run all validations (default)
-build-debug:
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/onos-ric-debug ./cmd/onos-ric
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/apps/onos-ric-ho-debug ./cmd/apps/onos-ric-ho
-	CGO_ENABLED=1 go build -gcflags "all=-N -l" -o build/_output/apps/onos-ric-mlb-debug ./cmd/apps/onos-ric-mlb
-
-build-plugins: # @HELP build plugin binaries
-build-plugins: $(MODELPLUGINS)
 
 generate: # @HELP generate store interfaces and implementations
 generate:
