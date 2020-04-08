@@ -298,11 +298,6 @@ func (s *distributedStore) Watch(ch chan<- message.MessageEntry, opts ...WatchOp
 		watchOptions = append(watchOptions, _map.WithReplay())
 	}
 
-	watchCh := make(chan *_map.Event)
-	if err := s.dist.Watch(context.Background(), watchCh, watchOptions...); err != nil {
-		return err
-	}
-
 	// Add the watcher to all stores
 	s.mu.Lock()
 	s.watchers = append(s.watchers, ch)
@@ -311,18 +306,21 @@ func (s *distributedStore) Watch(ch chan<- message.MessageEntry, opts ...WatchOp
 	}
 	s.mu.Unlock()
 
-	go func() {
-		defer close(ch)
-		for event := range watchCh {
-			if event.Type != _map.EventRemoved {
-				if entry, err := decodeEntry(event.Entry); err == nil {
-					store := s.getEntryStore(Key(event.Entry.Key))
-					store.update(entry, event.Type == _map.EventRemoved)
-					ch <- *entry
+	// If replay is enabled, list the entries in the store to replay messages
+	if options.replay {
+		entryCh := make(chan *_map.Entry)
+		if err := s.dist.Entries(context.Background(), entryCh); err != nil {
+			return err
+		}
+		go func() {
+			for entry := range entryCh {
+				if message, err := decodeEntry(entry); err == nil {
+					store := s.getEntryStore(Key(entry.Key))
+					store.update(message, false)
 				}
 			}
-		}
-	}()
+		}()
+	}
 	return nil
 }
 

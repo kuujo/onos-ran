@@ -69,7 +69,7 @@ type distributedEntryStore struct {
 	mu       sync.RWMutex
 }
 
-func (s *distributedEntryStore) update(updatedEntry *message.MessageEntry, tombstone bool) {
+func (s *distributedEntryStore) update(updateEntry *message.MessageEntry, tombstone bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -81,45 +81,58 @@ func (s *distributedEntryStore) update(updatedEntry *message.MessageEntry, tombs
 	if currentEntry != nil {
 		currentRevision = newRevision(currentEntry.Term, currentEntry.Timestamp)
 	}
-	updateRevision := newRevision(updatedEntry.Term, updatedEntry.Timestamp)
+	updateRevision := newRevision(updateEntry.Term, updateEntry.Timestamp)
 
 	// If the updated revision is newer than the current revision, update the cache
 	if updateRevision.isNewerThan(currentRevision) {
-		s.cache = updatedEntry
-
-		// Trigger all watchers
-		element := s.watchers.Front()
-		for element != nil {
-			watcher := element.Value.(*entryWatcher)
-			watcher.ch <- *updatedEntry
-			watcher.revision = updateRevision
-			element = element.Next()
-		}
-
-		// Trigger any channels waiting for the entry.
-		waiter := s.waiters.Front()
-		for waiter != nil {
-			ctx := waiter.Value.(*waiterContext)
-			if updateRevision.isEqualToOrNewerThan(ctx.revision) {
-				ctx.ch <- updatedEntry
-				close(ctx.ch)
-				next := waiter.Next()
-				s.waiters.Remove(waiter)
-				waiter = next
-			} else {
-				break
-			}
-		}
+		s.cache = updateEntry
+		go s.triggerWatches(updateEntry)
 	} else if currentRevision.isEqualTo(updateRevision) {
-		// Ensure all watchers have seen the revision
-		element := s.watchers.Front()
-		for element != nil {
-			watcher := element.Value.(*entryWatcher)
-			if updateRevision.isNewerThan(watcher.revision) {
-				watcher.ch <- *updatedEntry
-				watcher.revision = updateRevision
-			}
-			element = element.Next()
+		go s.triggerWatches(updateEntry)
+	}
+}
+
+func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	currentEntry := s.cache
+
+	// Compute the current revision and the update revision
+	currentRevision := newRevision(currentEntry.Term, currentEntry.Timestamp)
+	updateRevision := newRevision(updateEntry.Term, updateEntry.Timestamp)
+
+	// If the cache has changed since the given update, do not publish any events
+	if !currentRevision.isEqualTo(updateRevision) {
+		return
+	}
+
+	// Trigger all watchers that have not received events for this update
+	element := s.watchers.Front()
+	i := 0
+	for element != nil {
+		watcher := element.Value.(*entryWatcher)
+		if updateRevision.isNewerThan(watcher.revision) {
+			println(fmt.Sprintf("Event %s channel %d", s.key, i))
+			watcher.ch <- *updateEntry
+			watcher.revision = updateRevision
+		}
+		element = element.Next()
+		i++
+	}
+
+	// Trigger any channels waiting for the entry.
+	waiter := s.waiters.Front()
+	for waiter != nil {
+		ctx := waiter.Value.(*waiterContext)
+		if updateRevision.isEqualToOrNewerThan(ctx.revision) {
+			ctx.ch <- updateEntry
+			close(ctx.ch)
+			next := waiter.Next()
+			s.waiters.Remove(waiter)
+			waiter = next
+		} else {
+			break
 		}
 	}
 }
@@ -132,10 +145,12 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 
 	// If the entry term is greater than the requested term or the terms are equal and the entry timestamp
 	// is greater than or equal to the requested timestamp, the entry is up to date.
-	if messageEntry != nil &&
-		(Term(messageEntry.Term) > revision.Term ||
-			(Term(messageEntry.Term) == revision.Term && Timestamp(messageEntry.Timestamp) >= revision.Timestamp)) {
-		return messageEntry, nil
+	var messageRevision Revision
+	if messageEntry != nil {
+		messageRevision = newRevision(messageEntry.Term, messageEntry.Timestamp)
+		if messageRevision.isEqualToOrNewerThan(revision) {
+			return messageEntry, nil
+		}
 	}
 
 	// If the key is not present in the cache or is older than the requested key, read it from the distributed store.
@@ -155,7 +170,6 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 	}
 
 	// Again, determine whether the message entry meets the requested revision info.
-	messageRevision := newRevision(messageEntry.Term, messageEntry.Timestamp)
 	if messageRevision.isEqualToOrNewerThan(revision) {
 		// Cache the entry if it's up-to-date.
 		s.mu.Lock()
@@ -196,11 +210,8 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 }
 
 func (s *distributedEntryStore) put(update *message.MessageEntry) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	// Store the update in the local cache
-	s.cache = update
+	s.update(update, false)
 
 	// Propagate the change to the store asynchronously
 	s.enqueuePut(update)
@@ -208,9 +219,6 @@ func (s *distributedEntryStore) put(update *message.MessageEntry) error {
 }
 
 func (s *distributedEntryStore) delete(revision Revision) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	// Create a timestamped entry for the store
 	entry := &message.MessageEntry{
 		Term:      uint64(revision.Term),
@@ -218,7 +226,7 @@ func (s *distributedEntryStore) delete(revision Revision) error {
 	}
 
 	// Store the update in the local cache
-	s.cache = entry
+	s.update(entry, true)
 
 	// Enqueue the update to be written to the distributed store
 	s.enqueueDelete(revision)
@@ -344,6 +352,10 @@ func (s *distributedEntryStore) watch(ch chan<- message.MessageEntry) {
 	s.watchers.PushBack(&entryWatcher{
 		ch: ch,
 	})
+	entry := s.cache
+	if entry != nil {
+		go s.update(entry, false)
+	}
 }
 
 func decodeEntry(entry *_map.Entry) (*message.MessageEntry, error) {
