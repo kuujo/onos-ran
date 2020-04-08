@@ -25,8 +25,9 @@ import (
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
-
 	"github.com/onosproject/onos-ric/pkg/manager"
+	"github.com/onosproject/onos-ric/pkg/store/telemetry"
+	"github.com/onosproject/onos-ric/pkg/store/updates"
 	"google.golang.org/grpc"
 )
 
@@ -61,9 +62,18 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	if req.Ecgi == nil {
 		ch := make(chan sb.ControlUpdate)
 		if req.Subscribe {
-			if err := manager.GetManager().SubscribeControlUpdates(ch); err != nil {
+			watchCh := make(chan updates.Event)
+			if err := manager.GetManager().SubscribeControlUpdates(watchCh); err != nil {
 				return err
 			}
+			go func() {
+				defer close(ch)
+				for event := range watchCh {
+					if event.Type != updates.EventDelete {
+						ch <- event.Message
+					}
+				}
+			}()
 		} else {
 			if err := manager.GetManager().ListControlUpdates(ch); err != nil {
 				return err
@@ -101,9 +111,18 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 	if req.Ecgi == nil {
 		ch := make(chan sb.ControlUpdate)
 		if req.Subscribe {
-			if err := manager.GetManager().SubscribeControlUpdates(ch); err != nil {
+			watchCh := make(chan updates.Event)
+			if err := manager.GetManager().SubscribeControlUpdates(watchCh); err != nil {
 				return err
 			}
+			go func() {
+				defer close(ch)
+				for event := range watchCh {
+					if event.Type != updates.EventDelete {
+						ch <- event.Message
+					}
+				}
+			}()
 		} else {
 			if err := manager.GetManager().ListControlUpdates(ch); err != nil {
 				return err
@@ -146,9 +165,18 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
-			if err := manager.GetManager().SubscribeTelemetry(ch, !req.NoReplay); err != nil {
+			watchCh := make(chan telemetry.Event)
+			if err := manager.GetManager().SubscribeTelemetry(watchCh, !req.NoReplay); err != nil {
 				return err
 			}
+			go func() {
+				defer close(ch)
+				for event := range watchCh {
+					if event.Type != telemetry.EventDelete {
+						ch <- event.Message
+					}
+				}
+			}()
 		} else {
 			if err := manager.GetManager().ListTelemetry(ch); err != nil {
 				return err

@@ -53,7 +53,7 @@ func NewDistributedStore(name string, config config.Config, db atomix.DatabaseTy
 	store := &distributedStore{
 		dist:     messages,
 		entries:  make(map[Key]entryStore),
-		watchers: make([]chan<- message.MessageEntry, 0),
+		watchers: make([]chan<- Event, 0),
 		clocks:   timeStore,
 	}
 	if err := store.open(); err != nil {
@@ -92,6 +92,30 @@ func newLocalStore(address net.Address, name string, timeStore clocks.Store) (St
 	}, nil
 }
 
+// Event is a message store event
+type Event struct {
+	// Type is the event type
+	Type EventType
+	// Key is the event message key
+	Key Key
+	// Message is the event message
+	Message message.MessageEntry
+}
+
+// EventType is a message store event type
+type EventType string
+
+const (
+	// EventNone indicates an event that was not triggered but replayed
+	EventNone   EventType = ""
+	// EventInsert indicates the message was inserted into the store
+	EventInsert EventType = "insert"
+	// EventUpdate indicates the message was updated in the store
+	EventUpdate EventType = "update"
+	// EventDelete indicates the message was deleted from the store
+	EventDelete EventType = "remove"
+)
+
 // Store is interface for message store
 type Store interface {
 	io.Closer
@@ -109,7 +133,7 @@ type Store interface {
 	List(ch chan<- message.MessageEntry) error
 
 	// Watch watches message updates
-	Watch(ch chan<- message.MessageEntry, opts ...WatchOption) error
+	Watch(ch chan<- Event, opts ...WatchOption) error
 
 	// Clear deletes all entries from the store
 	Clear() error
@@ -203,7 +227,7 @@ func (o *watchReplayOption) configureWatch(options *watchOptions) {
 type distributedStore struct {
 	dist     _map.Map
 	entries  map[Key]entryStore
-	watchers []chan<- message.MessageEntry
+	watchers []chan<- Event
 	clocks   clocks.Store
 	mu       sync.RWMutex
 }
@@ -302,7 +326,7 @@ func (s *distributedStore) List(ch chan<- message.MessageEntry) error {
 	return nil
 }
 
-func (s *distributedStore) Watch(ch chan<- message.MessageEntry, opts ...WatchOption) error {
+func (s *distributedStore) Watch(ch chan<- Event, opts ...WatchOption) error {
 	options := &watchOptions{}
 	for _, opt := range opts {
 		opt.configureWatch(options)

@@ -55,7 +55,7 @@ func (s *{{ .Impl.Type.Name }}) Get(id ID, opts ...GetOption) (*{{ .DataType.Pac
 	return decode(entry)
 }
 
-func (s *{{ .Impl.Type.Name }}) Put(message *{{ .DataType.Package.Alias }}.{{ .DataType.Name }}) error {
+func (s *{{ .Impl.Type.Name }}) Put(message *{{ .DataType.Package.Alias }}.{{ .DataType.Name }}, opts ...PutOption) error {
 	entry, err := encode(message)
 	if err != nil {
 		return err
@@ -87,21 +87,26 @@ func (s *{{ .Impl.Type.Name }}) List(ch chan<- {{ .DataType.Package.Alias }}.{{ 
 	return nil
 }
 
-func (s *{{ .Impl.Type.Name }}) Watch(ch chan<- {{ .DataType.Package.Alias }}.{{ .DataType.Name }}, opts ...WatchOption) error {
+func (s *{{ .Impl.Type.Name }}) Watch(ch chan<- Event, opts ...WatchOption) error {
 	messageOpts := make([]messagestore.WatchOption, len(opts))
 	for i, opt := range opts {
 		messageOpts[i] = opt
 	}
 
-	watchCh := make(chan message.MessageEntry)
+	watchCh := make(chan messagestore.Event)
 	if err := s.messageStore.Watch(watchCh, messageOpts...); err != nil {
 		return err
 	}
 	go func() {
 		defer close(ch)
-		for entry := range watchCh {
-			if message, err := decode(&entry); err == nil {
-				ch <- *message
+		for event := range watchCh {
+			if message, err := decode(&event.Message); err == nil {
+                event := Event{
+                    Type:    EventType(event.Type),
+                    ID:      ID(event.Key),
+                    Message: *message,
+                }
+				ch <- event
 			}
 		}
 	}()

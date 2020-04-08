@@ -20,6 +20,27 @@ type Term uint64
 
 type Timestamp uint64
 
+// Event is a store event
+type Event struct {
+	// Type is the event type
+	Type EventType
+	// ID is the message identifier
+	ID ID
+	// Message is the event message
+	Message {{ .DataType.Package.Alias }}.{{ .DataType.Name }}
+}
+
+// EventType is a store event type
+type EventType messagestore.EventType
+
+const (
+	EventNone   EventType = EventType(messagestore.EventNone)
+	EventInsert EventType = EventType(messagestore.EventInsert)
+	EventUpdate EventType = EventType(messagestore.EventUpdate)
+	EventDelete EventType = EventType(messagestore.EventDelete)
+)
+
+
 // {{ .Interface.Type.Name }} is interface for store
 type {{ .Interface.Type.Name }} interface {
 	io.Closer
@@ -28,7 +49,7 @@ type {{ .Interface.Type.Name }} interface {
 	Get(ID, ...GetOption) (*{{ .DataType.Package.Alias }}.{{ .DataType.Name }}, error)
 
 	// Puts a message to the store
-	Put(*{{ .DataType.Package.Alias }}.{{ .DataType.Name }}) error
+	Put(*{{ .DataType.Package.Alias }}.{{ .DataType.Name }}, ...PutOption) error
 
 	// Removes a message from the store
 	Delete(ID, ...DeleteOption) error
@@ -36,8 +57,8 @@ type {{ .Interface.Type.Name }} interface {
 	// List all of the last up to date messages
 	List(ch chan<- {{ .DataType.Package.Alias }}.{{ .DataType.Name }}) error
 
-	// Watch watches messages
-	Watch(ch chan<- {{ .DataType.Package.Alias }}.{{ .DataType.Name }}, opts ...WatchOption) error
+	// Watch watches the store for changes
+	Watch(ch chan<- Event, opts ...WatchOption) error
 
 	// Clear deletes all messages from the store
 	Clear() error
@@ -50,6 +71,9 @@ type GetOption messagestore.GetOption
 func WithRevision(revision Revision) GetOption {
 	return messagestore.WithRevision(toMessageRevision(revision))
 }
+
+// PutOption is a message store put option
+type PutOption messagestore.PutOption
 
 // DeleteOption is a message store delete option
 type DeleteOption messagestore.DeleteOption

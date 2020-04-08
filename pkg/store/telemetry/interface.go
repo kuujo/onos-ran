@@ -20,6 +20,26 @@ type Term uint64
 
 type Timestamp uint64
 
+// Event is a store event
+type Event struct {
+	// Type is the event type
+	Type EventType
+	// ID is the message identifier
+	ID ID
+	// Message is the event message
+	Message e2ap.RicIndication
+}
+
+// EventType is a store event type
+type EventType messagestore.EventType
+
+const (
+	EventNone   EventType = EventType(messagestore.EventNone)
+	EventInsert EventType = EventType(messagestore.EventInsert)
+	EventUpdate EventType = EventType(messagestore.EventUpdate)
+	EventDelete EventType = EventType(messagestore.EventDelete)
+)
+
 // Store is interface for store
 type Store interface {
 	io.Closer
@@ -28,7 +48,7 @@ type Store interface {
 	Get(ID, ...GetOption) (*e2ap.RicIndication, error)
 
 	// Puts a message to the store
-	Put(*e2ap.RicIndication) error
+	Put(*e2ap.RicIndication, ...PutOption) error
 
 	// Removes a message from the store
 	Delete(ID, ...DeleteOption) error
@@ -36,8 +56,8 @@ type Store interface {
 	// List all of the last up to date messages
 	List(ch chan<- e2ap.RicIndication) error
 
-	// Watch watches messages
-	Watch(ch chan<- e2ap.RicIndication, opts ...WatchOption) error
+	// Watch watches the store for changes
+	Watch(ch chan<- Event, opts ...WatchOption) error
 
 	// Clear deletes all messages from the store
 	Clear() error
@@ -50,6 +70,9 @@ type GetOption messagestore.GetOption
 func WithRevision(revision Revision) GetOption {
 	return messagestore.WithRevision(toMessageRevision(revision))
 }
+
+// PutOption is a message store put option
+type PutOption messagestore.PutOption
 
 // DeleteOption is a message store delete option
 type DeleteOption messagestore.DeleteOption

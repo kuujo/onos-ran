@@ -55,7 +55,7 @@ func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicIndication, error) {
 	return decode(entry)
 }
 
-func (s *store) Put(message *e2ap.RicIndication) error {
+func (s *store) Put(message *e2ap.RicIndication, opts ...PutOption) error {
 	entry, err := encode(message)
 	if err != nil {
 		return err
@@ -87,21 +87,26 @@ func (s *store) List(ch chan<- e2ap.RicIndication) error {
 	return nil
 }
 
-func (s *store) Watch(ch chan<- e2ap.RicIndication, opts ...WatchOption) error {
+func (s *store) Watch(ch chan<- Event, opts ...WatchOption) error {
 	messageOpts := make([]messagestore.WatchOption, len(opts))
 	for i, opt := range opts {
 		messageOpts[i] = opt
 	}
 
-	watchCh := make(chan message.MessageEntry)
+	watchCh := make(chan messagestore.Event)
 	if err := s.messageStore.Watch(watchCh, messageOpts...); err != nil {
 		return err
 	}
 	go func() {
 		defer close(ch)
-		for entry := range watchCh {
-			if message, err := decode(&entry); err == nil {
-				ch <- *message
+		for event := range watchCh {
+			if message, err := decode(&event.Message); err == nil {
+				event := Event{
+					Type:    EventType(event.Type),
+					ID:      ID(event.Key),
+					Message: *message,
+				}
+				ch <- event
 			}
 		}
 	}()

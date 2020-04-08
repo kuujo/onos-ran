@@ -39,7 +39,7 @@ func newEntryStore(dist _map.Map, key Key, clock clocks.LogicalClock) entryStore
 
 // entryWatcher is a watcher for a single entry
 type entryWatcher struct {
-	ch       chan<- message.MessageEntry
+	ch       chan<- Event
 	revision Revision
 }
 
@@ -58,7 +58,7 @@ type entryStore interface {
 	delete(revision Revision) error
 
 	// watch watches the store
-	watch(ch chan<- message.MessageEntry)
+	watch(ch chan<- Event)
 }
 
 // distributedEntryStore is an implementation of the entryStore interface
@@ -94,14 +94,22 @@ func (s *distributedEntryStore) update(lockRevision Revision, updateEntry *messa
 	updateRevision := newRevision(updateEntry.Term, updateEntry.Timestamp)
 	if updateRevision.isNewerThan(currentRevision) {
 		s.cache = updateEntry
-		go s.triggerWatches(updateEntry)
+		var eventType EventType
+		if currentRevision.isZero() {
+			eventType = EventInsert
+		} else if tombstone {
+			eventType = EventDelete
+		} else {
+			eventType = EventUpdate
+		}
+		go s.triggerWatches(updateEntry, eventType)
 	} else if currentRevision.isEqualTo(updateRevision) {
-		go s.triggerWatches(updateEntry)
+		go s.triggerWatches(updateEntry, EventNone)
 	}
 	return nil
 }
 
-func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry) {
+func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry, eventType EventType) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -122,7 +130,12 @@ func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry
 	for element != nil {
 		watcher := element.Value.(*entryWatcher)
 		if updateRevision.isNewerThan(watcher.revision) {
-			watcher.ch <- *updateEntry
+			event := Event{
+				Type:    eventType,
+				Key:     s.key,
+				Message: *updateEntry,
+			}
+			watcher.ch <- event
 			watcher.revision = updateRevision
 		}
 		element = element.Next()
@@ -372,7 +385,7 @@ func (s *distributedEntryStore) writeDelete(revision Revision) {
 	}
 }
 
-func (s *distributedEntryStore) watch(ch chan<- message.MessageEntry) {
+func (s *distributedEntryStore) watch(ch chan<- Event) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.watchers.PushBack(&entryWatcher{

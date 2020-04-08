@@ -174,7 +174,7 @@ func (m *Manager) ListControlUpdates(ch chan<- sb.ControlUpdate) error {
 }
 
 // SubscribeControlUpdates subscribes the given channel to control updates
-func (m *Manager) SubscribeControlUpdates(ch chan<- sb.ControlUpdate) error {
+func (m *Manager) SubscribeControlUpdates(ch chan<- updates.Event) error {
 	return m.updatesStore.Watch(ch, updates.WithReplay())
 }
 
@@ -197,7 +197,7 @@ func (m *Manager) ListTelemetry(ch chan<- e2ap.RicIndication) error {
 }
 
 // SubscribeTelemetry subscribes the given channel to telemetry events
-func (m *Manager) SubscribeTelemetry(ch chan<- e2ap.RicIndication, withReplay bool) error {
+func (m *Manager) SubscribeTelemetry(ch chan<- telemetry.Event, withReplay bool) error {
 	if withReplay {
 		return m.telemetryStore.Watch(ch, telemetry.WithReplay())
 	}
