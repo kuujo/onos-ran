@@ -96,8 +96,6 @@ func (s *distributedEntryStore) update(lockRevision Revision, updateEntry *messa
 		s.cache = updateEntry
 		go s.triggerWatches(updateEntry)
 	} else if currentRevision.isEqualTo(updateRevision) {
-		println(fmt.Sprintf("%s currentRevision %v", s.key, currentRevision))
-		println(fmt.Sprintf("%s updateRevision %v", s.key, updateRevision))
 		go s.triggerWatches(updateEntry)
 	}
 	return nil
@@ -124,7 +122,6 @@ func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry
 	for element != nil {
 		watcher := element.Value.(*entryWatcher)
 		if updateRevision.isNewerThan(watcher.revision) {
-			println(fmt.Sprintf("Event %s channel %d", s.key, i))
 			watcher.ch <- *updateEntry
 			watcher.revision = updateRevision
 		}
