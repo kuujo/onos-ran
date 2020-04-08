@@ -293,10 +293,6 @@ func (s *distributedStore) Watch(ch chan<- message.MessageEntry, opts ...WatchOp
 	for _, opt := range opts {
 		opt.apply(options)
 	}
-	watchOptions := []_map.WatchOption{}
-	if options.replay {
-		watchOptions = append(watchOptions, _map.WithReplay())
-	}
 
 	// Add the watcher to all stores
 	s.mu.Lock()
