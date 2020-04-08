@@ -3,7 +3,7 @@
 package telemetry
 
 import (
-	sb "github.com/onosproject/onos-ric/api/sb"
+	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
 	messagestore "github.com/onosproject/onos-ric/pkg/store/message"
 	"io"
 )
@@ -25,19 +25,19 @@ type Store interface {
 	io.Closer
 
 	// Gets a message based on a given ID
-	Get(ID, ...GetOption) (*sb.TelemetryMessage, error)
+	Get(ID, ...GetOption) (*e2ap.RicIndication, error)
 
 	// Puts a message to the store
-	Put(*sb.TelemetryMessage) error
+	Put(*e2ap.RicIndication) error
 
 	// Removes a message from the store
 	Delete(ID, ...DeleteOption) error
 
 	// List all of the last up to date messages
-	List(ch chan<- sb.TelemetryMessage) error
+	List(ch chan<- e2ap.RicIndication) error
 
 	// Watch watches messages
-	Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error
+	Watch(ch chan<- e2ap.RicIndication, opts ...WatchOption) error
 
 	// Clear deletes all messages from the store
 	Clear() error

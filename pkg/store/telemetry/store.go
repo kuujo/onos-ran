@@ -5,7 +5,7 @@ package telemetry
 import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	sb "github.com/onosproject/onos-ric/api/sb"
+	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/message"
 	"github.com/onosproject/onos-ric/pkg/config"
 	messagestore "github.com/onosproject/onos-ric/pkg/store/message"
@@ -41,7 +41,7 @@ type store struct {
 	messageStore messagestore.Store
 }
 
-func (s *store) Get(id ID, opts ...GetOption) (*sb.TelemetryMessage, error) {
+func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicIndication, error) {
 	messageOpts := make([]messagestore.GetOption, len(opts))
 	for i, opt := range opts {
 		messageOpts[i] = opt
@@ -55,7 +55,7 @@ func (s *store) Get(id ID, opts ...GetOption) (*sb.TelemetryMessage, error) {
 	return decode(entry)
 }
 
-func (s *store) Put(message *sb.TelemetryMessage) error {
+func (s *store) Put(message *e2ap.RicIndication) error {
 	entry, err := encode(message)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func (s *store) Delete(id ID, opts ...DeleteOption) error {
 	return s.messageStore.Delete(messagestore.Key(id), messageOpts...)
 }
 
-func (s *store) List(ch chan<- sb.TelemetryMessage) error {
+func (s *store) List(ch chan<- e2ap.RicIndication) error {
 	entryCh := make(chan message.MessageEntry)
 	if err := s.messageStore.List(entryCh); err != nil {
 		return err
@@ -87,7 +87,7 @@ func (s *store) List(ch chan<- sb.TelemetryMessage) error {
 	return nil
 }
 
-func (s *store) Watch(ch chan<- sb.TelemetryMessage, opts ...WatchOption) error {
+func (s *store) Watch(ch chan<- e2ap.RicIndication, opts ...WatchOption) error {
 	messageOpts := make([]messagestore.WatchOption, len(opts))
 	for i, opt := range opts {
 		messageOpts[i] = opt
@@ -116,15 +116,15 @@ func (s *store) Close() error {
 	return s.messageStore.Close()
 }
 
-func decode(message *message.MessageEntry) (*sb.TelemetryMessage, error) {
-	m := &sb.TelemetryMessage{}
+func decode(message *message.MessageEntry) (*e2ap.RicIndication, error) {
+	m := &e2ap.RicIndication{}
 	if err := proto.Unmarshal(message.Bytes, m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func encode(m *sb.TelemetryMessage) (*message.MessageEntry, error) {
+func encode(m *e2ap.RicIndication) (*message.MessageEntry, error) {
 	bytes, err := proto.Marshal(m)
 	if err != nil {
 		return nil, err
@@ -141,6 +141,6 @@ func toMessageRevision(revision Revision) messagestore.Revision {
 	}
 }
 
-func getKey(message *sb.TelemetryMessage) messagestore.Key {
+func getKey(message *e2ap.RicIndication) messagestore.Key {
 	return messagestore.Key(message.GetID())
 }

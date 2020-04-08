@@ -29,3 +29,18 @@ func (r *RicControlResponse) GetID() string {
 	}
 	return sb.NewID(r.GetHdr().GetMessageType(), ecgi.PlmnId, ecgi.Ecid, crnti)
 }
+
+// GetID returns a unique identifier for the message
+func (r *RicIndication) GetID() string {
+	var ecgi sb.ECGI
+	var crnti string
+	msgType := r.GetHdr().GetMessageType()
+	switch msgType {
+	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+		ecgi = *r.GetMsg().GetRadioMeasReportPerUE().GetEcgi()
+		crnti = r.GetMsg().GetRadioMeasReportPerUE().GetCrnti()
+	case sb.MessageType_RADIO_MEAS_REPORT_PER_CELL:
+		ecgi = *r.GetMsg().GetRadioMeasReportPerCell().GetEcgi()
+	}
+	return sb.NewID(r.GetHdr().GetMessageType(), ecgi.PlmnId, ecgi.Ecid, crnti)
+}

@@ -3,8 +3,8 @@ stores:
   - name: telemetry
     message:
       type:
-        package: github.com/onosproject/onos-ric/api/sb
-        name: TelemetryMessage
+        package: github.com/onosproject/onos-ric/api/sb/e2ap
+        name: RicIndication
     storage:
       type: Cache
       name: telemetry

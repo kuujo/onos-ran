@@ -140,6 +140,7 @@ RICindicationMessage ::= OCTET STRING
 | radioMeasReportPerUE | [interface.e2.RadioMeasReportPerUE](#interface.e2.RadioMeasReportPerUE) |  |  |
 | uEAdmissionRequest | [interface.e2.UEAdmissionRequest](#interface.e2.UEAdmissionRequest) |  |  |
 | uEReleaseInd | [interface.e2.UEReleaseInd](#interface.e2.UEReleaseInd) |  |  |
+| radioMeasReportPerCell | [interface.e2.RadioMeasReportPerCell](#interface.e2.RadioMeasReportPerCell) |  |  |
 
 
 

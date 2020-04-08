@@ -17,13 +17,14 @@ package c1
 import (
 	"context"
 	"fmt"
+	"io"
+
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	service "github.com/onosproject/onos-lib-go/pkg/northbound"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
-	"io"
 
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"google.golang.org/grpc"
@@ -143,7 +144,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
 	if req.Ecgi == nil {
-		ch := make(chan sb.TelemetryMessage)
+		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
 			streamID := fmt.Sprintf("ue-%p", stream)
 			telemetryChan, err := manager.GetManager().RegisterTelemetryListener(streamID)
@@ -154,7 +155,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 			go func() {
 				for event := range telemetryChan {
 					if event.Type == "RADIO_MEAS_REPORT_PER_UE" {
-						tm, ok := event.Object.(sb.TelemetryMessage)
+						tm, ok := event.Object.(e2ap.RicIndication)
 						if !ok {
 							log.Fatal("Could not convert event to TelemetryMessage")
 						}
@@ -171,9 +172,9 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 		}
 
 		for telemetry := range ch {
-			switch telemetry.GetMessageType() {
+			switch telemetry.GetHdr().GetMessageType() {
 			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
-				radioReportUe := telemetry.GetRadioMeasReportPerUE()
+				radioReportUe := telemetry.GetMsg().GetRadioMeasReportPerUE()
 				ecgi := nb.ECGI{
 					Ecid:   radioReportUe.GetEcgi().GetEcid(),
 					Plmnid: radioReportUe.GetEcgi().GetPlmnId(),
@@ -213,7 +214,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 					return err
 				}
 			default:
-				log.Errorf("Unhandled case %s", telemetry.GetMessageType())
+				log.Errorf("Unhandled case %s", telemetry.GetHdr().GetMessageType())
 			}
 		}
 	} else {

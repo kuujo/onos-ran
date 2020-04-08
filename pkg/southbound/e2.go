@@ -43,7 +43,7 @@ var MutexMapHOEventMeasuredRIC sync.RWMutex
 var ChanHOEvent chan HOEventMeasuredRIC
 
 // TelemetryUpdateHandler - a function for the session to write back to manager without the import cycle
-type TelemetryUpdateHandler = func(sb.TelemetryMessage)
+type TelemetryUpdateHandler = func(e2ap.RicIndication)
 
 // RicControlResponseHandler - ricControlResponse messages to manager without the import cycle
 type RicControlResponseHandler = func(e2ap.RicControlResponse)
@@ -61,8 +61,7 @@ type Session struct {
 	ricControlResponseChan chan e2ap.RicControlResponse
 	controlResponses       chan sb.ControlResponse
 	controlUpdates         chan sb.ControlUpdate
-
-	telemetryUpdates chan sb.TelemetryMessage
+	telemetryUpdates       chan e2ap.RicIndication
 
 	RicControlResponseHandlerFunc RicControlResponseHandler
 	ControlUpdateHandlerFunc      ControlUpdateHandler
@@ -90,7 +89,7 @@ func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
 		ricControlResponseChan: make(chan e2ap.RicControlResponse),
 		controlResponses:       make(chan sb.ControlResponse),
 		controlUpdates:         make(chan sb.ControlUpdate),
-		telemetryUpdates:       make(chan sb.TelemetryMessage),
+		telemetryUpdates:       make(chan e2ap.RicIndication),
 	}, nil
 }
 
@@ -159,7 +158,9 @@ func (s *Session) manageConnection(connection *grpc.ClientConn) {
 
 	go s.handleControl(errors)
 
-	go s.handleTelemetry(errors)
+	go s.ricControl(errors)
+
+	go s.ricSubscribe(errors)
 
 	// Wait for the first error on the coordination channel.
 	for i := 0; i < 2; i++ {
@@ -246,17 +247,6 @@ func (s *Session) handleControl(errors chan error) {
 			s.processControlUpdate(update)
 		}
 	}()
-
-	go s.ricControl(errors)
-
-	for {
-		response := <-s.controlResponses
-		err := stream.Send(&response)
-		if err != nil {
-			waitc <- err
-			return
-		}
-	}
 }
 
 func (s *Session) ricControlResponse(update *e2ap.RicControlResponse) {
@@ -283,12 +273,8 @@ func (s *Session) processControlUpdate(update *sb.ControlUpdate) {
 	s.controlUpdates <- *update
 }
 
-func (s *Session) handleTelemetry(errors chan error) {
-	l2MeasConfig := &sb.L2MeasConfig{
-		Ecgi: &sb.ECGI{PlmnId: "test", Ecid: "test"},
-	}
-
-	stream, err := s.client.SendTelemetry(context.Background(), l2MeasConfig)
+func (s *Session) ricSubscribe(errors chan error) {
+	stream, err := s.client.RicSubscription(context.Background())
 	if err != nil {
 		errors <- err
 		return
@@ -302,35 +288,36 @@ func (s *Session) handleTelemetry(errors chan error) {
 				close(waitc)
 				return
 			}
-			log.Infof("%s telemetry messageType %d", s.EndPoint, update.MessageType)
-			s.processTelemetryUpdate(update)
+			log.Infof("%s indication messageType %d", s.EndPoint, update.GetHdr().GetMessageType())
+			s.processIndication(update)
 		}
 	}()
 }
 
-func (s *Session) processTelemetryUpdate(update *sb.TelemetryMessage) {
-	switch x := update.S.(type) {
-	case *sb.TelemetryMessage_RadioMeasReportPerUE:
+func (s *Session) processIndication(ind *e2ap.RicIndication) {
+	msgType := ind.GetHdr().GetMessageType()
+	switch msgType {
+	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
 		if s.EnableMetrics {
 			tT := time.Now()
-			go s.addReceivedHOEventMeasuredRIC(update, tT) // to monitor HO delay]
+			go s.addReceivedHOEventMeasuredRIC(ind, tT) // to monitor HO delay]
 		}
 	default:
-		log.Fatalf("%s Telemetry update has unexpected type %T", s.EndPoint, x)
+		log.Fatalf("%s Telemetry update has unexpected type %d", s.EndPoint, msgType)
 	}
-	s.telemetryUpdates <- *update
+	s.telemetryUpdates <- *ind
 }
 
-func (s *Session) addReceivedHOEventMeasuredRIC(update *sb.TelemetryMessage, tT time.Time) {
-	servStationID := update.GetRadioMeasReportPerUE().GetEcgi()
-	numNeighborCells := len(update.GetRadioMeasReportPerUE().GetRadioReportServCells())
-	bestStationID := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetEcgi()
-	bestCQI := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetCqiHist()[0]
+func (s *Session) addReceivedHOEventMeasuredRIC(update *e2ap.RicIndication, tT time.Time) {
+	servStationID := update.GetMsg().GetRadioMeasReportPerUE().GetEcgi()
+	numNeighborCells := len(update.GetMsg().GetRadioMeasReportPerUE().GetRadioReportServCells())
+	bestStationID := update.GetMsg().GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetEcgi()
+	bestCQI := update.GetMsg().GetRadioMeasReportPerUE().GetRadioReportServCells()[0].GetCqiHist()[0]
 
 	for i := 1; i < numNeighborCells; i++ {
-		tmpCQI := update.GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetCqiHist()[0]
+		tmpCQI := update.GetMsg().GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetCqiHist()[0]
 		if bestCQI < tmpCQI {
-			bestStationID = update.GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetEcgi()
+			bestStationID = update.GetMsg().GetRadioMeasReportPerUE().GetRadioReportServCells()[i].GetEcgi()
 			bestCQI = tmpCQI
 		}
 	}
@@ -338,11 +325,11 @@ func (s *Session) addReceivedHOEventMeasuredRIC(update *sb.TelemetryMessage, tT 
 	if servStationID.GetEcid() != bestStationID.GetEcid() || servStationID.GetPlmnId() != bestStationID.GetPlmnId() {
 		tmpHOEventMeasuredRIC := HOEventMeasuredRIC{
 			Timestamp:  tT,
-			Crnti:      update.GetRadioMeasReportPerUE().GetCrnti(),
+			Crnti:      update.GetMsg().GetRadioMeasReportPerUE().GetCrnti(),
 			DestPlmnID: bestStationID.GetPlmnId(),
 			DestECID:   bestStationID.GetEcid(),
 		}
-		key := fmt.Sprintf("%s:%s:%s:%s:%s", update.GetRadioMeasReportPerUE().GetCrnti(), servStationID.GetPlmnId(), servStationID.GetEcid(), bestStationID.GetPlmnId(), bestStationID.GetEcid())
+		key := fmt.Sprintf("%s:%s:%s:%s:%s", update.GetMsg().GetRadioMeasReportPerUE().GetCrnti(), servStationID.GetPlmnId(), servStationID.GetEcid(), bestStationID.GetPlmnId(), bestStationID.GetEcid())
 		MutexMapHOEventMeasuredRIC.Lock()
 		_, f := MapHOEventMeasuredRIC[key]
 		if !f {

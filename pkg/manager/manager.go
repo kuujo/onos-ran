@@ -183,12 +183,12 @@ func (m *Manager) SubscribeControlUpdates(ch chan<- sb.ControlUpdate) error {
 }
 
 // GetTelemetry gets telemeter messages
-func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
-	ch := make(chan sb.TelemetryMessage)
+func (m *Manager) GetTelemetry() ([]e2ap.RicIndication, error) {
+	ch := make(chan e2ap.RicIndication)
 	if err := m.ListTelemetry(ch); err != nil {
 		return nil, err
 	}
-	messages := make([]sb.TelemetryMessage, 0)
+	messages := make([]e2ap.RicIndication, 0)
 	for telemetry := range ch {
 		messages = append(messages, telemetry)
 	}
@@ -196,12 +196,12 @@ func (m *Manager) GetTelemetry() ([]sb.TelemetryMessage, error) {
 }
 
 // ListTelemetry lists telemeter messages
-func (m *Manager) ListTelemetry(ch chan<- sb.TelemetryMessage) error {
+func (m *Manager) ListTelemetry(ch chan<- e2ap.RicIndication) error {
 	return m.telemetryStore.List(ch)
 }
 
 // SubscribeTelemetry subscribes the given channel to telemetry events
-func (m *Manager) SubscribeTelemetry(ch chan<- sb.TelemetryMessage, withReplay bool) error {
+func (m *Manager) SubscribeTelemetry(ch chan<- e2ap.RicIndication, withReplay bool) error {
 	if withReplay {
 		return m.telemetryStore.Watch(ch, telemetry.WithReplay())
 	}
@@ -247,6 +247,7 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 				log.Fatalf("Unable to create new session %s", err.Error())
 			}
 			if session != nil {
+				session.RicControlResponseHandlerFunc = m.StoreRicControlResponse
 				session.ControlUpdateHandlerFunc = m.StoreControlUpdate
 				session.TelemetryUpdateHandlerFunc = m.StoreTelemetry
 				session.EnableMetrics = m.enableMetrics
@@ -275,9 +276,9 @@ func GetManager() *Manager {
 
 // StoreTelemetry - put the telemetry update in the atomix store
 // Only handles MessageType_RADIO_MEAS_REPORT_PER_UE at the moment
-func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
+func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
 	m.telemetryChannel <- Event{
-		Type:   update.GetMessageType().String(),
+		Type:   update.GetHdr().GetMessageType().String(),
 		Object: update,
 	}
 
@@ -286,25 +287,22 @@ func (m *Manager) StoreTelemetry(update sb.TelemetryMessage) {
 		log.Fatalf("Could not put message %v in telemetry store %s", update, err.Error())
 	}
 
-	switch update.MessageType {
+	switch update.GetHdr().MessageType {
 	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
-		x, ok := update.S.(*sb.TelemetryMessage_RadioMeasReportPerUE)
-		if !ok {
-			log.Fatalf("Telemetry update has unexpected type %T", x)
-		}
+		msg := update.GetMsg()
 		log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
-			x.RadioMeasReportPerUE.Ecgi.PlmnId,
-			x.RadioMeasReportPerUE.Ecgi.Ecid,
-			x.RadioMeasReportPerUE.Crnti,
-			x.RadioMeasReportPerUE.RadioReportServCells[0].CqiHist[0],
-			x.RadioMeasReportPerUE.RadioReportServCells[0].GetEcgi().GetEcid(),
-			x.RadioMeasReportPerUE.RadioReportServCells[1].CqiHist[0],
-			x.RadioMeasReportPerUE.RadioReportServCells[1].GetEcgi().GetEcid(),
-			x.RadioMeasReportPerUE.RadioReportServCells[2].CqiHist[0],
-			x.RadioMeasReportPerUE.RadioReportServCells[2].GetEcgi().GetEcid(),
+			msg.GetRadioMeasReportPerUE().GetEcgi().GetPlmnId(),
+			msg.GetRadioMeasReportPerUE().GetEcgi().GetEcid(),
+			msg.GetRadioMeasReportPerUE().GetCrnti(),
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[0].CqiHist[0],
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[0].GetEcgi().GetEcid(),
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[1].CqiHist[0],
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[1].GetEcgi().GetEcid(),
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[2].CqiHist[0],
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[2].GetEcgi().GetEcid(),
 		)
 	default:
-		log.Fatalf("Telemetry update has unexpected type %T", update.MessageType)
+		log.Fatalf("Telemetry update has unexpected type %T", update.GetHdr().GetMessageType())
 	}
 }
 
