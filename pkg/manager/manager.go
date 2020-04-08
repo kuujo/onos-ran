@@ -100,8 +100,6 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
-		dispatcher:       newDispatcher(),
-		telemetryChannel: make(chan Event),
 	}
 	return &mgr, nil
 }
@@ -115,8 +113,6 @@ type Manager struct {
 	SbSessions              map[sb.ECGI]*southbound.Session
 	topoMonitor             monitor.TopoMonitor
 	enableMetrics           bool
-	dispatcher              *Dispatcher
-	telemetryChannel        chan Event
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store
@@ -178,7 +174,7 @@ func (m *Manager) ListControlUpdates(ch chan<- sb.ControlUpdate) error {
 }
 
 // SubscribeControlUpdates subscribes the given channel to control updates
-func (m *Manager) SubscribeControlUpdates(ch chan<- sb.ControlUpdate) error {
+func (m *Manager) SubscribeControlUpdates(ch chan<- updates.Event) error {
 	return m.updatesStore.Watch(ch, updates.WithReplay())
 }
 
@@ -201,21 +197,11 @@ func (m *Manager) ListTelemetry(ch chan<- e2ap.RicIndication) error {
 }
 
 // SubscribeTelemetry subscribes the given channel to telemetry events
-func (m *Manager) SubscribeTelemetry(ch chan<- e2ap.RicIndication, withReplay bool) error {
+func (m *Manager) SubscribeTelemetry(ch chan<- telemetry.Event, withReplay bool) error {
 	if withReplay {
 		return m.telemetryStore.Watch(ch, telemetry.WithReplay())
 	}
 	return m.telemetryStore.Watch(ch)
-}
-
-// RegisterTelemetryListener :
-func (m *Manager) RegisterTelemetryListener(name string) (chan Event, error) {
-	return m.dispatcher.registerTelemetryListener(name)
-}
-
-// UnregisterTelemetryListener :
-func (m *Manager) UnregisterTelemetryListener(name string) {
-	m.dispatcher.unregisterTelemetryListener(name)
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -228,8 +214,6 @@ func (m *Manager) Run() {
 	if err != nil {
 		log.Errorf("Error listening to topo service: %s", err.Error())
 	}
-
-	go m.dispatcher.listenTelemetryEvents(m.telemetryChannel)
 }
 
 func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
@@ -277,11 +261,6 @@ func GetManager() *Manager {
 // StoreTelemetry - put the telemetry update in the atomix store
 // Only handles MessageType_RADIO_MEAS_REPORT_PER_UE at the moment
 func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
-	m.telemetryChannel <- Event{
-		Type:   update.GetHdr().GetMessageType().String(),
-		Object: update,
-	}
-
 	err := m.telemetryStore.Put(&update)
 	if err != nil {
 		log.Fatalf("Could not put message %v in telemetry store %s", update, err.Error())

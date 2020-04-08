@@ -19,7 +19,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-ric/api/store/message"
 	"github.com/onosproject/onos-ric/pkg/config"
-	timestore "github.com/onosproject/onos-ric/pkg/store/time"
+	clocks "github.com/onosproject/onos-ric/pkg/store/time"
 	"io"
 	"sync"
 	"time"
@@ -37,7 +37,7 @@ const requestTimeout = 15 * time.Second
 const retryInterval = time.Second
 
 // NewDistributedStore creates a new distributed message store
-func NewDistributedStore(name string, config config.Config, db atomix.DatabaseType, timeStore timestore.Store) (Store, error) {
+func NewDistributedStore(name string, config config.Config, db atomix.DatabaseType, timeStore clocks.Store) (Store, error) {
 	log.Info("Creating distributed message store")
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(db))
 
@@ -51,9 +51,10 @@ func NewDistributedStore(name string, config config.Config, db atomix.DatabaseTy
 		return nil, err
 	}
 	store := &distributedStore{
-		dist:    messages,
-		entries: make(map[Key]entryStore),
-		time:    timeStore,
+		dist:     messages,
+		entries:  make(map[Key]entryStore),
+		watchers: make([]chan<- Event, 0),
+		clocks:   timeStore,
 	}
 	if err := store.open(); err != nil {
 		return nil, err
@@ -62,13 +63,13 @@ func NewDistributedStore(name string, config config.Config, db atomix.DatabaseTy
 }
 
 // NewLocalStore returns a new local message store
-func NewLocalStore(name string, timeStore timestore.Store) (Store, error) {
+func NewLocalStore(name string, timeStore clocks.Store) (Store, error) {
 	_, address := atomix.StartLocalNode()
 	return newLocalStore(address, name, timeStore)
 }
 
 // newLocalStore creates a new local message store
-func newLocalStore(address net.Address, name string, timeStore timestore.Store) (Store, error) {
+func newLocalStore(address net.Address, name string, timeStore clocks.Store) (Store, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
@@ -87,9 +88,33 @@ func newLocalStore(address net.Address, name string, timeStore timestore.Store) 
 	return &distributedStore{
 		dist:    messages,
 		entries: make(map[Key]entryStore),
-		time:    timeStore,
+		clocks:  timeStore,
 	}, nil
 }
+
+// Event is a message store event
+type Event struct {
+	// Type is the event type
+	Type EventType
+	// Key is the event message key
+	Key Key
+	// Message is the event message
+	Message message.MessageEntry
+}
+
+// EventType is a message store event type
+type EventType string
+
+const (
+	// EventNone indicates an event that was not triggered but replayed
+	EventNone EventType = ""
+	// EventInsert indicates the message was inserted into the store
+	EventInsert EventType = "insert"
+	// EventUpdate indicates the message was updated in the store
+	EventUpdate EventType = "update"
+	// EventDelete indicates the message was deleted from the store
+	EventDelete EventType = "remove"
+)
 
 // Store is interface for message store
 type Store interface {
@@ -99,7 +124,7 @@ type Store interface {
 	Get(Key, ...GetOption) (*message.MessageEntry, error)
 
 	// Puts a message to the store
-	Put(Key, *message.MessageEntry) error
+	Put(Key, *message.MessageEntry, ...PutOption) error
 
 	// Removes a message from the store
 	Delete(Key, ...DeleteOption) error
@@ -108,7 +133,7 @@ type Store interface {
 	List(ch chan<- message.MessageEntry) error
 
 	// Watch watches message updates
-	Watch(ch chan<- message.MessageEntry, opts ...WatchOption) error
+	Watch(ch chan<- Event, opts ...WatchOption) error
 
 	// Clear deletes all entries from the store
 	Clear() error
@@ -116,7 +141,7 @@ type Store interface {
 
 // GetOption is a message store get option
 type GetOption interface {
-	apply(options *getOptions)
+	configureGet(options *getOptions)
 }
 
 // getOptions is a struct of message get options
@@ -135,13 +160,21 @@ type getRevisionOption struct {
 	revision Revision
 }
 
-func (o *getRevisionOption) apply(options *getOptions) {
+func (o *getRevisionOption) configureGet(options *getOptions) {
 	options.revision = o.revision
 }
 
+// PutOption is a message store put option
+type PutOption interface {
+	configurePut(options *putOptions)
+}
+
+// putOptions is a struct of message put options
+type putOptions struct{}
+
 // DeleteOption is a message store delete option
 type DeleteOption interface {
-	apply(options *deleteOptions)
+	configureDelete(options *deleteOptions)
 }
 
 // deleteOptions is a struct of message delete options
@@ -151,22 +184,22 @@ type deleteOptions struct {
 
 // IfRevision returns a delete option that deletes the message only if its revision matches the given revision
 func IfRevision(revision Revision) DeleteOption {
-	return &deleteRevisionOption{
+	return &updateRevisionOption{
 		revision: revision,
 	}
 }
 
-type deleteRevisionOption struct {
+type updateRevisionOption struct {
 	revision Revision
 }
 
-func (o *deleteRevisionOption) apply(options *deleteOptions) {
+func (o *updateRevisionOption) configureDelete(options *deleteOptions) {
 	options.revision = o.revision
 }
 
 // WatchOption is a message store watch option
 type WatchOption interface {
-	apply(options *watchOptions)
+	configureWatch(options *watchOptions)
 }
 
 // watchOptions is a struct of message store watch options
@@ -186,16 +219,17 @@ type watchReplayOption struct {
 	replay bool
 }
 
-func (o *watchReplayOption) apply(options *watchOptions) {
+func (o *watchReplayOption) configureWatch(options *watchOptions) {
 	options.replay = o.replay
 }
 
 // distributedStore is an Atomix based store
 type distributedStore struct {
-	dist    _map.Map
-	entries map[Key]entryStore
-	time    timestore.Store
-	mu      sync.RWMutex
+	dist     _map.Map
+	entries  map[Key]entryStore
+	watchers []chan<- Event
+	clocks   clocks.Store
+	mu       sync.RWMutex
 }
 
 // open opens the store
@@ -206,13 +240,11 @@ func (s *distributedStore) open() error {
 	}
 	go func() {
 		for event := range ch {
-			s.mu.RLock()
-			store, ok := s.entries[Key(event.Entry.Key)]
-			s.mu.RUnlock()
-			if ok {
-				if entry, err := decodeEntry(event.Entry); err == nil {
-					tombstone := event.Type == _map.EventRemoved
-					go store.update(entry, tombstone)
+			if entry, err := decodeEntry(event.Entry); err == nil {
+				if store, err := s.getEntryStore(Key(event.Entry.Key)); err == nil {
+					go func() {
+						_ = store.update(Revision{}, entry, event.Type == _map.EventRemoved)
+					}()
 				}
 			}
 		}
@@ -221,7 +253,7 @@ func (s *distributedStore) open() error {
 }
 
 // getKeyStore uses a double checked lock to get or create a key store
-func (s *distributedStore) getEntryStore(key Key) entryStore {
+func (s *distributedStore) getEntryStore(key Key) (entryStore, error) {
 	s.mu.RLock()
 	store, ok := s.entries[key]
 	s.mu.RUnlock()
@@ -229,46 +261,52 @@ func (s *distributedStore) getEntryStore(key Key) entryStore {
 		s.mu.Lock()
 		store, ok = s.entries[key]
 		if !ok {
-			store = newEntryStore(s.dist, key)
+			clock, err := s.clocks.GetLogicalClock(clocks.Key(key))
+			if err != nil {
+				return nil, err
+			}
+			store = newEntryStore(s.dist, key, clock)
+			for _, watcher := range s.watchers {
+				store.watch(watcher)
+			}
 			s.entries[key] = store
 		}
 		s.mu.Unlock()
 	}
-	return store
+	return store, nil
 }
 
 func (s *distributedStore) Get(key Key, opts ...GetOption) (*message.MessageEntry, error) {
 	options := &getOptions{}
 	for _, opt := range opts {
-		opt.apply(options)
+		opt.configureGet(options)
 	}
-	return s.getEntryStore(key).get(options.revision)
+	store, err := s.getEntryStore(key)
+	if err != nil {
+		return nil, err
+	}
+	return store.get(options.revision)
 }
 
-func (s *distributedStore) GetRevision(key Key, revision Revision) (*message.MessageEntry, error) {
-	return s.getEntryStore(key).get(revision)
-}
-
-func (s *distributedStore) Put(key Key, entry *message.MessageEntry) error {
-	clock, err := s.time.GetLogicalClock(timestore.Key(key))
+func (s *distributedStore) Put(key Key, entry *message.MessageEntry, opts ...PutOption) error {
+	store, err := s.getEntryStore(key)
 	if err != nil {
 		return err
 	}
-	timestamp, err := clock.GetTimestamp()
-	if err != nil {
-		return err
-	}
-	entry.Term = uint64(timestamp.Epoch)
-	entry.Timestamp = uint64(timestamp.LogicalTime)
-	return s.getEntryStore(key).put(entry)
+	revision := newRevision(entry.Term, entry.Timestamp)
+	return store.put(revision, entry)
 }
 
 func (s *distributedStore) Delete(key Key, opts ...DeleteOption) error {
 	options := &deleteOptions{}
 	for _, opt := range opts {
-		opt.apply(options)
+		opt.configureDelete(options)
 	}
-	return s.getEntryStore(key).delete(options.revision)
+	store, err := s.getEntryStore(key)
+	if err != nil {
+		return err
+	}
+	return store.delete(options.revision)
 }
 
 func (s *distributedStore) List(ch chan<- message.MessageEntry) error {
@@ -288,30 +326,36 @@ func (s *distributedStore) List(ch chan<- message.MessageEntry) error {
 	return nil
 }
 
-func (s *distributedStore) Watch(ch chan<- message.MessageEntry, opts ...WatchOption) error {
+func (s *distributedStore) Watch(ch chan<- Event, opts ...WatchOption) error {
 	options := &watchOptions{}
 	for _, opt := range opts {
-		opt.apply(options)
-	}
-	watchOptions := []_map.WatchOption{}
-	if options.replay {
-		watchOptions = append(watchOptions, _map.WithReplay())
+		opt.configureWatch(options)
 	}
 
-	watchCh := make(chan *_map.Event)
-	if err := s.dist.Watch(context.Background(), watchCh, watchOptions...); err != nil {
-		return err
+	// Add the watcher to all stores
+	s.mu.Lock()
+	s.watchers = append(s.watchers, ch)
+	for _, store := range s.entries {
+		store.watch(ch)
 	}
-	go func() {
-		defer close(ch)
-		for event := range watchCh {
-			if event.Type != _map.EventRemoved {
-				if entry, err := decodeEntry(event.Entry); err == nil {
-					ch <- *entry
+	s.mu.Unlock()
+
+	// If replay is enabled, list the entries in the store to replay messages
+	if options.replay {
+		entryCh := make(chan *_map.Entry)
+		if err := s.dist.Entries(context.Background(), entryCh); err != nil {
+			return err
+		}
+		go func() {
+			for entry := range entryCh {
+				if message, err := decodeEntry(entry); err == nil {
+					if store, err := s.getEntryStore(Key(entry.Key)); err == nil {
+						_ = store.update(Revision{}, message, false)
+					}
 				}
 			}
-		}
-	}()
+		}()
+	}
 	return nil
 }
 
@@ -345,4 +389,31 @@ type Revision struct {
 	Term Term
 	// Timestamp is the timestamp at which the revision was created
 	Timestamp Timestamp
+}
+
+// isEqualTo returns a bool indicating whether the revision is equal to the given revision
+func (r Revision) isEqualTo(revision Revision) bool {
+	return r.Term == revision.Term && r.Timestamp == revision.Timestamp
+}
+
+// isNewerThan returns a bool indicating whether the revision is newer than the given revision
+func (r Revision) isNewerThan(revision Revision) bool {
+	return r.Term > revision.Term || (r.Term == revision.Term && r.Timestamp > revision.Timestamp)
+}
+
+// isEqualToOrNewerThan returns a bool indicating whether the revision is equal to or newer than the given revision
+func (r Revision) isEqualToOrNewerThan(revision Revision) bool {
+	return r.Term > revision.Term || (r.Term == revision.Term && r.Timestamp >= revision.Timestamp)
+}
+
+// isZero returns a bool indicating whether the revision is not set
+func (r Revision) isZero() bool {
+	return r.Term == 0 || r.Timestamp == 0
+}
+
+func newRevision(term, timestamp uint64) Revision {
+	return Revision{
+		Term:      Term(term),
+		Timestamp: Timestamp(timestamp),
+	}
 }

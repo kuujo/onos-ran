@@ -40,7 +40,7 @@ func TestStore(t *testing.T) {
 	defer timeStore.Close()
 	defer mastershipStore.Close()
 
-	watchCh1 := make(chan e2ap.RicIndication)
+	watchCh1 := make(chan Event)
 	err = testStore.Watch(watchCh1)
 	assert.NoError(t, err)
 
@@ -71,16 +71,16 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, value1.GetHdr().GetMessageType().String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
 
 	event := <-watchCh1
-	assert.Equal(t, "test-ecid", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
 
-	watchCh2 := make(chan e2ap.RicIndication)
+	watchCh2 := make(chan Event)
 	err = testStore.Watch(watchCh2, WithReplay())
 	assert.NoError(t, err)
 
 	event = <-watchCh2
-	assert.Equal(t, "test-ecid", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
 
 	telemetry2 := &e2ap.RicIndication{
 		Hdr: &e2sm.RicIndicationHeader{
@@ -110,12 +110,12 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, value2.GetHdr().MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
 
 	event = <-watchCh1
-	assert.Equal(t, "test-ecid-2", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-2", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid-2", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
 
 	event = <-watchCh2
-	assert.Equal(t, "test-ecid-2", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-2", event.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid-2", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-2", event.Message.GetMsg().GetRadioMeasReportPerCell().Ecgi.PlmnId)
 
 	telemetry3 := &e2ap.RicIndication{
 		Hdr: &e2sm.RicIndicationHeader{
@@ -146,12 +146,12 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, value3.GetHdr().MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_UE.String())
 
 	event = <-watchCh1
-	assert.Equal(t, "test-ecid-3", event.GetMsg().GetRadioMeasReportPerUE().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-3", event.GetMsg().GetRadioMeasReportPerUE().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid-3", event.Message.GetMsg().GetRadioMeasReportPerUE().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.Message.GetMsg().GetRadioMeasReportPerUE().Ecgi.PlmnId)
 
 	event = <-watchCh2
-	assert.Equal(t, "test-ecid-3", event.GetMsg().GetRadioMeasReportPerUE().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-3", event.GetMsg().GetRadioMeasReportPerUE().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid-3", event.Message.GetMsg().GetRadioMeasReportPerUE().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.Message.GetMsg().GetRadioMeasReportPerUE().Ecgi.PlmnId)
 
 	listCh := make(chan e2ap.RicIndication)
 	err = testStore.List(listCh)
