@@ -22,14 +22,16 @@ import (
 	"github.com/atomix/go-client/pkg/client/map"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-ric/api/store/message"
+	clocks "github.com/onosproject/onos-ric/pkg/store/time"
 	"sync"
 	"time"
 )
 
-func newEntryStore(dist _map.Map, key Key) entryStore {
+func newEntryStore(dist _map.Map, key Key, clock clocks.LogicalClock) entryStore {
 	return &distributedEntryStore{
 		dist:     dist,
 		key:      key,
+		clock:    clock,
 		watchers: list.New(),
 		waiters:  list.New(),
 	}
@@ -44,13 +46,13 @@ type entryWatcher struct {
 // entryStore is a store for a single message entry
 type entryStore interface {
 	// update updates an entry in the store
-	update(updatedEntry *message.MessageEntry, tombstone bool)
+	update(revision Revision, updatedEntry *message.MessageEntry, tombstone bool) error
 
 	// get gets a message from the store
 	get(revision Revision) (*message.MessageEntry, error)
 
 	// put puts a message in the store
-	put(entry *message.MessageEntry) error
+	put(revision Revision, entry *message.MessageEntry) error
 
 	// delete deletes a message from the store
 	delete(revision Revision) error
@@ -63,13 +65,14 @@ type entryStore interface {
 type distributedEntryStore struct {
 	dist     _map.Map
 	key      Key
+	clock    clocks.LogicalClock
 	cache    *message.MessageEntry
 	watchers *list.List
 	waiters  *list.List
 	mu       sync.RWMutex
 }
 
-func (s *distributedEntryStore) update(updateEntry *message.MessageEntry, tombstone bool) {
+func (s *distributedEntryStore) update(lockRevision Revision, updateEntry *message.MessageEntry, tombstone bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -81,15 +84,23 @@ func (s *distributedEntryStore) update(updateEntry *message.MessageEntry, tombst
 	if currentEntry != nil {
 		currentRevision = newRevision(currentEntry.Term, currentEntry.Timestamp)
 	}
-	updateRevision := newRevision(updateEntry.Term, updateEntry.Timestamp)
+
+	// If the lock revision is set and does not match the current revision, ignore the update
+	if !lockRevision.isZero() && !lockRevision.isEqualTo(currentRevision) {
+		return errors.New("optimistic lock failure")
+	}
 
 	// If the updated revision is newer than the current revision, update the cache
+	updateRevision := newRevision(updateEntry.Term, updateEntry.Timestamp)
 	if updateRevision.isNewerThan(currentRevision) {
 		s.cache = updateEntry
 		go s.triggerWatches(updateEntry)
 	} else if currentRevision.isEqualTo(updateRevision) {
+		println(fmt.Sprintf("%s currentRevision %v", s.key, currentRevision))
+		println(fmt.Sprintf("%s updateRevision %v", s.key, updateRevision))
 		go s.triggerWatches(updateEntry)
 	}
+	return nil
 }
 
 func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry) {
@@ -209,9 +220,20 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 	}
 }
 
-func (s *distributedEntryStore) put(update *message.MessageEntry) error {
+func (s *distributedEntryStore) put(revision Revision, update *message.MessageEntry) error {
+	// Timestamp the entry for the store
+	timestamp, err := s.clock.GetTimestamp()
+	if err != nil {
+		return err
+	}
+	update.Term = uint64(timestamp.Epoch)
+	update.Timestamp = uint64(timestamp.LogicalTime)
+
 	// Store the update in the local cache
-	s.update(update, false)
+	err = s.update(revision, update, false)
+	if err != nil {
+		return err
+	}
 
 	// Propagate the change to the store asynchronously
 	s.enqueuePut(update)
@@ -220,13 +242,20 @@ func (s *distributedEntryStore) put(update *message.MessageEntry) error {
 
 func (s *distributedEntryStore) delete(revision Revision) error {
 	// Create a timestamped entry for the store
+	timestamp, err := s.clock.GetTimestamp()
+	if err != nil {
+		return err
+	}
 	entry := &message.MessageEntry{
-		Term:      uint64(revision.Term),
-		Timestamp: uint64(revision.Timestamp),
+		Term:      uint64(timestamp.Epoch),
+		Timestamp: uint64(timestamp.LogicalTime),
 	}
 
 	// Store the update in the local cache
-	s.update(entry, true)
+	err = s.update(revision, entry, true)
+	if err != nil {
+		return err
+	}
 
 	// Enqueue the update to be written to the distributed store
 	s.enqueueDelete(revision)
@@ -354,7 +383,9 @@ func (s *distributedEntryStore) watch(ch chan<- message.MessageEntry) {
 	})
 	entry := s.cache
 	if entry != nil {
-		go s.update(entry, false)
+		go func() {
+			_ = s.update(Revision{}, entry, false)
+		}()
 	}
 }
 

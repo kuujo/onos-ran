@@ -17,14 +17,12 @@ package time
 import (
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"io"
-	"sync"
 )
 
 // NewStore creates a new time store
 func NewStore(mastershipStore mastership.Store) (Store, error) {
 	return &store{
 		mastership: mastershipStore,
-		clocks:     make(map[Key]LogicalClock),
 	}, nil
 }
 
@@ -42,28 +40,14 @@ type Store interface {
 // store is the default implementation of the time store
 type store struct {
 	mastership mastership.Store
-	clocks     map[Key]LogicalClock
-	mu         sync.RWMutex
 }
 
 func (s *store) GetLogicalClock(key Key) (LogicalClock, error) {
-	s.mu.RLock()
-	clock, ok := s.clocks[key]
-	s.mu.RUnlock()
-	if !ok {
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		clock, ok = s.clocks[key]
-		if !ok {
-			election, err := s.mastership.GetElection(mastership.Key(key))
-			if err != nil {
-				return nil, err
-			}
-			clock = newLogicalClock(election)
-			s.clocks[key] = clock
-		}
+	election, err := s.mastership.GetElection(mastership.Key(key))
+	if err != nil {
+		return nil, err
 	}
-	return clock, nil
+	return newLogicalClock(election), nil
 }
 
 func (s *store) Close() error {
