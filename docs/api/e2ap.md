@@ -132,8 +132,6 @@ limitations under the License.
 | ----------- | ------------ | ------------- | ------------|
 | RicSubscription | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream |  |
 | RicControl | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicControlResponse](#interface.e2ap.RicControlResponse) stream |  |
-| SendControl | [.interface.e2.ControlResponse](#interface.e2.ControlResponse) stream | [.interface.e2.ControlUpdate](#interface.e2.ControlUpdate) stream | TODO - convert rest of the services to new E2 |
-| SendTelemetry | [.interface.e2.L2MeasConfig](#interface.e2.L2MeasConfig) | [.interface.e2.TelemetryMessage](#interface.e2.TelemetryMessage) stream |  |
 
  
 

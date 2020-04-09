@@ -17,7 +17,6 @@ syntax = "proto3";
 
 package interface.e2ap;
 
-import "github.com/onosproject/onos-ric/api/sb/e2-interface.proto";
 import "github.com/onosproject/onos-ric/api/sb/e2sm/e2sm.proto";
 
 //-- **************************************************************
@@ -69,10 +68,6 @@ service E2AP {
 
     rpc RicSubscription (stream RicSubscriptionRequest) returns (stream RicIndication) {}
     rpc RicControl (stream RicControlRequest) returns (stream RicControlResponse) {}
-
-    // TODO - convert rest of the services to new E2
-    rpc SendControl (stream interface.e2.ControlResponse) returns (stream interface.e2.ControlUpdate) {}
-    rpc SendTelemetry (interface.e2.L2MeasConfig) returns (stream interface.e2.TelemetryMessage) {}
 }
 
 //-- **************************************************************
