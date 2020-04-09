@@ -49,7 +49,7 @@ type TelemetryUpdateHandler = func(e2ap.RicIndication)
 type RicControlResponseHandler = func(e2ap.RicControlResponse)
 
 // ControlUpdateHandler - a function for the session to write back to manager without the import cycle
-type ControlUpdateHandler = func(sb.ControlUpdate)
+type ControlUpdateHandler = func(e2ap.RicIndication)
 
 // Session is responsible for managing connections to and interactions with the RAN southbound.
 type Session struct {
@@ -59,9 +59,8 @@ type Session struct {
 
 	ricControlRequestChan  chan e2ap.RicControlRequest
 	ricControlResponseChan chan e2ap.RicControlResponse
-	controlResponses       chan sb.ControlResponse
-	controlUpdates         chan sb.ControlUpdate
-	telemetryUpdates       chan e2ap.RicIndication
+	controlIndications     chan e2ap.RicIndication
+	telemetryIndications   chan e2ap.RicIndication
 
 	RicControlResponseHandlerFunc RicControlResponseHandler
 	ControlUpdateHandlerFunc      ControlUpdateHandler
@@ -87,9 +86,8 @@ func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
 		Ecgi:                   ecgi,
 		ricControlRequestChan:  make(chan e2ap.RicControlRequest),
 		ricControlResponseChan: make(chan e2ap.RicControlResponse),
-		controlResponses:       make(chan sb.ControlResponse),
-		controlUpdates:         make(chan sb.ControlUpdate),
-		telemetryUpdates:       make(chan e2ap.RicIndication),
+		controlIndications:     make(chan e2ap.RicIndication),
+		telemetryIndications:   make(chan e2ap.RicIndication),
 	}, nil
 }
 
@@ -102,13 +100,13 @@ func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials) {
 }
 
 func (s *Session) recvTelemetryUpdates() {
-	for update := range s.telemetryUpdates {
+	for update := range s.telemetryIndications {
 		s.TelemetryUpdateHandlerFunc(update)
 	}
 }
 
 func (s *Session) recvUpdates() {
-	for update := range s.controlUpdates {
+	for update := range s.controlIndications {
 		s.ControlUpdateHandlerFunc(update)
 	}
 }
@@ -155,8 +153,6 @@ func (s *Session) manageConnection(connection *grpc.ClientConn) {
 	log.Infof("Connected to simulator on %s", s.EndPoint)
 	// Setup coordination channel
 	errors := make(chan error)
-
-	go s.handleControl(errors)
 
 	go s.ricControl(errors)
 
@@ -228,27 +224,6 @@ func (s *Session) ricControl(errors chan error) {
 	}
 }
 
-func (s *Session) handleControl(errors chan error) {
-	stream, err := s.client.SendControl(context.Background())
-	if err != nil {
-		errors <- err
-		return
-	}
-
-	waitc := make(chan error)
-	go func() {
-		for {
-			update, err := stream.Recv()
-			if err != nil {
-				close(waitc)
-				return
-			}
-			log.Infof("Got messageType %d from %s", update.MessageType, s.EndPoint)
-			s.processControlUpdate(update)
-		}
-	}()
-}
-
 func (s *Session) ricControlResponse(update *e2ap.RicControlResponse) {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
@@ -256,21 +231,9 @@ func (s *Session) ricControlResponse(update *e2ap.RicControlResponse) {
 		msg := update.GetMsg().GetCellConfigReport()
 		log.Infof("%s CellConfigReport plmnid:%s, ecid:%s", s.EndPoint, msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid())
 	default:
-		log.Fatalf("%s ControlResponse has unexpected type %d", msgType)
+		log.Fatalf("%s ControlResponse has unexpected type %T", s.EndPoint, msgType)
 	}
 	s.ricControlResponseChan <- *update
-}
-
-func (s *Session) processControlUpdate(update *sb.ControlUpdate) {
-	switch x := update.S.(type) {
-	case *sb.ControlUpdate_UEAdmissionRequest:
-		log.Infof("%s UEAdmissionRequest plmnid:%s, ecid:%s, crnti:%s, imsi:%d", s.EndPoint, x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti, x.UEAdmissionRequest.Imsi)
-	case *sb.ControlUpdate_UEReleaseInd:
-		log.Infof("%s UEReleaseInd plmnid:%s, ecid:%s, crnti:%s", s.EndPoint, x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
-	default:
-		log.Fatalf("%s Control update has unexpected type %T", s.EndPoint, x)
-	}
-	s.controlUpdates <- *update
 }
 
 func (s *Session) ricSubscribe(errors chan error) {
@@ -283,29 +246,27 @@ func (s *Session) ricSubscribe(errors chan error) {
 	waitc := make(chan error)
 	go func() {
 		for {
-			update, err := stream.Recv()
+			ind, err := stream.Recv()
 			if err != nil {
 				close(waitc)
 				return
 			}
-			log.Infof("%s indication messageType %d", s.EndPoint, update.GetHdr().GetMessageType())
-			s.processIndication(update)
+			log.Infof("%s indication messageType %d", s.EndPoint, ind.GetHdr().GetMessageType())
+			msgType := ind.GetHdr().GetMessageType()
+			switch msgType {
+			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+				if s.EnableMetrics {
+					tT := time.Now()
+					go s.addReceivedHOEventMeasuredRIC(ind, tT) // to monitor HO delay]
+				}
+				s.telemetryIndications <- *ind
+			case sb.MessageType_UE_ADMISSION_REQUEST, sb.MessageType_UE_RELEASE_IND:
+				s.controlIndications <- *ind
+			default:
+				log.Fatalf("%s indication has unexpected type %T", s.EndPoint, msgType)
+			}
 		}
 	}()
-}
-
-func (s *Session) processIndication(ind *e2ap.RicIndication) {
-	msgType := ind.GetHdr().GetMessageType()
-	switch msgType {
-	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
-		if s.EnableMetrics {
-			tT := time.Now()
-			go s.addReceivedHOEventMeasuredRIC(ind, tT) // to monitor HO delay]
-		}
-	default:
-		log.Fatalf("%s Telemetry update has unexpected type %d", s.EndPoint, msgType)
-	}
-	s.telemetryUpdates <- *ind
 }
 
 func (s *Session) addReceivedHOEventMeasuredRIC(update *e2ap.RicIndication, tT time.Time) {

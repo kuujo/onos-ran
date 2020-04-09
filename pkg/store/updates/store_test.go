@@ -21,6 +21,8 @@ import (
 	timestore "github.com/onosproject/onos-ric/pkg/store/time"
 
 	"github.com/onosproject/onos-ric/api/sb"
+	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,15 +43,19 @@ func TestStore(t *testing.T) {
 	err = testStore.Watch(watchCh2, WithReplay())
 	assert.NoError(t, err)
 
-	controlUpdate3 := &sb.ControlUpdate{
-		MessageType: sb.MessageType_UE_ADMISSION_STATUS,
-		S: &sb.ControlUpdate_UEAdmissionStatus{
-			UEAdmissionStatus: &sb.UEAdmissionStatus{
-				Ecgi: &sb.ECGI{
-					Ecid:   "test-ecid-3",
-					PlmnId: "test-plmnid-3",
+	controlUpdate3 := &e2ap.RicIndication{
+		Hdr: &e2sm.RicIndicationHeader{
+			MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
+		},
+		Msg: &e2sm.RicIndicationMessage{
+			S: &e2sm.RicIndicationMessage_UEAdmissionRequest{
+				UEAdmissionRequest: &sb.UEAdmissionRequest{
+					Ecgi: &sb.ECGI{
+						Ecid:   "test-ecid-3",
+						PlmnId: "test-plmnid-3",
+					},
+					Crnti: "test-crnti-3",
 				},
-				Crnti: "test-crnti-3",
 			},
 		},
 	}
@@ -60,14 +66,14 @@ func TestStore(t *testing.T) {
 		Ecid:   "test-ecid-3",
 		PlmnId: "test-plmnid-3",
 	}
-	id3 := ID(sb.NewID(controlUpdate3.GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3"))
+	id3 := ID(sb.NewID(controlUpdate3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3"))
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
-	assert.Equal(t, value3.MessageType.String(), sb.MessageType_UE_ADMISSION_STATUS.String())
+	assert.Equal(t, value3.GetHdr().MessageType.String(), sb.MessageType_UE_ADMISSION_REQUEST.String())
 
 	event := <-watchCh2
-	assert.Equal(t, "test-ecid-3", event.Message.GetUEAdmissionStatus().Ecgi.Ecid)
-	assert.Equal(t, "test-plmnid-3", event.Message.GetUEAdmissionStatus().Ecgi.PlmnId)
+	assert.Equal(t, "test-ecid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.PlmnId)
 
 	err = testStore.Delete(id3)
 	assert.Nil(t, err)

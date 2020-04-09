@@ -41,6 +41,9 @@ func (r *RicIndication) GetID() string {
 		crnti = r.GetMsg().GetRadioMeasReportPerUE().GetCrnti()
 	case sb.MessageType_RADIO_MEAS_REPORT_PER_CELL:
 		ecgi = *r.GetMsg().GetRadioMeasReportPerCell().GetEcgi()
+	case sb.MessageType_UE_ADMISSION_REQUEST:
+		ecgi = *r.GetMsg().GetUEAdmissionRequest().GetEcgi()
+		crnti = r.GetMsg().GetUEAdmissionRequest().GetCrnti()
 	}
 	return sb.NewID(r.GetHdr().GetMessageType(), ecgi.PlmnId, ecgi.Ecid, crnti)
 }

@@ -81,27 +81,27 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 func exposeCellConfig(mgr *manager.Manager) []prometheus.Counter {
 	var listCellConfigMsgs []prometheus.Counter
 
-	allControlUpdates, _ := mgr.GetControlUpdates()
+	allControlUpdates, _ := mgr.GetControl()
 	for i := 0; i < len(allControlUpdates); i++ {
-		switch allControlUpdates[i].S.(type) {
-		case *sb.ControlUpdate_CellConfigReport:
+		switch allControlUpdates[i].GetHdr().GetMessageType() {
+		case sb.MessageType_CELL_CONFIG_REPORT:
 			tmp := promauto.NewCounter(prometheus.CounterOpts{
 				Name: "cell_config_info",
 				ConstLabels: prometheus.Labels{
-					"plmnid":                  allControlUpdates[i].GetCellConfigReport().GetEcgi().GetPlmnId(),
-					"ecid":                    allControlUpdates[i].GetCellConfigReport().GetEcgi().GetEcid(),
-					"pci":                     string(allControlUpdates[i].GetCellConfigReport().GetPci()),
-					"earfcndl":                allControlUpdates[i].GetCellConfigReport().GetEarfcnDl(),
-					"earfcnul":                allControlUpdates[i].GetCellConfigReport().GetEarfcnUl(),
-					"rbsperttidl":             string(allControlUpdates[i].GetCellConfigReport().GetRbsPerTtiDl()),
-					"rbsperttiul":             string(allControlUpdates[i].GetCellConfigReport().GetRbsPerTtiUl()),
-					"numtxantenna":            string(allControlUpdates[i].GetCellConfigReport().GetNumTxAntenna()),
-					"duplexmode":              allControlUpdates[i].GetCellConfigReport().GetDuplexMode(),
-					"maxnumconnectedues":      string(allControlUpdates[i].GetCellConfigReport().GetMaxNumConnectedUes()),
-					"maxnumconnectedbearers":  string(allControlUpdates[i].GetCellConfigReport().GetMaxNumConnectedBearers()),
-					"maxnumuesschedperrttidl": string(allControlUpdates[i].GetCellConfigReport().GetMaxNumUesSchedPerTtiDl()),
-					"maxnumuesschedperttiul":  string(allControlUpdates[i].GetCellConfigReport().GetMaxNumUesSchedPerTtiUl()),
-					"dlfsschedenable":         allControlUpdates[i].GetCellConfigReport().GetDlfsSchedEnable(),
+					"plmnid":                  allControlUpdates[i].GetMsg().GetCellConfigReport().GetEcgi().GetPlmnId(),
+					"ecid":                    allControlUpdates[i].GetMsg().GetCellConfigReport().GetEcgi().GetEcid(),
+					"pci":                     string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetPci()),
+					"earfcndl":                allControlUpdates[i].GetMsg().GetCellConfigReport().GetEarfcnDl(),
+					"earfcnul":                allControlUpdates[i].GetMsg().GetCellConfigReport().GetEarfcnUl(),
+					"rbsperttidl":             string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetRbsPerTtiDl()),
+					"rbsperttiul":             string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetRbsPerTtiUl()),
+					"numtxantenna":            string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetNumTxAntenna()),
+					"duplexmode":              allControlUpdates[i].GetMsg().GetCellConfigReport().GetDuplexMode(),
+					"maxnumconnectedues":      string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumConnectedUes()),
+					"maxnumconnectedbearers":  string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumConnectedBearers()),
+					"maxnumuesschedperrttidl": string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumUesSchedPerTtiDl()),
+					"maxnumuesschedperttiul":  string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumUesSchedPerTtiUl()),
+					"dlfsschedenable":         allControlUpdates[i].GetMsg().GetCellConfigReport().GetDlfsSchedEnable(),
 				},
 			})
 			listCellConfigMsgs = append(listCellConfigMsgs, tmp)
@@ -114,16 +114,16 @@ func exposeCellConfig(mgr *manager.Manager) []prometheus.Counter {
 // exposeUEAdmRequests exposes UEAdmissionRequest info
 func exposeUEAdmRequests(mgr *manager.Manager) []prometheus.Counter {
 	var listUEAdmRequestMsgs []prometheus.Counter
-	allControlUpdates, _ := mgr.GetControlUpdates()
+	allControlUpdates, _ := mgr.GetUpdate()
 	for i := 0; i < len(allControlUpdates); i++ {
-		switch allControlUpdates[i].S.(type) {
-		case *sb.ControlUpdate_UEAdmissionRequest:
+		switch allControlUpdates[i].GetHdr().GetMessageType() {
+		case sb.MessageType_UE_ADMISSION_REQUEST:
 			tmp := promauto.NewCounter(prometheus.CounterOpts{
 				Name: "ue_adm_req_info",
 				ConstLabels: prometheus.Labels{
-					"crnti":  allControlUpdates[i].GetUEAdmissionRequest().GetCrnti(),
-					"plmnid": allControlUpdates[i].GetUEAdmissionRequest().Ecgi.GetPlmnId(),
-					"ecid":   allControlUpdates[i].GetUEAdmissionRequest().GetEcgi().GetEcid(),
+					"crnti":  allControlUpdates[i].GetMsg().GetUEAdmissionRequest().GetCrnti(),
+					"plmnid": allControlUpdates[i].GetMsg().GetUEAdmissionRequest().Ecgi.GetPlmnId(),
+					"ecid":   allControlUpdates[i].GetMsg().GetUEAdmissionRequest().GetEcgi().GetEcid(),
 				},
 			})
 			listUEAdmRequestMsgs = append(listUEAdmRequestMsgs, tmp)

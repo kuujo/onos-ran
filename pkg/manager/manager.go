@@ -63,19 +63,19 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		return nil, err
 	}
 
-	updatesStore, err := updates.NewDistributedStore(config, timeStore)
+	updateStore, err := updates.NewDistributedStore(config, timeStore)
 	if err != nil {
 		return nil, err
 	}
-	if err = updatesStore.Clear(); err != nil {
+	if err = updateStore.Clear(); err != nil {
 		log.Error("Error clearing Updates store %s", err.Error())
 	}
 
-	ricControlResponseStore, err := control.NewDistributedStore(config, timeStore)
+	controlStore, err := control.NewDistributedStore(config, timeStore)
 	if err != nil {
 		return nil, err
 	}
-	if err = ricControlResponseStore.Clear(); err != nil {
+	if err = controlStore.Clear(); err != nil {
 		log.Error("Error clearing Updates store %s", err.Error())
 	}
 
@@ -91,12 +91,12 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 	}
 
 	mgr = Manager{
-		ricControlResponseStore: ricControlResponseStore,
-		updatesStore:            updatesStore,
-		telemetryStore:          telemetryStore,
-		deviceChangesStore:      deviceChangeStore,
-		SbSessions:              make(map[sb.ECGI]*southbound.Session),
-		enableMetrics:           enableMetrics,
+		controlStore:       controlStore,
+		updateStore:        updateStore,
+		telemetryStore:     telemetryStore,
+		deviceChangesStore: deviceChangeStore,
+		SbSessions:         make(map[sb.ECGI]*southbound.Session),
+		enableMetrics:      enableMetrics,
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
@@ -106,13 +106,13 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 
 // Manager single point of entry for the RAN system.
 type Manager struct {
-	ricControlResponseStore control.Store
-	updatesStore            updates.Store
-	telemetryStore          telemetry.Store
-	deviceChangesStore      device.Store
-	SbSessions              map[sb.ECGI]*southbound.Session
-	topoMonitor             monitor.TopoMonitor
-	enableMetrics           bool
+	controlStore       control.Store
+	updateStore        updates.Store
+	telemetryStore     telemetry.Store
+	deviceChangesStore device.Store
+	SbSessions         map[sb.ECGI]*southbound.Session
+	topoMonitor        monitor.TopoMonitor
+	enableMetrics      bool
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store
@@ -120,42 +120,57 @@ func (m *Manager) StoreRicControlResponse(update e2ap.RicControlResponse) {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REQUEST:
-		_ = m.ricControlResponseStore.Put(&update)
+		_ = m.controlStore.Put(&update)
 	default:
 		log.Fatalf("RicControlResponse has unexpected type %d", msgType)
 	}
 }
 
 // StoreControlUpdate - put the control update in the atomix store
-func (m *Manager) StoreControlUpdate(update sb.ControlUpdate) {
-	log.Infof("Got messageType %s", update.MessageType)
-	switch x := update.S.(type) {
-	case *sb.ControlUpdate_UEAdmissionRequest:
-		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", x.UEAdmissionRequest.Ecgi.PlmnId, x.UEAdmissionRequest.Ecgi.Ecid, x.UEAdmissionRequest.Crnti, x.UEAdmissionRequest.Imsi)
-		_ = m.updatesStore.Put(&update)
-	case *sb.ControlUpdate_UEReleaseInd:
-		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+func (m *Manager) StoreControlUpdate(update e2ap.RicIndication) {
+	log.Infof("Got messageType %s", update.GetHdr().MessageType)
+	switch update.GetHdr().GetMessageType() {
+	case sb.MessageType_UE_ADMISSION_REQUEST:
+		msg := update.GetMsg().GetUEAdmissionRequest()
+		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti(), msg.GetImsi())
+		_ = m.updateStore.Put(&update)
+	case sb.MessageType_UE_RELEASE_IND:
+		msg := update.GetMsg().GetUEReleaseInd()
+		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
 
-		err := m.DeleteTelemetry(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		err := m.DeleteTelemetry(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
 		if err != nil {
 			log.Errorf("%s", err)
 		}
-		err = m.DeleteUEAdmissionRequest(x.UEReleaseInd.Ecgi.PlmnId, x.UEReleaseInd.Ecgi.Ecid, x.UEReleaseInd.Crnti)
+		err = m.DeleteUEAdmissionRequest(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
 		if err != nil {
 			log.Errorf("%s", err)
 		}
 	default:
-		log.Fatalf("ControlReport has unexpected type %T", x)
+		log.Fatalf("ControlReport has unexpected type %T", update.GetHdr().GetMessageType())
 	}
 }
 
-// GetControlUpdates gets control updates
-func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
-	ch := make(chan sb.ControlUpdate)
-	if err := m.ListControlUpdates(ch); err != nil {
+// GetUpdate gets update indications
+func (m *Manager) GetUpdate() ([]e2ap.RicIndication, error) {
+	ch := make(chan e2ap.RicIndication)
+	if err := m.ListUpdate(ch); err != nil {
 		return nil, err
 	}
-	messages := make([]sb.ControlUpdate, 0)
+	messages := make([]e2ap.RicIndication, 0)
+	for update := range ch {
+		messages = append(messages, update)
+	}
+	return messages, nil
+}
+
+// GetControl gets control updates
+func (m *Manager) GetControl() ([]e2ap.RicControlResponse, error) {
+	ch := make(chan e2ap.RicControlResponse)
+	if err := m.ListControl(ch); err != nil {
+		return nil, err
+	}
+	messages := make([]e2ap.RicControlResponse, 0)
 	for update := range ch {
 		messages = append(messages, update)
 	}
@@ -163,19 +178,19 @@ func (m *Manager) GetControlUpdates() ([]sb.ControlUpdate, error) {
 }
 
 // GetUEAdmissionByID retrieve a single value from the updates store
-func (m *Manager) GetUEAdmissionByID(ecgi *sb.ECGI, crnti string) (*sb.ControlUpdate, error) {
+func (m *Manager) GetUEAdmissionByID(ecgi *sb.ECGI, crnti string) (*e2ap.RicIndication, error) {
 	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, ecgi.PlmnId, ecgi.Ecid, crnti)
-	return m.updatesStore.Get(updates.ID(id))
+	return m.updateStore.Get(updates.ID(id))
 }
 
-// ListControlUpdates lists control updates
-func (m *Manager) ListControlUpdates(ch chan<- sb.ControlUpdate) error {
-	return m.updatesStore.List(ch)
+// ListUpdate lists control updates
+func (m *Manager) ListUpdate(ch chan<- e2ap.RicIndication) error {
+	return m.updateStore.List(ch)
 }
 
-// SubscribeControlUpdates subscribes the given channel to control updates
-func (m *Manager) SubscribeControlUpdates(ch chan<- updates.Event) error {
-	return m.updatesStore.Watch(ch, updates.WithReplay())
+// SubscribeUpdate subscribes the given channel to control updates
+func (m *Manager) SubscribeUpdate(ch chan<- updates.Event) error {
+	return m.updateStore.Watch(ch, updates.WithReplay())
 }
 
 // GetTelemetry gets telemeter messages
@@ -202,6 +217,16 @@ func (m *Manager) SubscribeTelemetry(ch chan<- telemetry.Event, withReplay bool)
 		return m.telemetryStore.Watch(ch, telemetry.WithReplay())
 	}
 	return m.telemetryStore.Watch(ch)
+}
+
+// ListControl ...
+func (m *Manager) ListControl(ch chan<- e2ap.RicControlResponse) error {
+	return m.controlStore.List(ch)
+}
+
+// SubscribeControl ...
+func (m *Manager) SubscribeControl(ch chan<- control.Event) error {
+	return m.controlStore.Watch(ch, control.WithReplay())
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -298,7 +323,7 @@ func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) erro
 // DeleteUEAdmissionRequest deletes UpdateControls
 func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti string) error {
 	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
-	if err := m.updatesStore.Delete(updates.ID(id)); err != nil {
+	if err := m.updateStore.Delete(updates.ID(id)); err != nil {
 		log.Infof("Error deleting UEAdmissionRequest, key=%s", id)
 		return err
 	}

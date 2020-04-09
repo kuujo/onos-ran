@@ -25,8 +25,8 @@ stores:
   - name: updates
     message:
       type:
-        package: github.com/onosproject/onos-ric/api/sb
-        name: ControlUpdate
+        package: github.com/onosproject/onos-ric/api/sb/e2ap
+        name: RicIndication
     storage:
       type: Cache
       name: updates

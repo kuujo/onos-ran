@@ -3,7 +3,7 @@
 package updates
 
 import (
-	sb "github.com/onosproject/onos-ric/api/sb"
+	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
 	messagestore "github.com/onosproject/onos-ric/pkg/store/message"
 	"io"
 )
@@ -27,7 +27,7 @@ type Event struct {
 	// ID is the message identifier
 	ID ID
 	// Message is the event message
-	Message sb.ControlUpdate
+	Message e2ap.RicIndication
 }
 
 // EventType is a store event type
@@ -45,16 +45,16 @@ type Store interface {
 	io.Closer
 
 	// Gets a message based on a given ID
-	Get(ID, ...GetOption) (*sb.ControlUpdate, error)
+	Get(ID, ...GetOption) (*e2ap.RicIndication, error)
 
 	// Puts a message to the store
-	Put(*sb.ControlUpdate, ...PutOption) error
+	Put(*e2ap.RicIndication, ...PutOption) error
 
 	// Removes a message from the store
 	Delete(ID, ...DeleteOption) error
 
 	// List all of the last up to date messages
-	List(ch chan<- sb.ControlUpdate) error
+	List(ch chan<- e2ap.RicIndication) error
 
 	// Watch watches the store for changes
 	Watch(ch chan<- Event, opts ...WatchOption) error

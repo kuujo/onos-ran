@@ -26,8 +26,8 @@ import (
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/onosproject/onos-ric/pkg/manager"
+	"github.com/onosproject/onos-ric/pkg/store/control"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
-	"github.com/onosproject/onos-ric/pkg/store/updates"
 	"google.golang.org/grpc"
 )
 
@@ -60,30 +60,30 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	}
 
 	if req.Ecgi == nil {
-		ch := make(chan sb.ControlUpdate)
+		ch := make(chan e2ap.RicControlResponse)
 		if req.Subscribe {
-			watchCh := make(chan updates.Event)
-			if err := manager.GetManager().SubscribeControlUpdates(watchCh); err != nil {
+			watchCh := make(chan control.Event)
+			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != updates.EventDelete {
+					if event.Type != control.EventDelete {
 						ch <- event.Message
 					}
 				}
 			}()
 		} else {
-			if err := manager.GetManager().ListControlUpdates(ch); err != nil {
+			if err := manager.GetManager().ListControl(ch); err != nil {
 				return err
 			}
 		}
 
 		for update := range ch {
-			switch update.GetMessageType() {
+			switch update.GetHdr().GetMessageType() {
 			case sb.MessageType_CELL_CONFIG_REPORT:
-				cellConfigReport := update.GetCellConfigReport()
+				cellConfigReport := update.GetMsg().GetCellConfigReport()
 				ecgi := nb.ECGI{
 					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
 					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
@@ -109,30 +109,30 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 		return fmt.Errorf("subscribe not yet implemented")
 	}
 	if req.Ecgi == nil {
-		ch := make(chan sb.ControlUpdate)
+		ch := make(chan e2ap.RicControlResponse)
 		if req.Subscribe {
-			watchCh := make(chan updates.Event)
-			if err := manager.GetManager().SubscribeControlUpdates(watchCh); err != nil {
+			watchCh := make(chan control.Event)
+			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != updates.EventDelete {
+					if event.Type != control.EventDelete {
 						ch <- event.Message
 					}
 				}
 			}()
 		} else {
-			if err := manager.GetManager().ListControlUpdates(ch); err != nil {
+			if err := manager.GetManager().ListControl(ch); err != nil {
 				return err
 			}
 		}
 
 		for update := range ch {
-			switch update.GetMessageType() {
+			switch update.GetHdr().GetMessageType() {
 			case sb.MessageType_CELL_CONFIG_REPORT:
-				cellConfigReport := update.GetCellConfigReport()
+				cellConfigReport := update.GetMsg().GetCellConfigReport()
 				ecgi := nb.ECGI{
 					Ecid:   cellConfigReport.GetEcgi().GetEcid(),
 					Plmnid: cellConfigReport.GetEcgi().GetPlmnId(),
@@ -217,9 +217,9 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 				if !req.Noimsi {
 					update, err := manager.GetManager().GetUEAdmissionByID(radioReportUe.GetEcgi(), radioReportUe.Crnti)
 					if err == nil {
-						ueLinkInfo.Imsi = fmt.Sprintf("%d", update.GetUEAdmissionRequest().GetImsi())
+						ueLinkInfo.Imsi = fmt.Sprintf("%d", update.GetMsg().GetUEAdmissionRequest().GetImsi())
 					} else {
-						log.Infof("Cannot find Imsi for %v %s", radioReportUe.Ecgi, radioReportUe.Crnti)
+						log.Infof("Cannot find Imsi for %v %s", radioReportUe.GetEcgi(), radioReportUe.GetCrnti())
 					}
 				}
 				if err := stream.Send(&ueLinkInfo); err != nil {
@@ -237,7 +237,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
 func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
-	if req == nil || req.Crnti == "" ||
+	if req == nil || req.GetCrnti() == "" ||
 		req.DstStation == nil || req.DstStation.Plmnid == "" || req.DstStation.Ecid == "" ||
 		req.SrcStation == nil || req.SrcStation.Plmnid == "" || req.SrcStation.Ecid == "" {
 
@@ -256,7 +256,7 @@ func (s Server) TriggerHandOverStream(stream nb.C1InterfaceService_TriggerHandOv
 		if err != nil {
 			return err
 		}
-		if req == nil || req.Crnti == "" ||
+		if req == nil || req.GetCrnti() == "" ||
 			req.DstStation == nil || req.DstStation.Plmnid == "" || req.DstStation.Ecid == "" ||
 			req.SrcStation == nil || req.SrcStation.Plmnid == "" || req.SrcStation.Ecid == "" {
 
