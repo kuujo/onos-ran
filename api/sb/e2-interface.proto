@@ -18,70 +18,6 @@ syntax = "proto3";
 
 package interface.e2;
 
-// TelemetryMessage carries sensory data about the RAN environment.
-message TelemetryMessage {
-    MessageType messageType = 1;
-    oneof s {
-        RadioMeasReportPerUE radioMeasReportPerUE = 2;
-
-        // Implement later
-        RadioMeasReportPerCell radioMeasReportPerCell = 3;
-        SchedMeasReportPerCell schedMeasReportPerCell = 4;
-        PDCPMeasReportPerUe pDCPMeasReportPerUe = 5;
-    }
-}
-
-// NOTE: The numbers in the comments are merely notes to document sequencing; they will be cleaned up later.
-
-// ControlUpdate carries a class of asynchronous control messages initiated by the RAN environment.
-message ControlUpdate {
-    MessageType messageType = 1;
-    oneof s {
-        // 2. CellConfigReport
-        CellConfigReport cellConfigReport = 2;
-
-        // 4. RRMConfigStatus
-        RRMConfigStatus rRMConfigStatus = 3;
-
-        // 11. UEAdmissionRequest
-        UEAdmissionRequest uEAdmissionRequest = 4;
-        // 13. UEAdmissionStatus
-        UEAdmissionStatus uEAdmissionStatus = 5;
-        // 14. UEContextUpdate
-        UEContextUpdate uEContextUpdate = 6;
-
-        // 21. BearerAdmissionRequest
-        BearerAdmissionRequest bearerAdmissionRequest = 7;
-
-        // 23. BearerAdmissionStatus
-        BearerAdmissionStatus bearerAdmissionStatus = 8;
-
-        // 32. UEContextUpdate   (sent from dstENodeB)
-        // 33. HOComplete        (sent from dstENodeB)
-        HOComplete hOComplete = 9;
-        HOFailure hOFailure = 10;
-        HOCause hOCause = 11;
-
-        UEReleaseInd uEReleaseInd = 12;
-    }
-}
-
-// ControlResponse contains asynchronous responses to control updates, e.g. admission response.
-message ControlResponse {
-    MessageType messageType = 1;
-    oneof s {
-        // 1. CellConfigRequest
-        CellConfigRequest cellConfigRequest = 2;
-
-        // 12. UEAdmissionResponse
-        UEAdmissionResponse uEAdmissionResponse = 5;
-
-        // 22. BearerAdmissionResponse
-        BearerAdmissionResponse bearerAdmissionResponse = 6;
-    }
-}
-
-
 // Definition of all message types in E2 interface
 enum MessageType {
     UNKNOWN_MESSAGE = 0;
@@ -122,66 +58,6 @@ enum MessageType {
     RRC_MEAS_CONFIG = 35; // Defined, but not used yet
 
     // Can be extended if necessary
-}
-
-// Message header
-message MessageHeader {
-    MessageType messageType = 1;
-
-    // Can be extended if necessary
-}
-
-// Message payload; one of s defined below
-message MessagePayload {
-    oneof s {
-        CellConfigRequest cellConfigRequest = 1;
-        CellConfigReport cellConfigReport = 2;
-        UEAdmissionRequest uEAdmissionRequest = 3;
-        UEAdmissionResponse uEAdmissionResponse = 4;
-        UEAdmissionStatus uEAdmissionStatus = 5;
-        UEContextUpdate uEContextUpdate = 6;
-        UEReconfigInd uEReconfigInd = 7;
-        UEReleaseInd uEReleaseInd = 8;
-        BearerAdmissionRequest bearerAdmissionRequest = 9;
-        BearerAdmissionResponse bearerAdmissionResponse = 10;
-        BearerAdmissionStatus bearerAdmissionStatus = 11;
-        BearerReleaseInd bearerReleaseInd = 12;
-        HORequest hORequest = 13;
-        HOFailure hOFailure = 14;
-        HOComplete hOComplete = 15;
-        HOCause hOCause = 16;
-        RRCMeasConfig rRCMeasConfig = 17;
-        RxSigMeasReport rxSigMeasReport = 18;
-        L2MeasConfig l2MeasConfig = 19;
-        RadioMeasReportPerUE radioMeasReportPerU = 20;
-        RadioMeasReportPerCell radioMeasReportPerCell = 21;
-        SchedMeasReportPerUE schedMeasReportPerUE = 22;
-        SchedMeasReportPerCell schedMeasReportPerCell = 23;
-        PDCPMeasReportPerUe pDCPMeasReportPerUe = 24;
-        RRMConfig rRMConfig = 25;
-        RRMConfigStatus rRMConfigStatus = 26;
-        UECapabilityEnquiry uECapabilityEnquiry = 27;
-        UECapabilityInfo uECapabilityInfo = 28;
-        ScellAdd scellAdd = 29;
-        ScellAddStatus scellAddStatus = 30;
-        ScellDelete scellDelete = 31;
-        SeNBAdd seNBAdd = 32;
-        SeNBAddStatus seNBAddStatus = 33;
-        SeNBDelete seNBDelete = 34;
-        TrafficSplitConfig trafficSplitConfig = 35;
-    }
-}
-
-// Full message frame having one header and one payload
-message Message {
-    MessageHeader header = 1;
-    MessagePayload payload = 2;
-}
-
-// RPC result
-message ServiceResult {
-    int32 resultCode = 1;
-    string resultMessage = 2;
 }
 
 // From here, detailed  interface messages are coming up

@@ -19,8 +19,6 @@
     - [CandScell](#interface.e2.CandScell)
     - [CellConfigReport](#interface.e2.CellConfigReport)
     - [CellConfigRequest](#interface.e2.CellConfigRequest)
-    - [ControlResponse](#interface.e2.ControlResponse)
-    - [ControlUpdate](#interface.e2.ControlUpdate)
     - [DCCap](#interface.e2.DCCap)
     - [DelMeasId](#interface.e2.DelMeasId)
     - [ECGI](#interface.e2.ECGI)
@@ -37,9 +35,6 @@
     - [MeasIdAction](#interface.e2.MeasIdAction)
     - [MeasIdActionChoice](#interface.e2.MeasIdActionChoice)
     - [MeasObject](#interface.e2.MeasObject)
-    - [Message](#interface.e2.Message)
-    - [MessageHeader](#interface.e2.MessageHeader)
-    - [MessagePayload](#interface.e2.MessagePayload)
     - [PCIARFCN](#interface.e2.PCIARFCN)
     - [PDCPMeasReportPerUe](#interface.e2.PDCPMeasReportPerUe)
     - [PRBUsage](#interface.e2.PRBUsage)
@@ -65,8 +60,6 @@
     - [SeNBAdd](#interface.e2.SeNBAdd)
     - [SeNBAddStatus](#interface.e2.SeNBAddStatus)
     - [SeNBDelete](#interface.e2.SeNBDelete)
-    - [ServiceResult](#interface.e2.ServiceResult)
-    - [TelemetryMessage](#interface.e2.TelemetryMessage)
     - [ThreasholdEUTRA](#interface.e2.ThreasholdEUTRA)
     - [ThresholdEUTRAChoice](#interface.e2.ThresholdEUTRAChoice)
     - [TrafficSplitConfig](#interface.e2.TrafficSplitConfig)
@@ -401,50 +394,6 @@ CellConfigRequest message
 
 
 
-<a name="interface.e2.ControlResponse"></a>
-
-### ControlResponse
-ControlResponse contains asynchronous responses to control updates, e.g. admission response.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| messageType | [MessageType](#interface.e2.MessageType) |  |  |
-| cellConfigRequest | [CellConfigRequest](#interface.e2.CellConfigRequest) |  | 1. CellConfigRequest |
-| uEAdmissionResponse | [UEAdmissionResponse](#interface.e2.UEAdmissionResponse) |  | 12. UEAdmissionResponse |
-| bearerAdmissionResponse | [BearerAdmissionResponse](#interface.e2.BearerAdmissionResponse) |  | 22. BearerAdmissionResponse |
-
-
-
-
-
-
-<a name="interface.e2.ControlUpdate"></a>
-
-### ControlUpdate
-ControlUpdate carries a class of asynchronous control messages initiated by the RAN environment.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| messageType | [MessageType](#interface.e2.MessageType) |  |  |
-| cellConfigReport | [CellConfigReport](#interface.e2.CellConfigReport) |  | 2. CellConfigReport |
-| rRMConfigStatus | [RRMConfigStatus](#interface.e2.RRMConfigStatus) |  | 4. RRMConfigStatus |
-| uEAdmissionRequest | [UEAdmissionRequest](#interface.e2.UEAdmissionRequest) |  | 11. UEAdmissionRequest |
-| uEAdmissionStatus | [UEAdmissionStatus](#interface.e2.UEAdmissionStatus) |  | 13. UEAdmissionStatus |
-| uEContextUpdate | [UEContextUpdate](#interface.e2.UEContextUpdate) |  | 14. UEContextUpdate |
-| bearerAdmissionRequest | [BearerAdmissionRequest](#interface.e2.BearerAdmissionRequest) |  | 21. BearerAdmissionRequest |
-| bearerAdmissionStatus | [BearerAdmissionStatus](#interface.e2.BearerAdmissionStatus) |  | 23. BearerAdmissionStatus |
-| hOComplete | [HOComplete](#interface.e2.HOComplete) |  | 32. UEContextUpdate (sent from dstENodeB) 33. HOComplete (sent from dstENodeB) |
-| hOFailure | [HOFailure](#interface.e2.HOFailure) |  |  |
-| hOCause | [HOCause](#interface.e2.HOCause) |  |  |
-| uEReleaseInd | [UEReleaseInd](#interface.e2.UEReleaseInd) |  |  |
-
-
-
-
-
-
 <a name="interface.e2.DCCap"></a>
 
 ### DCCap
@@ -712,86 +661,6 @@ L2MeasConfig message
 | ----- | ---- | ----- | ----------- |
 | dlFreq | [string](#string) |  |  |
 | measCells | [MeasCell](#interface.e2.MeasCell) | repeated |  |
-
-
-
-
-
-
-<a name="interface.e2.Message"></a>
-
-### Message
-Full message frame having one header and one payload
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| header | [MessageHeader](#interface.e2.MessageHeader) |  |  |
-| payload | [MessagePayload](#interface.e2.MessagePayload) |  |  |
-
-
-
-
-
-
-<a name="interface.e2.MessageHeader"></a>
-
-### MessageHeader
-Message header
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| messageType | [MessageType](#interface.e2.MessageType) |  |  |
-
-
-
-
-
-
-<a name="interface.e2.MessagePayload"></a>
-
-### MessagePayload
-Message payload; one of s defined below
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| cellConfigRequest | [CellConfigRequest](#interface.e2.CellConfigRequest) |  |  |
-| cellConfigReport | [CellConfigReport](#interface.e2.CellConfigReport) |  |  |
-| uEAdmissionRequest | [UEAdmissionRequest](#interface.e2.UEAdmissionRequest) |  |  |
-| uEAdmissionResponse | [UEAdmissionResponse](#interface.e2.UEAdmissionResponse) |  |  |
-| uEAdmissionStatus | [UEAdmissionStatus](#interface.e2.UEAdmissionStatus) |  |  |
-| uEContextUpdate | [UEContextUpdate](#interface.e2.UEContextUpdate) |  |  |
-| uEReconfigInd | [UEReconfigInd](#interface.e2.UEReconfigInd) |  |  |
-| uEReleaseInd | [UEReleaseInd](#interface.e2.UEReleaseInd) |  |  |
-| bearerAdmissionRequest | [BearerAdmissionRequest](#interface.e2.BearerAdmissionRequest) |  |  |
-| bearerAdmissionResponse | [BearerAdmissionResponse](#interface.e2.BearerAdmissionResponse) |  |  |
-| bearerAdmissionStatus | [BearerAdmissionStatus](#interface.e2.BearerAdmissionStatus) |  |  |
-| bearerReleaseInd | [BearerReleaseInd](#interface.e2.BearerReleaseInd) |  |  |
-| hORequest | [HORequest](#interface.e2.HORequest) |  |  |
-| hOFailure | [HOFailure](#interface.e2.HOFailure) |  |  |
-| hOComplete | [HOComplete](#interface.e2.HOComplete) |  |  |
-| hOCause | [HOCause](#interface.e2.HOCause) |  |  |
-| rRCMeasConfig | [RRCMeasConfig](#interface.e2.RRCMeasConfig) |  |  |
-| rxSigMeasReport | [RxSigMeasReport](#interface.e2.RxSigMeasReport) |  |  |
-| l2MeasConfig | [L2MeasConfig](#interface.e2.L2MeasConfig) |  |  |
-| radioMeasReportPerU | [RadioMeasReportPerUE](#interface.e2.RadioMeasReportPerUE) |  |  |
-| radioMeasReportPerCell | [RadioMeasReportPerCell](#interface.e2.RadioMeasReportPerCell) |  |  |
-| schedMeasReportPerUE | [SchedMeasReportPerUE](#interface.e2.SchedMeasReportPerUE) |  |  |
-| schedMeasReportPerCell | [SchedMeasReportPerCell](#interface.e2.SchedMeasReportPerCell) |  |  |
-| pDCPMeasReportPerUe | [PDCPMeasReportPerUe](#interface.e2.PDCPMeasReportPerUe) |  |  |
-| rRMConfig | [RRMConfig](#interface.e2.RRMConfig) |  |  |
-| rRMConfigStatus | [RRMConfigStatus](#interface.e2.RRMConfigStatus) |  |  |
-| uECapabilityEnquiry | [UECapabilityEnquiry](#interface.e2.UECapabilityEnquiry) |  |  |
-| uECapabilityInfo | [UECapabilityInfo](#interface.e2.UECapabilityInfo) |  |  |
-| scellAdd | [ScellAdd](#interface.e2.ScellAdd) |  |  |
-| scellAddStatus | [ScellAddStatus](#interface.e2.ScellAddStatus) |  |  |
-| scellDelete | [ScellDelete](#interface.e2.ScellDelete) |  |  |
-| seNBAdd | [SeNBAdd](#interface.e2.SeNBAdd) |  |  |
-| seNBAddStatus | [SeNBAddStatus](#interface.e2.SeNBAddStatus) |  |  |
-| seNBDelete | [SeNBDelete](#interface.e2.SeNBDelete) |  |  |
-| trafficSplitConfig | [TrafficSplitConfig](#interface.e2.TrafficSplitConfig) |  |  |
 
 
 
@@ -1248,41 +1117,6 @@ SeNBDelete message
 | crnti | [string](#string) |  |  |
 | mEcgi | [ECGI](#interface.e2.ECGI) |  |  |
 | sEcgi | [ECGI](#interface.e2.ECGI) |  |  |
-
-
-
-
-
-
-<a name="interface.e2.ServiceResult"></a>
-
-### ServiceResult
-RPC result
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resultCode | [int32](#int32) |  |  |
-| resultMessage | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="interface.e2.TelemetryMessage"></a>
-
-### TelemetryMessage
-TelemetryMessage carries sensory data about the RAN environment.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| messageType | [MessageType](#interface.e2.MessageType) |  |  |
-| radioMeasReportPerUE | [RadioMeasReportPerUE](#interface.e2.RadioMeasReportPerUE) |  |  |
-| radioMeasReportPerCell | [RadioMeasReportPerCell](#interface.e2.RadioMeasReportPerCell) |  | Implement later |
-| schedMeasReportPerCell | [SchedMeasReportPerCell](#interface.e2.SchedMeasReportPerCell) |  |  |
-| pDCPMeasReportPerUe | [PDCPMeasReportPerUe](#interface.e2.PDCPMeasReportPerUe) |  |  |
 
 
 
