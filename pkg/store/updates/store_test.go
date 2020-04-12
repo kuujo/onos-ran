@@ -59,14 +59,14 @@ func TestStore(t *testing.T) {
 			},
 		},
 	}
-	err = testStore.Put(controlUpdate3)
+	err = testStore.Put(GetID(controlUpdate3), controlUpdate3)
 	assert.Nil(t, err)
 
 	ecigTest3 := sb.ECGI{
 		Ecid:   "test-ecid-3",
 		PlmnId: "test-plmnid-3",
 	}
-	id3 := ID(sb.NewID(controlUpdate3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3"))
+	id3 := NewID(controlUpdate3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3")
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
 	assert.Equal(t, value3.GetHdr().MessageType.String(), sb.MessageType_UE_ADMISSION_REQUEST.String())

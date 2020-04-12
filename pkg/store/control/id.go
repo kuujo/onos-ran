@@ -20,6 +20,7 @@ import (
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 )
 
+// NewID creates a new control store ID
 func NewID(messageType sb.MessageType, plmnidn, ecid string) ID {
 	return ID{
 		Partition: PartitionKey(fmt.Sprintf("%s:%s", plmnidn, ecid)),
@@ -27,6 +28,7 @@ func NewID(messageType sb.MessageType, plmnidn, ecid string) ID {
 	}
 }
 
+// GetID gets the control store ID for the given message
 func GetID(message *e2ap.RicControlResponse) ID {
 	var ecgi sb.ECGI
 	msgType := message.GetHdr().GetMessageType()

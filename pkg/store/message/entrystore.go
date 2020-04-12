@@ -132,7 +132,7 @@ func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry
 		if updateRevision.isNewerThan(watcher.revision) {
 			event := Event{
 				Type:    eventType,
-				ID:     s.id,
+				ID:      s.id,
 				Message: *updateEntry,
 			}
 			watcher.ch <- event
