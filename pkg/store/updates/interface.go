@@ -8,7 +8,14 @@ import (
 	"io"
 )
 
-type ID string
+type PartitionKey string
+
+type Key string
+
+type ID struct {
+	Partition PartitionKey
+	Key       Key
+}
 
 // Revision is a message revision
 type Revision struct {
@@ -48,7 +55,7 @@ type Store interface {
 	Get(ID, ...GetOption) (*e2ap.RicIndication, error)
 
 	// Puts a message to the store
-	Put(*e2ap.RicIndication, ...PutOption) error
+	Put(ID, *e2ap.RicIndication, ...PutOption) error
 
 	// Removes a message from the store
 	Delete(ID, ...DeleteOption) error

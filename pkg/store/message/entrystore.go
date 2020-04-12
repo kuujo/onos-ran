@@ -27,10 +27,10 @@ import (
 	"time"
 )
 
-func newEntryStore(dist _map.Map, key Key, clock clocks.LogicalClock) entryStore {
+func newEntryStore(dist _map.Map, id ID, clock clocks.LogicalClock) entryStore {
 	return &distributedEntryStore{
 		dist:     dist,
-		key:      key,
+		id:       id,
 		clock:    clock,
 		watchers: list.New(),
 		waiters:  list.New(),
@@ -64,7 +64,7 @@ type entryStore interface {
 // distributedEntryStore is an implementation of the entryStore interface
 type distributedEntryStore struct {
 	dist     _map.Map
-	key      Key
+	id       ID
 	clock    clocks.LogicalClock
 	cache    *message.MessageEntry
 	watchers *list.List
@@ -132,7 +132,7 @@ func (s *distributedEntryStore) triggerWatches(updateEntry *message.MessageEntry
 		if updateRevision.isNewerThan(watcher.revision) {
 			event := Event{
 				Type:    eventType,
-				Key:     s.key,
+				ID:     s.id,
 				Message: *updateEntry,
 			}
 			watcher.ch <- event
@@ -176,7 +176,7 @@ func (s *distributedEntryStore) get(revision Revision) (*message.MessageEntry, e
 
 	// If the key is not present in the cache or is older than the requested key, read it from the distributed store.
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	entry, err := s.dist.Get(ctx, s.key.String())
+	entry, err := s.dist.Get(ctx, s.id.String())
 	cancel()
 	if err != nil {
 		return nil, err
@@ -285,7 +285,7 @@ func (s *distributedEntryStore) requeuePut(update *message.MessageEntry) {
 func (s *distributedEntryStore) writePut(update *message.MessageEntry) {
 	// Get the current entry from the store
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	entry, err := s.dist.Get(ctx, s.key.String())
+	entry, err := s.dist.Get(ctx, s.id.String())
 	cancel()
 	if err != nil {
 		fmt.Println(err)
@@ -322,9 +322,9 @@ func (s *distributedEntryStore) writePut(update *message.MessageEntry) {
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	if entry == nil {
-		_, err = s.dist.Put(ctx, s.key.String(), bytes, _map.IfNotSet())
+		_, err = s.dist.Put(ctx, s.id.String(), bytes, _map.IfNotSet())
 	} else {
-		_, err = s.dist.Put(ctx, s.key.String(), bytes, _map.IfVersion(entry.Version))
+		_, err = s.dist.Put(ctx, s.id.String(), bytes, _map.IfVersion(entry.Version))
 	}
 
 	// If the update failed, requeue it
@@ -347,7 +347,7 @@ func (s *distributedEntryStore) requeueDelete(revision Revision) {
 func (s *distributedEntryStore) writeDelete(revision Revision) {
 	// Get the current entry from the store
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	entry, err := s.dist.Get(ctx, s.key.String())
+	entry, err := s.dist.Get(ctx, s.id.String())
 	cancel()
 	if err != nil {
 		fmt.Println(err)
@@ -376,7 +376,7 @@ func (s *distributedEntryStore) writeDelete(revision Revision) {
 	// Remove the stored entry using an optimistic lock
 	ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	_, err = s.dist.Remove(ctx, s.key.String(), _map.IfVersion(entry.Version))
+	_, err = s.dist.Remove(ctx, s.id.String(), _map.IfVersion(entry.Version))
 
 	// If the remove failed, requeue it
 	if err != nil {

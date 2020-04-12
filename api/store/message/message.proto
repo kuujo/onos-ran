@@ -19,15 +19,18 @@ package onos.ric.store.message;
 
 // MessageEntry is a message store entry
 message MessageEntry {
-    // 'key' is the message key
-    string key = 1;
+    // 'partition_key' is the message partition key
+    string partition_key = 1;
+
+    // 'id' is the message identifier
+    string id = 2;
 
     // 'term' is the entry term
-    uint64 term = 2;
+    uint64 term = 3;
 
     // 'timestamp' is the entry timestamp
-    uint64 timestamp = 3;
+    uint64 timestamp = 4;
 
     // 'bytes' is the message bytes
-    bytes bytes = 4;
+    bytes bytes = 5;
 }

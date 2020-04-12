@@ -24,14 +24,16 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // MessageEntry is a message store entry
 type MessageEntry struct {
-	// 'key' is the message key
-	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	// 'partition_key' is the message partition key
+	PartitionKey string `protobuf:"bytes,1,opt,name=partition_key,json=partitionKey,proto3" json:"partition_key,omitempty"`
+	// 'id' is the message identifier
+	Id string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	// 'term' is the entry term
-	Term uint64 `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Term uint64 `protobuf:"varint,3,opt,name=term,proto3" json:"term,omitempty"`
 	// 'timestamp' is the entry timestamp
-	Timestamp uint64 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp uint64 `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// 'bytes' is the message bytes
-	Bytes []byte `protobuf:"bytes,4,opt,name=bytes,proto3" json:"bytes,omitempty"`
+	Bytes []byte `protobuf:"bytes,5,opt,name=bytes,proto3" json:"bytes,omitempty"`
 }
 
 func (m *MessageEntry) Reset()         { *m = MessageEntry{} }
@@ -67,9 +69,16 @@ func (m *MessageEntry) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MessageEntry proto.InternalMessageInfo
 
-func (m *MessageEntry) GetKey() string {
+func (m *MessageEntry) GetPartitionKey() string {
 	if m != nil {
-		return m.Key
+		return m.PartitionKey
+	}
+	return ""
+}
+
+func (m *MessageEntry) GetId() string {
+	if m != nil {
+		return m.Id
 	}
 	return ""
 }
@@ -102,19 +111,20 @@ func init() {
 func init() { proto.RegisterFile("api/store/message/message.proto", fileDescriptor_9f303d1c9557996c) }
 
 var fileDescriptor_9f303d1c9557996c = []byte{
-	// 179 bytes of a gzipped FileDescriptorProto
+	// 207 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4f, 0x2c, 0xc8, 0xd4,
 	0x2f, 0x2e, 0xc9, 0x2f, 0x4a, 0xd5, 0xcf, 0x4d, 0x2d, 0x2e, 0x4e, 0x4c, 0x87, 0xd3, 0x7a, 0x05,
 	0x45, 0xf9, 0x25, 0xf9, 0x42, 0x62, 0xf9, 0x79, 0xf9, 0xc5, 0x7a, 0x45, 0x99, 0xc9, 0x7a, 0x60,
-	0x55, 0x7a, 0x50, 0x59, 0xa5, 0x0c, 0x2e, 0x1e, 0x5f, 0x08, 0xd3, 0x35, 0xaf, 0xa4, 0xa8, 0x52,
-	0x48, 0x80, 0x8b, 0x39, 0x3b, 0xb5, 0x52, 0x82, 0x51, 0x81, 0x51, 0x83, 0x33, 0x08, 0xc4, 0x14,
-	0x12, 0xe2, 0x62, 0x29, 0x49, 0x2d, 0xca, 0x95, 0x60, 0x52, 0x60, 0xd4, 0x60, 0x09, 0x02, 0xb3,
-	0x85, 0x64, 0xb8, 0x38, 0x4b, 0x32, 0x73, 0x53, 0x8b, 0x4b, 0x12, 0x73, 0x0b, 0x24, 0x98, 0xc1,
-	0x12, 0x08, 0x01, 0x21, 0x11, 0x2e, 0xd6, 0xa4, 0xca, 0x92, 0xd4, 0x62, 0x09, 0x16, 0x05, 0x46,
-	0x0d, 0x9e, 0x20, 0x08, 0xc7, 0x49, 0xe2, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f,
-	0x3c, 0x92, 0x63, 0x9c, 0xf0, 0x58, 0x8e, 0xe1, 0xc2, 0x63, 0x39, 0x86, 0x1b, 0x8f, 0xe5, 0x18,
-	0x92, 0xd8, 0xc0, 0x4e, 0x34, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xef, 0x71, 0x59, 0xb5, 0xc5,
-	0x00, 0x00, 0x00,
+	0x55, 0x7a, 0x50, 0x59, 0xa5, 0x6e, 0x46, 0x2e, 0x1e, 0x5f, 0x08, 0xdb, 0x35, 0xaf, 0xa4, 0xa8,
+	0x52, 0x48, 0x99, 0x8b, 0xb7, 0x20, 0xb1, 0xa8, 0x24, 0xb3, 0x24, 0x33, 0x3f, 0x2f, 0x3e, 0x3b,
+	0xb5, 0x52, 0x82, 0x51, 0x81, 0x51, 0x83, 0x33, 0x88, 0x07, 0x2e, 0xe8, 0x9d, 0x5a, 0x29, 0xc4,
+	0xc7, 0xc5, 0x94, 0x99, 0x22, 0xc1, 0x04, 0x96, 0x61, 0xca, 0x4c, 0x11, 0x12, 0xe2, 0x62, 0x29,
+	0x49, 0x2d, 0xca, 0x95, 0x60, 0x56, 0x60, 0xd4, 0x60, 0x09, 0x02, 0xb3, 0x85, 0x64, 0xb8, 0x38,
+	0x4b, 0x32, 0x73, 0x53, 0x8b, 0x4b, 0x12, 0x73, 0x0b, 0x24, 0x58, 0xc0, 0x12, 0x08, 0x01, 0x21,
+	0x11, 0x2e, 0xd6, 0xa4, 0xca, 0x92, 0xd4, 0x62, 0x09, 0x56, 0x05, 0x46, 0x0d, 0x9e, 0x20, 0x08,
+	0xc7, 0x49, 0xe2, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f, 0x3c, 0x92, 0x63, 0x9c,
+	0xf0, 0x58, 0x8e, 0xe1, 0xc2, 0x63, 0x39, 0x86, 0x1b, 0x8f, 0xe5, 0x18, 0x92, 0xd8, 0xc0, 0xde,
+	0x30, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0x4d, 0xea, 0x08, 0x7c, 0xe9, 0x00, 0x00, 0x00,
 }
 
 func (m *MessageEntry) Marshal() (dAtA []byte, err error) {
@@ -142,22 +152,29 @@ func (m *MessageEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.Bytes)
 		i = encodeVarintMessage(dAtA, i, uint64(len(m.Bytes)))
 		i--
-		dAtA[i] = 0x22
+		dAtA[i] = 0x2a
 	}
 	if m.Timestamp != 0 {
 		i = encodeVarintMessage(dAtA, i, uint64(m.Timestamp))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x20
 	}
 	if m.Term != 0 {
 		i = encodeVarintMessage(dAtA, i, uint64(m.Term))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x18
 	}
-	if len(m.Key) > 0 {
-		i -= len(m.Key)
-		copy(dAtA[i:], m.Key)
-		i = encodeVarintMessage(dAtA, i, uint64(len(m.Key)))
+	if len(m.Id) > 0 {
+		i -= len(m.Id)
+		copy(dAtA[i:], m.Id)
+		i = encodeVarintMessage(dAtA, i, uint64(len(m.Id)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.PartitionKey) > 0 {
+		i -= len(m.PartitionKey)
+		copy(dAtA[i:], m.PartitionKey)
+		i = encodeVarintMessage(dAtA, i, uint64(len(m.PartitionKey)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -181,7 +198,11 @@ func (m *MessageEntry) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Key)
+	l = len(m.PartitionKey)
+	if l > 0 {
+		n += 1 + l + sovMessage(uint64(l))
+	}
+	l = len(m.Id)
 	if l > 0 {
 		n += 1 + l + sovMessage(uint64(l))
 	}
@@ -235,7 +256,7 @@ func (m *MessageEntry) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PartitionKey", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -263,9 +284,41 @@ func (m *MessageEntry) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Key = string(dAtA[iNdEx:postIndex])
+			m.PartitionKey = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessage
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMessage
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessage
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Id = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Term", wireType)
 			}
@@ -284,7 +337,7 @@ func (m *MessageEntry) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 3:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
 			}
@@ -303,7 +356,7 @@ func (m *MessageEntry) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Bytes", wireType)
 			}

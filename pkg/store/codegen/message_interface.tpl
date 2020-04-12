@@ -8,7 +8,14 @@ import (
 	{{ .DataType.Package.Alias }} {{ .DataType.Package.Path | quote }}
 )
 
-type ID string
+type PartitionKey string
+
+type Key string
+
+type ID struct {
+    Partition PartitionKey
+    Key       Key
+}
 
 // Revision is a message revision
 type Revision struct {
@@ -49,7 +56,7 @@ type {{ .Interface.Type.Name }} interface {
 	Get(ID, ...GetOption) (*{{ .DataType.Package.Alias }}.{{ .DataType.Name }}, error)
 
 	// Puts a message to the store
-	Put(*{{ .DataType.Package.Alias }}.{{ .DataType.Name }}, ...PutOption) error
+	Put(ID, *{{ .DataType.Package.Alias }}.{{ .DataType.Name }}, ...PutOption) error
 
 	// Removes a message from the store
 	Delete(ID, ...DeleteOption) error
