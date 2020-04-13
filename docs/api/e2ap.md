@@ -130,7 +130,8 @@ limitations under the License.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| RicSubscription | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream |  |
+| RicChan | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | RicChan is a bi-directonal stream for all messaging between RIC and E2-Node |
+| RicSubscription | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | ---- Below two rpcs are to be removed |
 | RicControl | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicControlResponse](#interface.e2ap.RicControlResponse) stream |  |
 
  

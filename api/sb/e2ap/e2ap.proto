@@ -66,8 +66,13 @@ import "github.com/onosproject/onos-ric/api/sb/e2sm/e2sm.proto";
 
 service E2AP {
 
+    // RicChan is a bi-directonal stream for all messaging between RIC and E2-Node
+    rpc RicChan (stream RicControlRequest) returns (stream RicIndication) {}
+    // ----
+    // Below two rpcs are to be removed
     rpc RicSubscription (stream RicSubscriptionRequest) returns (stream RicIndication) {}
     rpc RicControl (stream RicControlRequest) returns (stream RicControlResponse) {}
+    // ----
 }
 
 //-- **************************************************************

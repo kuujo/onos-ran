@@ -56,6 +56,7 @@ message RicIndicationMessage {
         interface.e2.UEAdmissionRequest uEAdmissionRequest = 2;
         interface.e2.UEReleaseInd uEReleaseInd = 3;
         interface.e2.RadioMeasReportPerCell radioMeasReportPerCell = 4;
+        interface.e2.CellConfigReport cellConfigReport = 5;
     }
 }
 

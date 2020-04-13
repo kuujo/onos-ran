@@ -143,6 +143,7 @@ RICindicationMessage ::= OCTET STRING
 | uEAdmissionRequest | [interface.e2.UEAdmissionRequest](#interface.e2.UEAdmissionRequest) |  |  |
 | uEReleaseInd | [interface.e2.UEReleaseInd](#interface.e2.UEReleaseInd) |  |  |
 | radioMeasReportPerCell | [interface.e2.RadioMeasReportPerCell](#interface.e2.RadioMeasReportPerCell) |  |  |
+| cellConfigReport | [interface.e2.CellConfigReport](#interface.e2.CellConfigReport) |  |  |
 
 
 
