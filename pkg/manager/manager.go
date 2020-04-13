@@ -120,7 +120,7 @@ func (m *Manager) StoreRicControlResponse(update e2ap.RicControlResponse) {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REQUEST:
-		_ = m.controlStore.Put(&update)
+		_ = m.controlStore.Put(control.GetID(&update), &update)
 	default:
 		log.Fatalf("RicControlResponse has unexpected type %d", msgType)
 	}
@@ -133,7 +133,7 @@ func (m *Manager) StoreControlUpdate(update e2ap.RicIndication) {
 	case sb.MessageType_UE_ADMISSION_REQUEST:
 		msg := update.GetMsg().GetUEAdmissionRequest()
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti(), msg.GetImsi())
-		_ = m.updateStore.Put(&update)
+		_ = m.updateStore.Put(updates.GetID(&update), &update)
 	case sb.MessageType_UE_RELEASE_IND:
 		msg := update.GetMsg().GetUEReleaseInd()
 		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
@@ -179,8 +179,7 @@ func (m *Manager) GetControl() ([]e2ap.RicControlResponse, error) {
 
 // GetUEAdmissionByID retrieve a single value from the updates store
 func (m *Manager) GetUEAdmissionByID(ecgi *sb.ECGI, crnti string) (*e2ap.RicIndication, error) {
-	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, ecgi.PlmnId, ecgi.Ecid, crnti)
-	return m.updateStore.Get(updates.ID(id))
+	return m.updateStore.Get(updates.NewID(sb.MessageType_UE_ADMISSION_REQUEST, ecgi.PlmnId, ecgi.Ecid, crnti))
 }
 
 // ListUpdate lists control updates
@@ -286,7 +285,7 @@ func GetManager() *Manager {
 // StoreTelemetry - put the telemetry update in the atomix store
 // Only handles MessageType_RADIO_MEAS_REPORT_PER_UE at the moment
 func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
-	err := m.telemetryStore.Put(&update)
+	err := m.telemetryStore.Put(telemetry.GetID(&update), &update)
 	if err != nil {
 		log.Fatalf("Could not put message %v in telemetry store %s", update, err.Error())
 	}
@@ -312,8 +311,8 @@ func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
 
 // DeleteTelemetry deletes telemetry when a handover happens
 func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) error {
-	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
-	if err := m.telemetryStore.Delete(telemetry.ID(id)); err != nil {
+	id := telemetry.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
+	if err := m.telemetryStore.Delete(id); err != nil {
 		log.Infof("Error deleting Telemetry, key=%s", id)
 		return err
 	}
@@ -322,8 +321,8 @@ func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) erro
 
 // DeleteUEAdmissionRequest deletes UpdateControls
 func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti string) error {
-	id := sb.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
-	if err := m.updateStore.Delete(updates.ID(id)); err != nil {
+	id := updates.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
+	if err := m.updateStore.Delete(id); err != nil {
 		log.Infof("Error deleting UEAdmissionRequest, key=%s", id)
 		return err
 	}

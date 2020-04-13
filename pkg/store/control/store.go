@@ -46,7 +46,7 @@ func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicControlResponse, error) 
 	for i, opt := range opts {
 		messageOpts[i] = opt
 	}
-	entry, err := s.messageStore.Get(messagestore.Key(id), messageOpts...)
+	entry, err := s.messageStore.Get(messagestore.PartitionKey(id.Partition), messagestore.ID(id.Key), messageOpts...)
 	if err != nil {
 		return nil, err
 	} else if entry == nil {
@@ -55,12 +55,12 @@ func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicControlResponse, error) 
 	return decode(entry)
 }
 
-func (s *store) Put(message *e2ap.RicControlResponse, opts ...PutOption) error {
+func (s *store) Put(id ID, message *e2ap.RicControlResponse, opts ...PutOption) error {
 	entry, err := encode(message)
 	if err != nil {
 		return err
 	}
-	return s.messageStore.Put(getKey(message), entry)
+	return s.messageStore.Put(messagestore.PartitionKey(id.Partition), messagestore.ID(id.Key), entry)
 }
 
 func (s *store) Delete(id ID, opts ...DeleteOption) error {
@@ -68,7 +68,7 @@ func (s *store) Delete(id ID, opts ...DeleteOption) error {
 	for i, opt := range opts {
 		messageOpts[i] = opt
 	}
-	return s.messageStore.Delete(messagestore.Key(id), messageOpts...)
+	return s.messageStore.Delete(messagestore.PartitionKey(id.Partition), messagestore.ID(id.Key), messageOpts...)
 }
 
 func (s *store) List(ch chan<- e2ap.RicControlResponse) error {
@@ -102,8 +102,11 @@ func (s *store) Watch(ch chan<- Event, opts ...WatchOption) error {
 		for event := range watchCh {
 			if message, err := decode(&event.Message); err == nil {
 				event := Event{
-					Type:    EventType(event.Type),
-					ID:      ID(event.Key),
+					Type: EventType(event.Type),
+					ID: ID{
+						Partition: PartitionKey(event.Message.PartitionKey),
+						Key:       Key(event.Message.Id),
+					},
 					Message: *message,
 				}
 				ch <- event
@@ -144,8 +147,4 @@ func toMessageRevision(revision Revision) messagestore.Revision {
 		Term:      messagestore.Term(revision.Term),
 		Timestamp: messagestore.Timestamp(revision.Timestamp),
 	}
-}
-
-func getKey(message *e2ap.RicControlResponse) messagestore.Key {
-	return messagestore.Key(message.GetID())
 }

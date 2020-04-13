@@ -16,6 +16,7 @@ package message
 
 import (
 	"context"
+	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-ric/api/store/message"
 	"github.com/onosproject/onos-ric/pkg/config"
@@ -52,7 +53,7 @@ func NewDistributedStore(name string, config config.Config, db atomix.DatabaseTy
 	}
 	store := &distributedStore{
 		dist:     messages,
-		entries:  make(map[Key]entryStore),
+		entries:  make(map[ID]entryStore),
 		watchers: make([]chan<- Event, 0),
 		clocks:   timeStore,
 	}
@@ -87,7 +88,7 @@ func newLocalStore(address net.Address, name string, timeStore clocks.Store) (St
 
 	return &distributedStore{
 		dist:    messages,
-		entries: make(map[Key]entryStore),
+		entries: make(map[ID]entryStore),
 		clocks:  timeStore,
 	}, nil
 }
@@ -96,8 +97,8 @@ func newLocalStore(address net.Address, name string, timeStore clocks.Store) (St
 type Event struct {
 	// Type is the event type
 	Type EventType
-	// Key is the event message key
-	Key Key
+	// ID is the event message ID
+	ID ID
 	// Message is the event message
 	Message message.MessageEntry
 }
@@ -121,13 +122,13 @@ type Store interface {
 	io.Closer
 
 	// Gets a message based on a given ID
-	Get(Key, ...GetOption) (*message.MessageEntry, error)
+	Get(PartitionKey, ID, ...GetOption) (*message.MessageEntry, error)
 
 	// Puts a message to the store
-	Put(Key, *message.MessageEntry, ...PutOption) error
+	Put(PartitionKey, ID, *message.MessageEntry, ...PutOption) error
 
 	// Removes a message from the store
-	Delete(Key, ...DeleteOption) error
+	Delete(PartitionKey, ID, ...DeleteOption) error
 
 	// List all of the last up to date messages
 	List(ch chan<- message.MessageEntry) error
@@ -226,7 +227,7 @@ func (o *watchReplayOption) configureWatch(options *watchOptions) {
 // distributedStore is an Atomix based store
 type distributedStore struct {
 	dist     _map.Map
-	entries  map[Key]entryStore
+	entries  map[ID]entryStore
 	watchers []chan<- Event
 	clocks   clocks.Store
 	mu       sync.RWMutex
@@ -241,7 +242,7 @@ func (s *distributedStore) open() error {
 	go func() {
 		for event := range ch {
 			if entry, err := decodeEntry(event.Entry); err == nil {
-				if store, err := s.getEntryStore(Key(event.Entry.Key)); err == nil {
+				if store, err := s.getEntryStore(PartitionKey(entry.PartitionKey), ID(entry.Id)); err == nil {
 					go func() {
 						_ = store.update(Revision{}, entry, event.Type == _map.EventRemoved)
 					}()
@@ -253,43 +254,43 @@ func (s *distributedStore) open() error {
 }
 
 // getKeyStore uses a double checked lock to get or create a key store
-func (s *distributedStore) getEntryStore(key Key) (entryStore, error) {
+func (s *distributedStore) getEntryStore(key PartitionKey, id ID) (entryStore, error) {
 	s.mu.RLock()
-	store, ok := s.entries[key]
+	store, ok := s.entries[id]
 	s.mu.RUnlock()
 	if !ok {
 		s.mu.Lock()
-		store, ok = s.entries[key]
+		store, ok = s.entries[id]
 		if !ok {
 			clock, err := s.clocks.GetLogicalClock(clocks.Key(key))
 			if err != nil {
 				return nil, err
 			}
-			store = newEntryStore(s.dist, key, clock)
+			store = newEntryStore(s.dist, id, clock)
 			for _, watcher := range s.watchers {
 				store.watch(watcher)
 			}
-			s.entries[key] = store
+			s.entries[id] = store
 		}
 		s.mu.Unlock()
 	}
 	return store, nil
 }
 
-func (s *distributedStore) Get(key Key, opts ...GetOption) (*message.MessageEntry, error) {
+func (s *distributedStore) Get(key PartitionKey, id ID, opts ...GetOption) (*message.MessageEntry, error) {
 	options := &getOptions{}
 	for _, opt := range opts {
 		opt.configureGet(options)
 	}
-	store, err := s.getEntryStore(key)
+	store, err := s.getEntryStore(key, id)
 	if err != nil {
 		return nil, err
 	}
 	return store.get(options.revision)
 }
 
-func (s *distributedStore) Put(key Key, entry *message.MessageEntry, opts ...PutOption) error {
-	store, err := s.getEntryStore(key)
+func (s *distributedStore) Put(key PartitionKey, id ID, entry *message.MessageEntry, opts ...PutOption) error {
+	store, err := s.getEntryStore(key, id)
 	if err != nil {
 		return err
 	}
@@ -297,12 +298,12 @@ func (s *distributedStore) Put(key Key, entry *message.MessageEntry, opts ...Put
 	return store.put(revision, entry)
 }
 
-func (s *distributedStore) Delete(key Key, opts ...DeleteOption) error {
+func (s *distributedStore) Delete(key PartitionKey, id ID, opts ...DeleteOption) error {
 	options := &deleteOptions{}
 	for _, opt := range opts {
 		opt.configureDelete(options)
 	}
-	store, err := s.getEntryStore(key)
+	store, err := s.getEntryStore(key, id)
 	if err != nil {
 		return err
 	}
@@ -349,7 +350,7 @@ func (s *distributedStore) Watch(ch chan<- Event, opts ...WatchOption) error {
 		go func() {
 			for entry := range entryCh {
 				if message, err := decodeEntry(entry); err == nil {
-					if store, err := s.getEntryStore(Key(entry.Key)); err == nil {
+					if store, err := s.getEntryStore(PartitionKey(message.PartitionKey), ID(message.Id)); err == nil {
 						_ = store.update(Revision{}, message, false)
 					}
 				}
@@ -369,12 +370,44 @@ func (s *distributedStore) Close() error {
 	return s.dist.Close(ctx)
 }
 
-// Key is a mesasge key
-type Key string
+// NewPartitionKey creates a new partition key
+func NewPartitionKey(args ...interface{}) PartitionKey {
+	if len(args) == 0 {
+		return PartitionKey("")
+	}
+	key := fmt.Sprintf("%v", args[0])
+	for i := 1; i < len(args); i++ {
+		key = fmt.Sprintf("%s:%v", key, args[i])
+	}
+	return PartitionKey(key)
+}
 
-// String returns the key as a string
-func (k Key) String() string {
+// PartitionKey is a message partition key
+type PartitionKey string
+
+// String returns the partition key as a string
+func (k PartitionKey) String() string {
 	return string(k)
+}
+
+// NewID creates a new message identifier
+func NewID(args ...interface{}) ID {
+	if len(args) == 0 {
+		return ID("")
+	}
+	key := fmt.Sprintf("%v", args[0])
+	for i := 1; i < len(args); i++ {
+		key = fmt.Sprintf("%s:%v", key, args[i])
+	}
+	return ID(key)
+}
+
+// ID is a message ID
+type ID string
+
+// String returns the ID as a string
+func (i ID) String() string {
+	return string(i)
 }
 
 // Term is a message term

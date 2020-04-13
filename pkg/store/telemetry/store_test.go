@@ -59,13 +59,13 @@ func TestStore(t *testing.T) {
 			},
 		},
 	}
-	err = testStore.Put(telemetry1)
+	err = testStore.Put(GetID(telemetry1), telemetry1)
 	assert.Nil(t, err)
 	ecigTest1 := sb.ECGI{
 		Ecid:   "test-ecid",
 		PlmnId: "test-plmnid",
 	}
-	id1 := ID(sb.NewID(telemetry1.GetHdr().GetMessageType(), ecigTest1.GetPlmnId(), ecigTest1.GetEcid(), ""))
+	id1 := NewID(telemetry1.GetHdr().GetMessageType(), ecigTest1.GetPlmnId(), ecigTest1.GetEcid(), "")
 	value1, err := testStore.Get(id1)
 	assert.Nil(t, err)
 	assert.Equal(t, value1.GetHdr().GetMessageType().String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
@@ -98,13 +98,13 @@ func TestStore(t *testing.T) {
 		},
 	}
 
-	err = testStore.Put(telemetry2)
+	err = testStore.Put(GetID(telemetry2), telemetry2)
 	assert.Nil(t, err)
 	ecigTest2 := sb.ECGI{
 		Ecid:   "test-ecid-2",
 		PlmnId: "test-plmnid-2",
 	}
-	id2 := ID(sb.NewID(telemetry2.GetHdr().GetMessageType(), ecigTest2.GetPlmnId(), ecigTest2.GetEcid(), ""))
+	id2 := NewID(telemetry2.GetHdr().GetMessageType(), ecigTest2.GetPlmnId(), ecigTest2.GetEcid(), "")
 	value2, err := testStore.Get(id2)
 	assert.Nil(t, err)
 	assert.Equal(t, value2.GetHdr().MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_CELL.String())
@@ -133,14 +133,14 @@ func TestStore(t *testing.T) {
 			},
 		},
 	}
-	err = testStore.Put(telemetry3)
+	err = testStore.Put(GetID(telemetry3), telemetry3)
 	assert.Nil(t, err)
 
 	ecigTest3 := sb.ECGI{
 		Ecid:   "test-ecid-3",
 		PlmnId: "test-plmnid-3",
 	}
-	id3 := ID(sb.NewID(telemetry3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3"))
+	id3 := NewID(telemetry3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3")
 	value3, err := testStore.Get(id3)
 	assert.Nil(t, err)
 	assert.Equal(t, value3.GetHdr().MessageType.String(), sb.MessageType_RADIO_MEAS_REPORT_PER_UE.String())
