@@ -62,6 +62,8 @@ message RicIndicationMessage {
 //RICcontrolHeader ::= OCTET STRING
 message RicControlHeader {
     interface.e2.MessageType messageType = 1;
+    interface.e2.ECGI ecgi = 2;
+    repeated string crnti = 3;
 }
 
 //-- **************************************************************

@@ -114,6 +114,8 @@ func (s *Session) recvUpdates() {
 // SendRicControlRequest sends the specified RicControlRequest on the control channel
 func (s *Session) SendRicControlRequest(req e2ap.RicControlRequest) error {
 
+	req.GetHdr().Ecgi = &s.Ecgi
+
 	switch req.GetHdr().GetMessageType() {
 	case sb.MessageType_HO_REQUEST:
 		if s.EnableMetrics {

@@ -48,6 +48,8 @@ RICcontrolHeader ::= OCTET STRING
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | messageType | [interface.e2.MessageType](#interface.e2.MessageType) |  |  |
+| ecgi | [interface.e2.ECGI](#interface.e2.ECGI) |  |  |
+| crnti | [string](#string) | repeated |  |
 
 
 
