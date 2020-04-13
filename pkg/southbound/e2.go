@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
-	"github.com/onosproject/onos-ric/pkg/store/cluster"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"sync"
 	"time"
@@ -54,9 +53,9 @@ type ControlUpdateHandler = func(e2ap.RicIndication)
 
 // Session is responsible for managing connections to and interactions with the RAN southbound.
 type Session struct {
-	Device     topodevice.Device
-	Ecgi       sb.ECGI
-	mastership mastership.Store
+	Device   topodevice.Device
+	Ecgi     sb.ECGI
+	election mastership.Election
 
 	ricControlRequestChan  chan e2ap.RicControlRequest
 	ricControlResponseChan chan e2ap.RicControlResponse
@@ -79,13 +78,18 @@ type HOEventMeasuredRIC struct {
 }
 
 // NewSession creates a new southbound session controller.
-func NewSession(ecgi sb.ECGI, device topodevice.Device, mastership mastership.Store) (*Session, error) {
+func NewSession(ecgi sb.ECGI, device topodevice.Device, mastershipStore mastership.Store) (*Session, error) {
 	log.Infof("Creating Session for %v at %s", ecgi, device.Address)
+
+	election, err := mastershipStore.GetElection(mastership.NewKey(ecgi.PlmnId, ecgi.Ecid))
+	if err != nil {
+		return nil, err
+	}
 
 	session := &Session{
 		Device:                 device,
 		Ecgi:                   ecgi,
-		mastership:             mastership,
+		election:               election,
 		ricControlRequestChan:  make(chan e2ap.RicControlRequest),
 		ricControlResponseChan: make(chan e2ap.RicControlResponse),
 		controlIndications:     make(chan e2ap.RicIndication),
@@ -99,22 +103,18 @@ func NewSession(ecgi sb.ECGI, device topodevice.Device, mastership mastership.St
 
 // listen starts the session listening for mastership
 func (s *Session) listen() error {
-	election, err := s.mastership.GetElection(mastership.Key(fmt.Sprintf("%s:%s", s.Ecgi.PlmnId, s.Ecgi.Ecid)))
-	if err != nil {
-		return err
-	}
 	ch := make(chan mastership.State)
-	err = election.Watch(ch)
+	err := s.election.Watch(ch)
 	if err != nil {
 		return err
 	}
 	go func() {
 		var errCh chan error
 		for state := range ch {
-			if state.Master == cluster.GetNodeID() && errCh == nil {
+			if state.Master == s.election.NodeID() && errCh == nil {
 				errCh = make(chan error)
 				s.connect(errCh)
-			} else if state.Master != cluster.GetNodeID() && errCh != nil {
+			} else if state.Master != s.election.NodeID() && errCh != nil {
 				s.disconnect(errCh)
 				errCh = nil
 			}
@@ -161,6 +161,14 @@ func (s *Session) recvUpdates(errCh chan error) {
 
 // SendRicControlRequest sends the specified RicControlRequest on the control channel
 func (s *Session) SendRicControlRequest(req e2ap.RicControlRequest) error {
+	mastership, err := s.election.GetState()
+	if err != nil {
+		return err
+	}
+	if mastership.Master != s.election.NodeID() {
+		return fmt.Errorf("not the master for %s", s.Device.Address)
+	}
+
 	switch req.GetHdr().GetMessageType() {
 	case sb.MessageType_HO_REQUEST:
 		if s.EnableMetrics {

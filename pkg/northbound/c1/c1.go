@@ -54,7 +54,7 @@ type Server struct {
 }
 
 // ListStations returns a stream of base station records.
-func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
+func (s *Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
 	if req.Subscribe {
 		return fmt.Errorf("subscribe not yet implemented")
 	}
@@ -104,7 +104,7 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 }
 
 // ListStationLinks returns a stream of links between neighboring base stations.
-func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
+func (s *Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
 	if req.Subscribe {
 		return fmt.Errorf("subscribe not yet implemented")
 	}
@@ -161,7 +161,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 }
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
-func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
+func (s *Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
@@ -236,7 +236,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 }
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
-func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
+func (s *Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
 	if req == nil || req.GetCrnti() == "" ||
 		req.DstStation == nil || req.DstStation.Plmnid == "" || req.DstStation.Ecid == "" ||
 		req.SrcStation == nil || req.SrcStation.Plmnid == "" || req.SrcStation.Ecid == "" {
@@ -247,7 +247,7 @@ func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*
 }
 
 // TriggerHandOverStream is a version that stays open all the time.
-func (s Server) TriggerHandOverStream(stream nb.C1InterfaceService_TriggerHandOverStreamServer) error {
+func (s *Server) TriggerHandOverStream(stream nb.C1InterfaceService_TriggerHandOverStreamServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
@@ -333,7 +333,7 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 }
 
 // SetRadioPower returns a response indicating success or failure.
-func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
+func (s *Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*nb.RadioPowerResponse, error) {
 	if req == nil || req.Ecgi == nil || req.Ecgi.Plmnid == "" || req.Ecgi.Ecid == "" || req.Offset < 0 {
 		return nil, fmt.Errorf("SetRadioPower is missing values %v", req)
 	}

@@ -15,6 +15,7 @@
 package mastership
 
 import (
+	"fmt"
 	"github.com/DataDog/mmh3"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
@@ -33,6 +34,18 @@ type Key string
 // Hash returns the mastership election key as a hash
 func (k Key) Hash() uint32 {
 	return mmh3.Hash32([]byte(k))
+}
+
+// NewKey creates a new mastership election key
+func NewKey(args ...interface{}) Key {
+	if len(args) == 0 {
+		return Key("")
+	}
+	key := fmt.Sprintf("%v", args[0])
+	for i := 1; i < len(args); i++ {
+		key = fmt.Sprintf("%s:%v", key, args[i])
+	}
+	return Key(key)
 }
 
 // PartitionID is the partition identifier
