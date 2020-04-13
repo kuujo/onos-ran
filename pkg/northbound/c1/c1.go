@@ -300,21 +300,21 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		},
 	}
 
-	srcSession, ok := manager.GetManager().SbSessions[srcEcgi]
-	if !ok {
+	srcSession, err := manager.GetManager().GetSession(srcEcgi)
+	if err != nil {
 		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
 	}
-	log.Infof("Sending HO for %v:%s to Source %s", srcEcgi, crnti, srcSession.EndPoint)
-	err := srcSession.SendRicControlRequest(hoReq)
+	log.Infof("Sending HO for %v:%s to Source %s", srcEcgi, crnti, srcSession.Device.Address)
+	err = srcSession.SendRicControlRequest(hoReq)
 	if err != nil {
 		return nil, err
 	}
 
-	dstSession, ok := manager.GetManager().SbSessions[dstEcgi]
-	if !ok {
+	dstSession, err := manager.GetManager().GetSession(srcEcgi)
+	if err != nil {
 		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
 	}
-	log.Infof("Sending HO for %v:%s to Dest %s", srcEcgi, crnti, dstSession.EndPoint)
+	log.Infof("Sending HO for %v:%s to Dest %s", srcEcgi, crnti, dstSession.Device.Address)
 	err = dstSession.SendRicControlRequest(hoReq)
 	if err != nil {
 		return nil, err
@@ -377,11 +377,11 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 			},
 		},
 	}
-	session, ok := manager.GetManager().SbSessions[ecgi]
-	if !ok {
+	session, err := manager.GetManager().GetSession(ecgi)
+	if err != nil {
 		return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
 	}
-	err := session.SendRicControlRequest(rrmConfigReq)
+	err = session.SendRicControlRequest(rrmConfigReq)
 	if err != nil {
 		return nil, err
 	}

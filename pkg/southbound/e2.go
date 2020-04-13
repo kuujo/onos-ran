@@ -17,16 +17,17 @@ package southbound
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
+	"github.com/onosproject/onos-ric/pkg/store/cluster"
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"sync"
 	"time"
 
 	topodevice "github.com/onosproject/onos-topo/api/device"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
-	"github.com/onosproject/onos-lib-go/pkg/southbound"
-
 	"github.com/onosproject/onos-ric/api/sb"
-	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"google.golang.org/grpc"
 )
@@ -53,9 +54,9 @@ type ControlUpdateHandler = func(e2ap.RicIndication)
 
 // Session is responsible for managing connections to and interactions with the RAN southbound.
 type Session struct {
-	EndPoint sb.Endpoint
-	Ecgi     sb.ECGI
-	client   e2ap.E2APClient
+	Device     topodevice.Device
+	Ecgi       sb.ECGI
+	mastership mastership.Store
 
 	ricControlRequestChan  chan e2ap.RicControlRequest
 	ricControlResponseChan chan e2ap.RicControlResponse
@@ -78,42 +79,88 @@ type HOEventMeasuredRIC struct {
 }
 
 // NewSession creates a new southbound session controller.
-func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
-	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
+func NewSession(ecgi sb.ECGI, device topodevice.Device, mastership mastership.Store) (*Session, error) {
+	log.Infof("Creating Session for %v at %s", ecgi, device.Address)
 
-	return &Session{
-		EndPoint:               endPoint,
+	session := &Session{
+		Device:                 device,
 		Ecgi:                   ecgi,
+		mastership:             mastership,
 		ricControlRequestChan:  make(chan e2ap.RicControlRequest),
 		ricControlResponseChan: make(chan e2ap.RicControlResponse),
 		controlIndications:     make(chan e2ap.RicIndication),
 		telemetryIndications:   make(chan e2ap.RicIndication),
-	}, nil
+	}
+	if err := session.listen(); err != nil {
+		return nil, err
+	}
+	return session, nil
 }
 
-// Run starts the southbound control loop.
-func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials) {
+// listen starts the session listening for mastership
+func (s *Session) listen() error {
+	election, err := s.mastership.GetElection(mastership.Key(fmt.Sprintf("%s:%s", s.Ecgi.PlmnId, s.Ecgi.Ecid)))
+	if err != nil {
+		return err
+	}
+	ch := make(chan mastership.State)
+	err = election.Watch(ch)
+	if err != nil {
+		return err
+	}
+	go func() {
+		var errCh chan error
+		for state := range ch {
+			if state.Master == cluster.GetNodeID() && errCh == nil {
+				errCh = make(chan error)
+				s.connect(errCh)
+			} else if state.Master != cluster.GetNodeID() && errCh != nil {
+				s.disconnect(errCh)
+				errCh = nil
+			}
+		}
+	}()
+	return nil
+}
+
+// connect connects the session to the device
+func (s *Session) connect(errCh chan error) {
 	MapHOEventMeasuredRIC = make(map[string]HOEventMeasuredRIC)
-	go s.manageConnections(tls, creds)
-	go s.recvTelemetryUpdates()
-	go s.recvUpdates()
+	go s.manageConnections(errCh)
+	go s.recvTelemetryUpdates(errCh)
+	go s.recvUpdates(errCh)
 }
 
-func (s *Session) recvTelemetryUpdates() {
-	for update := range s.telemetryIndications {
-		s.TelemetryUpdateHandlerFunc(update)
+// disconnect disconnects the session from the device
+func (s *Session) disconnect(errCh chan error) {
+	// Close the error channel to disconnect the session
+	close(errCh)
+}
+
+func (s *Session) recvTelemetryUpdates(errCh chan error) {
+	for {
+		select {
+		case update := <-s.telemetryIndications:
+			s.TelemetryUpdateHandlerFunc(update)
+		case <-errCh:
+			return
+		}
 	}
 }
 
-func (s *Session) recvUpdates() {
-	for update := range s.controlIndications {
-		s.ControlUpdateHandlerFunc(update)
+func (s *Session) recvUpdates(errCh chan error) {
+	for {
+		select {
+		case update := <-s.controlIndications:
+			s.ControlUpdateHandlerFunc(update)
+		case <-errCh:
+			return
+		}
 	}
 }
 
 // SendRicControlRequest sends the specified RicControlRequest on the control channel
 func (s *Session) SendRicControlRequest(req e2ap.RicControlRequest) error {
-
 	switch req.GetHdr().GetMessageType() {
 	case sb.MessageType_HO_REQUEST:
 		if s.EnableMetrics {
@@ -127,55 +174,49 @@ func (s *Session) SendRicControlRequest(req e2ap.RicControlRequest) error {
 	return nil
 }
 
-func (s *Session) manageConnections(tls topodevice.TlsConfig, creds topodevice.Credentials) {
+func (s *Session) manageConnections(masterCh chan error) {
+	errCh := make(chan error)
 	for {
-		// Attempt to create connection to the simulator
-		log.Infof("Connecting to simulator...%s with context", s.EndPoint)
-		opts := []grpc.DialOption{
-			grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100 * time.Millisecond)),
-		}
-		connection, err := southbound.Connect(context.Background(), string(s.EndPoint), tls.GetCert(), tls.GetKey(), opts...)
+		conn, err := s.createConnection(errCh)
 		if err == nil {
-			// If successful, manage this connection and don't return until it is
-			// no longer valid and all related resources have been properly cleaned-up.
-			s.manageConnection(connection)
+			for {
+				select {
+				case <-masterCh:
+					if conn != nil {
+						_ = conn.Close()
+					}
+					return
+				case <-errCh:
+					break
+				}
+			}
 		}
-		time.Sleep(5 * time.Second)
+		select {
+		case <-masterCh:
+			return
+		case <-time.After(5 * time.Second):
+		}
 	}
 }
 
-func (s *Session) manageConnection(connection *grpc.ClientConn) {
-	// Offer the telemetry and control surfaces to the E2 devices
-	s.client = e2ap.NewE2APClient(connection)
-	if s.client == nil {
-		return
+func (s *Session) createConnection(errCh chan<- error) (*grpc.ClientConn, error) {
+	// Attempt to create connection to the simulator
+	log.Infof("Connecting to simulator...%s with context", s.Device.Address)
+	opts := []grpc.DialOption{
+		grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100 * time.Millisecond)),
 	}
-	log.Infof("Connected to simulator on %s", s.EndPoint)
-	// Setup coordination channel
-	errors := make(chan error)
-
-	go s.ricControl(errors)
-
-	go s.ricSubscribe(errors)
-
-	// Wait for the first error on the coordination channel.
-	for i := 0; i < 2; i++ {
-		<-errors
+	conn, err := southbound.Connect(context.Background(), string(s.Device.Address), s.Device.TLS.Cert, s.Device.TLS.Key, opts...)
+	if err != nil {
+		return nil, err
 	}
-
-	// Clean-up the connection, forcing other consumers to terminate and clean-up.
-	_ = connection.Close()
-
-	// FIXME: should be done separately
-	//close(s.responses)
-	//close(s.updates)
-
-	close(errors)
-	log.Info("Disconnected from simulator %s", s.EndPoint)
+	client := e2ap.NewE2APClient(conn)
+	go s.ricControl(client, errCh)
+	go s.ricSubscribe(client, errCh)
+	return conn, nil
 }
 
-func (s *Session) ricControl(errors chan error) {
-	stream, err := s.client.RicControl(context.Background())
+func (s *Session) ricControl(client e2ap.E2APClient, errors chan<- error) {
+	stream, err := client.RicControl(context.Background())
 	if err != nil {
 		errors <- err
 		return
@@ -229,15 +270,15 @@ func (s *Session) ricControlResponse(update *e2ap.RicControlResponse) {
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REPORT:
 		msg := update.GetMsg().GetCellConfigReport()
-		log.Infof("%s CellConfigReport plmnid:%s, ecid:%s", s.EndPoint, msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid())
+		log.Infof("%s CellConfigReport plmnid:%s, ecid:%s", s.Device.Address, msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid())
 	default:
-		log.Fatalf("%s ControlResponse has unexpected type %T", s.EndPoint, msgType)
+		log.Fatalf("%s ControlResponse has unexpected type %T", s.Device.Address, msgType)
 	}
 	s.ricControlResponseChan <- *update
 }
 
-func (s *Session) ricSubscribe(errors chan error) {
-	stream, err := s.client.RicSubscription(context.Background())
+func (s *Session) ricSubscribe(client e2ap.E2APClient, errors chan<- error) {
+	stream, err := client.RicSubscription(context.Background())
 	if err != nil {
 		errors <- err
 		return
@@ -251,7 +292,7 @@ func (s *Session) ricSubscribe(errors chan error) {
 				close(waitc)
 				return
 			}
-			log.Infof("%s indication messageType %d", s.EndPoint, ind.GetHdr().GetMessageType())
+			log.Infof("%s indication messageType %d", s.Device.Address, ind.GetHdr().GetMessageType())
 			msgType := ind.GetHdr().GetMessageType()
 			switch msgType {
 			case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
@@ -263,7 +304,7 @@ func (s *Session) ricSubscribe(errors chan error) {
 			case sb.MessageType_UE_ADMISSION_REQUEST, sb.MessageType_UE_RELEASE_IND:
 				s.controlIndications <- *ind
 			default:
-				log.Fatalf("%s indication has unexpected type %T", s.EndPoint, msgType)
+				log.Fatalf("%s indication has unexpected type %T", s.Device.Address, msgType)
 			}
 		}
 	}()
