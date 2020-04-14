@@ -15,13 +15,24 @@ stores:
     message:
       type:
         package: github.com/onosproject/onos-ric/api/sb/e2ap
-        name: RicControlResponse
+        name: RicControlRequest
     storage:
       type: Cache
       name: control
       cached: true
     target:
       package: github.com/onosproject/onos-ric/pkg/store/control
+  - name: outcome
+    message:
+      type:
+        package: github.com/onosproject/onos-ric/api/sb/e2ap
+        name: RicControlResponse
+    storage:
+      type: Cache
+      name: control
+      cached: true
+    target:
+      package: github.com/onosproject/onos-ric/pkg/store/outcome
   - name: updates
     message:
       type:

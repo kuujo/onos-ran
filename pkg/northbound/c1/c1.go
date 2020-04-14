@@ -17,6 +17,7 @@ package c1
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-ric/pkg/store/outcome"
 	"io"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -26,7 +27,6 @@ import (
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/onosproject/onos-ric/pkg/manager"
-	"github.com/onosproject/onos-ric/pkg/store/control"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
 	"google.golang.org/grpc"
 )
@@ -62,14 +62,14 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicControlResponse)
 		if req.Subscribe {
-			watchCh := make(chan control.Event)
+			watchCh := make(chan outcome.Event)
 			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != control.EventDelete {
+					if event.Type != outcome.EventDelete {
 						ch <- event.Message
 					}
 				}
@@ -111,14 +111,14 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicControlResponse)
 		if req.Subscribe {
-			watchCh := make(chan control.Event)
+			watchCh := make(chan outcome.Event)
 			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != control.EventDelete {
+					if event.Type != outcome.EventDelete {
 						ch <- event.Message
 					}
 				}
@@ -285,9 +285,10 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		PlmnId: dst.GetPlmnid(),
 	}
 
-	hoReq := e2ap.RicControlRequest{
+	srcHoReq := e2ap.RicControlRequest{
 		Hdr: &e2sm.RicControlHeader{
 			MessageType: sb.MessageType_HO_REQUEST,
+			Ecgi:        &srcEcgi,
 		},
 		Msg: &e2sm.RicControlMessage{
 			S: &e2sm.RicControlMessage_HORequest{
@@ -300,22 +301,30 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		},
 	}
 
-	srcSession, ok := manager.GetManager().SbSessions[srcEcgi]
-	if !ok {
-		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
-	}
-	log.Infof("Sending HO for %v:%s to Source %s", srcEcgi, crnti, srcSession.EndPoint)
-	err := srcSession.SendRicControlRequest(hoReq)
+	log.Infof("Sending HO for %v:%s to source", srcEcgi, crnti)
+	err := manager.GetManager().StoreControl(srcHoReq)
 	if err != nil {
 		return nil, err
 	}
 
-	dstSession, ok := manager.GetManager().SbSessions[dstEcgi]
-	if !ok {
-		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
+	dstHoReq := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_HO_REQUEST,
+			Ecgi:        &dstEcgi,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_HORequest{
+				HORequest: &sb.HORequest{
+					Crnti: crnti,
+					EcgiS: &srcEcgi,
+					EcgiT: &dstEcgi,
+				},
+			},
+		},
 	}
-	log.Infof("Sending HO for %v:%s to Dest %s", srcEcgi, crnti, dstSession.EndPoint)
-	err = dstSession.SendRicControlRequest(hoReq)
+
+	log.Infof("Sending HO for %v:%s to dest", srcEcgi, crnti)
+	err = manager.GetManager().StoreControl(dstHoReq)
 	if err != nil {
 		return nil, err
 	}
@@ -377,11 +386,7 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 			},
 		},
 	}
-	session, ok := manager.GetManager().SbSessions[ecgi]
-	if !ok {
-		return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
-	}
-	err := session.SendRicControlRequest(rrmConfigReq)
+	err := manager.GetManager().StoreControl(rrmConfigReq)
 	if err != nil {
 		return nil, err
 	}

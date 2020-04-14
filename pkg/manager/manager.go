@@ -16,6 +16,9 @@
 package manager
 
 import (
+	"github.com/onosproject/onos-ric/pkg/controller"
+	controlcontroller "github.com/onosproject/onos-ric/pkg/controller/control"
+	"github.com/onosproject/onos-ric/pkg/store/outcome"
 	"strings"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -67,21 +70,15 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 	if err != nil {
 		return nil, err
 	}
-	if err = updateStore.Clear(); err != nil {
-		log.Error("Error clearing Updates store %s", err.Error())
-	}
 
-	controlStore, err := control.NewDistributedStore(config, timeStore)
+	controlStore, err := control.NewDistributedStore(config)
 	if err != nil {
 		return nil, err
 	}
-	if err = controlStore.Clear(); err != nil {
-		log.Error("Error clearing Updates store %s", err.Error())
-	}
 
-	// Should always clear out the stores on startup because it will be out of sync with ran-simulator
-	if err = telemetryStore.Clear(); err != nil {
-		log.Error("Error clearing Telemetry store %s", err.Error())
+	outcomeStore, err := outcome.NewDistributedStore(config, timeStore)
+	if err != nil {
+		return nil, err
 	}
 
 	deviceChangeStore, err := device.NewTopoStore(topoEndPoint, opts...)
@@ -90,12 +87,18 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		return nil, err
 	}
 
+	sessionManager := southbound.NewSessionManager()
+
+	controlController := controlcontroller.NewController(mastershipStore, controlStore, sessionManager)
+
 	mgr = Manager{
 		controlStore:       controlStore,
+		outcomeStore:       outcomeStore,
 		updateStore:        updateStore,
 		telemetryStore:     telemetryStore,
 		deviceChangesStore: deviceChangeStore,
-		SbSessions:         make(map[sb.ECGI]*southbound.Session),
+		controlController:  controlController,
+		sessionManager:     sessionManager,
 		enableMetrics:      enableMetrics,
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
@@ -107,10 +110,12 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 // Manager single point of entry for the RAN system.
 type Manager struct {
 	controlStore       control.Store
+	outcomeStore       outcome.Store
 	updateStore        updates.Store
 	telemetryStore     telemetry.Store
+	controlController  *controller.Controller
 	deviceChangesStore device.Store
-	SbSessions         map[sb.ECGI]*southbound.Session
+	sessionManager     *southbound.SessionManager
 	topoMonitor        monitor.TopoMonitor
 	enableMetrics      bool
 }
@@ -120,7 +125,7 @@ func (m *Manager) StoreRicControlResponse(update e2ap.RicControlResponse) {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REQUEST:
-		_ = m.controlStore.Put(control.GetID(&update), &update)
+		_ = m.outcomeStore.Put(outcome.GetID(&update), &update)
 	default:
 		log.Fatalf("RicControlResponse has unexpected type %d", msgType)
 	}
@@ -220,12 +225,12 @@ func (m *Manager) SubscribeTelemetry(ch chan<- telemetry.Event, withReplay bool)
 
 // ListControl ...
 func (m *Manager) ListControl(ch chan<- e2ap.RicControlResponse) error {
-	return m.controlStore.List(ch)
+	return m.outcomeStore.List(ch)
 }
 
 // SubscribeControl ...
-func (m *Manager) SubscribeControl(ch chan<- control.Event) error {
-	return m.controlStore.Watch(ch, control.WithReplay())
+func (m *Manager) SubscribeControl(ch chan<- outcome.Event) error {
+	return m.outcomeStore.Watch(ch, outcome.WithReplay())
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
@@ -237,6 +242,11 @@ func (m *Manager) Run() {
 	err := mgr.deviceChangesStore.Watch(m.topoMonitor.TopoChannel())
 	if err != nil {
 		log.Errorf("Error listening to topo service: %s", err.Error())
+	}
+
+	err = m.controlController.Start()
+	if err != nil {
+		log.Error("Error starting controller: %v", err)
 	}
 }
 
@@ -252,17 +262,21 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 			deviceEndpoint := sb.Endpoint(device.GetDevice().GetAddress())
 			session, err := southbound.NewSession(ecgi, deviceEndpoint)
 			if err != nil {
-				log.Fatalf("Unable to create new session %s", err.Error())
+				log.Errorf("Unable to create new session %s", err.Error())
 			}
 			if session != nil {
 				session.RicControlResponseHandlerFunc = m.StoreRicControlResponse
 				session.ControlUpdateHandlerFunc = m.StoreControlUpdate
 				session.TelemetryUpdateHandlerFunc = m.StoreTelemetry
 				session.EnableMetrics = m.enableMetrics
-				m.SbSessions[ecgi] = session
-				session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials())
+				err = m.sessionManager.AddSession(session)
+				if err != nil {
+					log.Errorf("Failed to add new session: %v", err)
+				} else {
+					session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials())
+				}
 			} else {
-				log.Fatalf("Error creating new session for %v", ecgi)
+				log.Errorf("Error creating new session for %v", ecgi)
 			}
 		} else {
 			log.Warnf("Topo device event not yet handled %s %v", device.String())
@@ -280,6 +294,15 @@ func (m *Manager) Close() {
 // Should be called only after NewManager and Run are done.
 func GetManager() *Manager {
 	return &mgr
+}
+
+// StoreControl stores a control request
+func (m *Manager) StoreControl(request e2ap.RicControlRequest) error {
+	err := m.controlStore.Put(control.GetID(&request), &request)
+	if err != nil {
+		log.Errorf("Could not put message %v in control store %s", request, err.Error())
+	}
+	return err
 }
 
 // StoreTelemetry - put the telemetry update in the atomix store

@@ -12,20 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package control
+package outcome
 
 import (
-	"fmt"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/pkg/store/message"
 )
 
 // NewID creates a new control store ID
 func NewID(messageType sb.MessageType, plmnidn, ecid string) ID {
-	return ID(fmt.Sprintf("%s:%s:%s", messageType, plmnidn, ecid))
+	return ID{
+		Partition: PartitionKey(message.NewPartitionKey(plmnidn, ecid)),
+		Key:       Key(message.NewID(messageType, plmnidn, ecid)),
+	}
 }
 
 // GetID gets the control store ID for the given message
-func GetID(message *e2ap.RicControlRequest) ID {
-	return NewID(message.GetHdr().GetMessageType(), message.GetHdr().GetEcgi().PlmnId, message.GetHdr().GetEcgi().Ecid)
+func GetID(message *e2ap.RicControlResponse) ID {
+	var ecgi sb.ECGI
+	msgType := message.GetHdr().GetMessageType()
+	switch msgType {
+	case sb.MessageType_CELL_CONFIG_REPORT:
+		ecgi = *message.GetMsg().GetCellConfigReport().GetEcgi()
+	}
+	return NewID(message.GetHdr().GetMessageType(), ecgi.PlmnId, ecgi.Ecid)
 }

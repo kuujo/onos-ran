@@ -16,6 +16,7 @@ package southbound
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -26,7 +27,7 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
 
 	"github.com/onosproject/onos-ric/api/sb"
-	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"google.golang.org/grpc"
 )
@@ -50,6 +51,38 @@ type RicControlResponseHandler = func(e2ap.RicControlResponse)
 
 // ControlUpdateHandler - a function for the session to write back to manager without the import cycle
 type ControlUpdateHandler = func(e2ap.RicIndication)
+
+func NewSessionManager() *SessionManager {
+	return &SessionManager{
+		sessions: make(map[sb.ECGI]*Session),
+	}
+}
+
+// SessionManager is a registry of E2 sessions
+type SessionManager struct {
+	sessions map[sb.ECGI]*Session
+	mu       sync.RWMutex
+}
+
+func (s *SessionManager) GetSession(ecgi sb.ECGI) (*Session, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	session, ok := s.sessions[ecgi]
+	if !ok {
+		return nil, fmt.Errorf("unknown session %v", ecgi)
+	}
+	return session, nil
+}
+
+func (s *SessionManager) AddSession(session *Session) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.sessions[session.Ecgi]; ok {
+		return errors.New("session already exists")
+	}
+	s.sessions[session.Ecgi] = session
+	return nil
+}
 
 // Session is responsible for managing connections to and interactions with the RAN southbound.
 type Session struct {
