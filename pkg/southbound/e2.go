@@ -97,6 +97,7 @@ func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials) {
 	go s.manageConnections(tls, creds)
 	go s.recvTelemetryUpdates()
 	go s.recvUpdates()
+	go s.recvControlResponses()
 }
 
 func (s *Session) recvTelemetryUpdates() {
@@ -108,6 +109,12 @@ func (s *Session) recvTelemetryUpdates() {
 func (s *Session) recvUpdates() {
 	for update := range s.controlIndications {
 		s.ControlUpdateHandlerFunc(update)
+	}
+}
+
+func (s *Session) recvControlResponses() {
+	for update := range s.ricControlResponseChan {
+		s.RicControlResponseHandlerFunc(update)
 	}
 }
 

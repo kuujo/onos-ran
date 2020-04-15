@@ -119,7 +119,7 @@ type Manager struct {
 func (m *Manager) StoreRicControlResponse(update e2ap.RicControlResponse) {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
-	case sb.MessageType_CELL_CONFIG_REQUEST:
+	case sb.MessageType_CELL_CONFIG_REPORT:
 		_ = m.controlStore.Put(control.GetID(&update), &update)
 	default:
 		log.Fatalf("RicControlResponse has unexpected type %d", msgType)
