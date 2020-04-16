@@ -116,7 +116,7 @@ type Manager struct {
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store
-func (m *Manager) StoreRicControlResponse(update e2ap.RicControlResponse) {
+func (m *Manager) StoreRicControlResponse(update e2ap.RicIndication) {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REPORT:
@@ -165,12 +165,12 @@ func (m *Manager) GetUpdate() ([]e2ap.RicIndication, error) {
 }
 
 // GetControl gets control updates
-func (m *Manager) GetControl() ([]e2ap.RicControlResponse, error) {
-	ch := make(chan e2ap.RicControlResponse)
+func (m *Manager) GetControl() ([]e2ap.RicIndication, error) {
+	ch := make(chan e2ap.RicIndication)
 	if err := m.ListControl(ch); err != nil {
 		return nil, err
 	}
-	messages := make([]e2ap.RicControlResponse, 0)
+	messages := make([]e2ap.RicIndication, 0)
 	for update := range ch {
 		messages = append(messages, update)
 	}
@@ -219,7 +219,7 @@ func (m *Manager) SubscribeTelemetry(ch chan<- telemetry.Event, withReplay bool)
 }
 
 // ListControl ...
-func (m *Manager) ListControl(ch chan<- e2ap.RicControlResponse) error {
+func (m *Manager) ListControl(ch chan<- e2ap.RicIndication) error {
 	return m.controlStore.List(ch)
 }
 

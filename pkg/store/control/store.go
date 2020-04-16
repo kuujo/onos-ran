@@ -41,7 +41,7 @@ type store struct {
 	messageStore messagestore.Store
 }
 
-func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicControlResponse, error) {
+func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicIndication, error) {
 	messageOpts := make([]messagestore.GetOption, len(opts))
 	for i, opt := range opts {
 		messageOpts[i] = opt
@@ -55,7 +55,7 @@ func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicControlResponse, error) 
 	return decode(entry)
 }
 
-func (s *store) Put(id ID, message *e2ap.RicControlResponse, opts ...PutOption) error {
+func (s *store) Put(id ID, message *e2ap.RicIndication, opts ...PutOption) error {
 	entry, err := encode(message)
 	if err != nil {
 		return err
@@ -71,7 +71,7 @@ func (s *store) Delete(id ID, opts ...DeleteOption) error {
 	return s.messageStore.Delete(messagestore.PartitionKey(id.Partition), messagestore.ID(id.Key), messageOpts...)
 }
 
-func (s *store) List(ch chan<- e2ap.RicControlResponse) error {
+func (s *store) List(ch chan<- e2ap.RicIndication) error {
 	entryCh := make(chan message.MessageEntry)
 	if err := s.messageStore.List(entryCh); err != nil {
 		return err
@@ -124,15 +124,15 @@ func (s *store) Close() error {
 	return s.messageStore.Close()
 }
 
-func decode(message *message.MessageEntry) (*e2ap.RicControlResponse, error) {
-	m := &e2ap.RicControlResponse{}
+func decode(message *message.MessageEntry) (*e2ap.RicIndication, error) {
+	m := &e2ap.RicIndication{}
 	if err := proto.Unmarshal(message.Bytes, m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func encode(m *e2ap.RicControlResponse) (*message.MessageEntry, error) {
+func encode(m *e2ap.RicIndication) (*message.MessageEntry, error) {
 	bytes, err := proto.Marshal(m)
 	if err != nil {
 		return nil, err

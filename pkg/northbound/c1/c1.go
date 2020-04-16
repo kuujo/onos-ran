@@ -60,7 +60,7 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	}
 
 	if req.Ecgi == nil {
-		ch := make(chan e2ap.RicControlResponse)
+		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
 			watchCh := make(chan control.Event)
 			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {
@@ -109,7 +109,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 		return fmt.Errorf("subscribe not yet implemented")
 	}
 	if req.Ecgi == nil {
-		ch := make(chan e2ap.RicControlResponse)
+		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
 			watchCh := make(chan control.Event)
 			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {

@@ -29,7 +29,7 @@ func NewID(messageType sb.MessageType, plmnidn, ecid string) ID {
 }
 
 // GetID gets the control store ID for the given message
-func GetID(message *e2ap.RicControlResponse) ID {
+func GetID(message *e2ap.RicIndication) ID {
 	var ecgi sb.ECGI
 	msgType := message.GetHdr().GetMessageType()
 	switch msgType {

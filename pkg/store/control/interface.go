@@ -34,7 +34,7 @@ type Event struct {
 	// ID is the message identifier
 	ID ID
 	// Message is the event message
-	Message e2ap.RicControlResponse
+	Message e2ap.RicIndication
 }
 
 // EventType is a store event type
@@ -52,16 +52,16 @@ type Store interface {
 	io.Closer
 
 	// Gets a message based on a given ID
-	Get(ID, ...GetOption) (*e2ap.RicControlResponse, error)
+	Get(ID, ...GetOption) (*e2ap.RicIndication, error)
 
 	// Puts a message to the store
-	Put(ID, *e2ap.RicControlResponse, ...PutOption) error
+	Put(ID, *e2ap.RicIndication, ...PutOption) error
 
 	// Removes a message from the store
 	Delete(ID, ...DeleteOption) error
 
 	// List all of the last up to date messages
-	List(ch chan<- e2ap.RicControlResponse) error
+	List(ch chan<- e2ap.RicIndication) error
 
 	// Watch watches the store for changes
 	Watch(ch chan<- Event, opts ...WatchOption) error
