@@ -80,7 +80,7 @@ func main() {
 
 	log.Info("Starting onos-ric")
 
-	opts, err := certs.HandleCertArgs(keyPath, certPath)
+	opts, err := certs.HandleCertPaths(*caPath, *keyPath, *certPath, true)
 	if err != nil {
 		log.Fatal(err)
 	}
