@@ -6,14 +6,8 @@
 [![Coverage Status](https://img.shields.io/coveralls/github/onosproject/onos-ric/badge.svg)](https://coveralls.io/github/onosproject/onos-ric?branch=master)
 [![GoDoc](https://godoc.org/github.com/onosproject/onos-ric?status.svg)](https://godoc.org/github.com/onosproject/onos-ric)
 
-RAN subsystem for ONOS (µONOS Architecture)
+Near real time RAN Intelligent Controller subsystem for ONOS (µONOS Architecture)
 
-Presently, this is just a skeletal project established to provide support for the upcoming MWC demonstration.
-However, we expected to start evolving quickly towards the long-term architecture.
-
-## Running (provisionally)
-To run `onos-ric`, use the following options:
-
-```
-> onos-ric --simulator <ip-address:port>
-```
+You can find all the documentation under [docs](docs).  
+A good place to start is the [README](docs/README.md).  
+The documentation is also published on it's own [website](https://docs.onosproject.org).
