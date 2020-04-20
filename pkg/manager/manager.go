@@ -95,7 +95,7 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		updateStore:        updateStore,
 		telemetryStore:     telemetryStore,
 		deviceChangesStore: deviceChangeStore,
-		SbSessions:         make(map[sb.ECGI]*southbound.Session),
+		SbSessions:         make(map[sb.ECGI]southbound.E2),
 		enableMetrics:      enableMetrics,
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
@@ -110,7 +110,7 @@ type Manager struct {
 	updateStore        updates.Store
 	telemetryStore     telemetry.Store
 	deviceChangesStore device.Store
-	SbSessions         map[sb.ECGI]*southbound.Session
+	SbSessions         map[sb.ECGI]southbound.E2
 	topoMonitor        monitor.TopoMonitor
 	enableMetrics      bool
 }
@@ -250,15 +250,11 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 		if device.Type == topodevice.ListResponse_NONE || device.Type == topodevice.ListResponse_ADDED {
 			ecgi := ecgiFromTopoID(device.GetDevice().GetID())
 			deviceEndpoint := sb.Endpoint(device.GetDevice().GetAddress())
-			session, err := southbound.NewSession(ecgi, deviceEndpoint)
+			session, err := southbound.NewSession(ecgi, deviceEndpoint, m.StoreRicControlResponse, m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics)
 			if err != nil {
 				log.Fatalf("Unable to create new session %s", err.Error())
 			}
 			if session != nil {
-				session.RicControlResponseHandlerFunc = m.StoreRicControlResponse
-				session.ControlUpdateHandlerFunc = m.StoreControlUpdate
-				session.TelemetryUpdateHandlerFunc = m.StoreTelemetry
-				session.EnableMetrics = m.enableMetrics
 				m.SbSessions[ecgi] = session
 				session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials())
 			} else {

@@ -31,6 +31,13 @@ import (
 	"google.golang.org/grpc"
 )
 
+// E2 ...
+type E2 interface {
+	Run(tls topodevice.TlsConfig, creds topodevice.Credentials)
+	RemoteAddress() sb.Endpoint
+	SendRicControlRequest(req e2ap.RicControlRequest) error
+}
+
 var log = logging.GetLogger("southbound")
 
 //MapHOEventMeasuredRIC ...
@@ -78,16 +85,24 @@ type HOEventMeasuredRIC struct {
 }
 
 // NewSession creates a new southbound session controller.
-func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint) (*Session, error) {
+func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint,
+	storeRicControlResponse RicControlResponseHandler,
+	storeControlUpdate ControlUpdateHandler,
+	storeTelemetry TelemetryUpdateHandler,
+	enableMetrics bool) (E2, error) {
 	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
 
 	return &Session{
-		EndPoint:              endPoint,
-		Ecgi:                  ecgi,
-		ricControlRequestChan: make(chan e2ap.RicControlRequest),
-		ricIndicationChan:     make(chan e2ap.RicIndication),
-		controlIndications:    make(chan e2ap.RicIndication),
-		telemetryIndications:  make(chan e2ap.RicIndication),
+		EndPoint:                      endPoint,
+		Ecgi:                          ecgi,
+		ricControlRequestChan:         make(chan e2ap.RicControlRequest),
+		ricIndicationChan:             make(chan e2ap.RicIndication),
+		controlIndications:            make(chan e2ap.RicIndication),
+		telemetryIndications:          make(chan e2ap.RicIndication),
+		RicControlResponseHandlerFunc: storeRicControlResponse,
+		ControlUpdateHandlerFunc:      storeControlUpdate,
+		TelemetryUpdateHandlerFunc:    storeTelemetry,
+		EnableMetrics:                 enableMetrics,
 	}, nil
 }
 
@@ -98,6 +113,11 @@ func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials) {
 	go s.recvTelemetryUpdates()
 	go s.recvUpdates()
 	go s.recvControlResponses()
+}
+
+// RemoteAddress ...
+func (s *Session) RemoteAddress() sb.Endpoint {
+	return s.EndPoint
 }
 
 func (s *Session) recvTelemetryUpdates() {
