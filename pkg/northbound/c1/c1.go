@@ -28,6 +28,7 @@ import (
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"github.com/onosproject/onos-ric/pkg/store/control"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
+	"github.com/onosproject/onos-ric/pkg/store/updates"
 	"google.golang.org/grpc"
 )
 
@@ -157,6 +158,58 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 	} else {
 		return fmt.Errorf("list station links for specific ecgi not yet implemented")
 	}
+	return nil
+}
+
+// ListUEs returns a stream of UEs
+func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_ListUEsServer) error {
+
+	if req.Ecgi == nil {
+		ch := make(chan e2ap.RicIndication)
+		if req.Subscribe {
+			watchCh := make(chan updates.Event)
+			if err := manager.GetManager().SubscribeUpdate(watchCh); err != nil {
+				return err
+			}
+			go func() {
+				defer close(ch)
+				for event := range watchCh {
+					if event.Type != updates.EventDelete {
+						ch <- event.Message
+					}
+				}
+			}()
+		} else {
+			if err := manager.GetManager().ListUpdate(ch); err != nil {
+				return err
+			}
+		}
+
+		for update := range ch {
+			switch update.GetHdr().GetMessageType() {
+			case sb.MessageType_UE_ADMISSION_REQUEST:
+				ueAdmReq := update.GetMsg().GetUEAdmissionRequest()
+				crnti := ueAdmReq.GetCrnti()
+				ecgi := nb.ECGI{
+					Plmnid: ueAdmReq.GetEcgi().GetPlmnId(),
+					Ecid:   ueAdmReq.GetEcgi().GetEcid(),
+				}
+				imsi := fmt.Sprintf("%d", ueAdmReq.GetImsi())
+				ueInfo := nb.UEInfo{
+					Crnti: crnti,
+					Ecgi:  &ecgi,
+					Imsi:  imsi,
+				}
+				if err := stream.Send(&ueInfo); err != nil {
+					return err
+				}
+			}
+		}
+
+	} else {
+		return fmt.Errorf("list UEs for specific ecgi and crnti not yet implemented")
+	}
+
 	return nil
 }
 

@@ -41,63 +41,34 @@ func RunMLBExposer(sb *mlbappsouthbound.MLBSessions) {
 
 // exposeMLBInfo exposes MLB Information - UELink info, Cell info, and MLB events
 func exposeMLBInfo(sb *mlbappsouthbound.MLBSessions) {
+	go exposeMLBEvents(sb)
 	go func() {
 		for {
 			var wg sync.WaitGroup
 			wg.Add(2)
 
-			var listUELinkInfo []prometheus.Counter
+			var listUEInfo []prometheus.Counter
 			var listCellInfo []prometheus.Counter
-			var listMLBEventInfo []prometheus.Counter
 
 			go func() {
-				listUELinkInfo = exposeUELinkInfo(sb)
+				listCellInfo = exposeCellInfo(sb)
 				defer wg.Done()
 			}()
 			go func() {
-				listCellInfo = exposeCellInfo(sb)
+				listUEInfo = exposeUEInfo(sb)
 				defer wg.Done()
 			}()
 			wg.Wait()
 
 			time.Sleep(1000 * time.Millisecond)
-			for i := 0; i < len(listUELinkInfo); i++ {
-				prometheus.Unregister(listUELinkInfo[i])
+			for i := 0; i < len(listUEInfo); i++ {
+				prometheus.Unregister(listUEInfo[i])
 			}
 			for i := 0; i < len(listCellInfo); i++ {
 				prometheus.Unregister(listCellInfo[i])
 			}
-			for i := 0; i < len(listMLBEventInfo); i++ {
-				prometheus.Unregister(listMLBEventInfo[i])
-			}
 		}
 	}()
-}
-
-// exposeUELinkInfo exposes UE link information
-func exposeUELinkInfo(sb *mlbappsouthbound.MLBSessions) []prometheus.Counter {
-	var listRNIBUELink []prometheus.Counter
-	for _, e := range sb.GetUELinkInfo() {
-		tmp := promauto.NewCounter(prometheus.CounterOpts{
-			Name: "mlbapp_ue_link_info",
-			ConstLabels: prometheus.Labels{
-				"crnti":       e.GetCrnti(),
-				"serv_plmnid": e.GetEcgi().GetPlmnid(),
-				"serv_ecid":   e.GetEcgi().GetEcid(),
-				"n1_plmnid":   e.GetChannelQualities()[0].GetTargetEcgi().GetPlmnid(),
-				"n1_ecid":     e.GetChannelQualities()[0].GetTargetEcgi().GetEcid(),
-				"n1_cqi":      fmt.Sprintf("%d", e.GetChannelQualities()[0].GetCqiHist()),
-				"n2_plmnid":   e.GetChannelQualities()[1].GetTargetEcgi().GetPlmnid(),
-				"n2_ecid":     e.GetChannelQualities()[1].GetTargetEcgi().GetEcid(),
-				"n2_cqi":      fmt.Sprintf("%d", e.GetChannelQualities()[1].GetCqiHist()),
-				"n3_plmnid":   e.GetChannelQualities()[2].GetTargetEcgi().GetPlmnid(),
-				"n3_ecid":     e.GetChannelQualities()[2].GetTargetEcgi().GetEcid(),
-				"n3_cqi":      fmt.Sprintf("%d", e.GetChannelQualities()[2].GetCqiHist()),
-			},
-		})
-		listRNIBUELink = append(listRNIBUELink, tmp)
-	}
-	return listRNIBUELink
 }
 
 // exposeCellInfo exposes cell infomration
@@ -115,4 +86,41 @@ func exposeCellInfo(sb *mlbappsouthbound.MLBSessions) []prometheus.Counter {
 		listRNIBCell = append(listRNIBCell, tmp)
 	}
 	return listRNIBCell
+}
+
+func exposeUEInfo(sb *mlbappsouthbound.MLBSessions) []prometheus.Counter {
+	var listUEInfo []prometheus.Counter
+	for _, e := range sb.UEInfoList {
+		tmp := promauto.NewCounter(prometheus.CounterOpts{
+			Name: "mlbapp_ue_info",
+			ConstLabels: prometheus.Labels{
+				"imsi":   e.GetImsi(),
+				"crnti":  e.GetCrnti(),
+				"plmnid": e.GetEcgi().GetPlmnid(),
+				"ecid":   e.GetEcgi().GetEcid(),
+			},
+		})
+		listUEInfo = append(listUEInfo, tmp)
+	}
+	return listUEInfo
+}
+
+func exposeMLBEvents(sb *mlbappsouthbound.MLBSessions) {
+	for {
+		if sb.MLBEventChan == nil {
+			continue
+		}
+		for e := range sb.MLBEventChan {
+			tmp := promauto.NewCounter(prometheus.CounterOpts{
+				Name: "mlbapp_mlb_events",
+				ConstLabels: prometheus.Labels{
+					"plmnid":    e.MLBReq.GetEcgi().GetPlmnid(),
+					"ecgi":      e.MLBReq.GetEcgi().GetEcid(),
+					"pa":        e.MLBReq.GetOffset().String(),
+					"timestamp": e.EndTime.Format(time.StampNano),
+				},
+			})
+			tmp.Add(float64(e.EndTime.Sub(e.StartTime).Microseconds()))
+		}
+	}
 }

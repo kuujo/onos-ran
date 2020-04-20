@@ -95,9 +95,6 @@
     - [TriggerQuantity](#interface.e2.TriggerQuantity)
     - [XICICPA](#interface.e2.XICICPA)
   
-  
-  
-
 - [api/sb/e2ap.proto](#api/sb/e2ap.proto)
     - [E2apProtocolIE](#interface.e2ap.E2apProtocolIE)
     - [E2apProtocolIEsPair](#interface.e2ap.E2apProtocolIEsPair)
@@ -111,9 +108,6 @@
     - [ProtocolIEId](#interface.e2ap.ProtocolIEId)
     - [TriggeringMessage](#interface.e2ap.TriggeringMessage)
   
-  
-  
-
 - [Scalar Value Types](#scalar-value-types)
 
 

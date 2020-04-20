@@ -10,11 +10,8 @@
     - [RicSubscriptionDetails](#interface.e2ap.RicSubscriptionDetails)
     - [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest)
   
-  
-  
     - [E2AP](#interface.e2ap.E2AP)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 

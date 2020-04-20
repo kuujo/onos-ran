@@ -311,7 +311,7 @@ func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
 
 // DeleteTelemetry deletes telemetry when a handover happens
 func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) error {
-	id := telemetry.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
+	id := telemetry.NewID(sb.MessageType_RADIO_MEAS_REPORT_PER_UE, plmnid, ecid, crnti)
 	if err := m.telemetryStore.Delete(id); err != nil {
 		log.Infof("Error deleting Telemetry, key=%s", id)
 		return err

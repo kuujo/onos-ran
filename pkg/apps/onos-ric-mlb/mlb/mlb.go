@@ -36,16 +36,16 @@ type StaUeJointLink struct {
 }
 
 // MLBDecisionMaker decides stations to adjust transmission power.
-func MLBDecisionMaker(stas []*nb.StationInfo, staLinks []nb.StationLinkInfo, ueLinks []*nb.UELinkInfo, threshold *float64) (*[]nb.RadioPowerRequest, []StaUeJointLink) {
+func MLBDecisionMaker(stas []*nb.StationInfo, staLinks []nb.StationLinkInfo, ueInfoList []*nb.UEInfo, threshold *float64) (*[]nb.RadioPowerRequest, map[string]*StaUeJointLink) {
 	var mlbReqs []nb.RadioPowerRequest
-	var mlbEvents []StaUeJointLink
+	staUeJointLinks := make(map[string]*StaUeJointLink)
 
 	// 1. Decide whose tx power should be reduced
-	// init staUeJointLinkList
-	var staUeJointLinkList []StaUeJointLink
+	// init staUEJointLinkList
+	t := time.Now()
 	for _, s := range stas {
 		tmpStaUeJointLink := &StaUeJointLink{
-			TimeStamp:   time.Now(),
+			TimeStamp:   t,
 			PlmnID:      s.GetEcgi().GetPlmnid(),
 			Ecid:        s.GetEcgi().GetEcid(),
 			MaxNumUes:   s.GetMaxNumConnectedUes(),
@@ -53,17 +53,14 @@ func MLBDecisionMaker(stas []*nb.StationInfo, staLinks []nb.StationLinkInfo, ueL
 			Pa:          0,
 			ElapsedTime: 0,
 		}
-		staUeJointLinkList = append(staUeJointLinkList, *tmpStaUeJointLink)
+		staUeJointLinks[s.Ecgi.String()] = tmpStaUeJointLink
 	}
 
-	// fill ueLinks in each staUeJointLinkList
-	setUeLinks(&staUeJointLinkList, ueLinks)
+	countUEs(staUeJointLinks, ueInfoList)
 
-	overloadedStas := getOverloadedStationList(&staUeJointLinkList, threshold)
-	stasToBeExpanded := getStasToBeExpanded(&staUeJointLinkList, overloadedStas, &staLinks)
+	overloadedStas := getOverloadedStationList(staUeJointLinks, threshold)
+	stasToBeExpanded := getStasToBeExpanded(staUeJointLinks, overloadedStas, &staLinks)
 
-	// 2. Decide how much tx power should be reduced? (static, or dynamic according to CQI values?)
-	// - For static, just + or - 3 dB
 	for _, os := range *overloadedStas {
 		tmpMlbReq := &nb.RadioPowerRequest{
 			Ecgi: &nb.ECGI{
@@ -73,7 +70,6 @@ func MLBDecisionMaker(stas []*nb.StationInfo, staLinks []nb.StationLinkInfo, ueL
 			Offset: nb.StationPowerOffset_PA_DB_MINUS3,
 		}
 		mlbReqs = append(mlbReqs, *tmpMlbReq)
-		mlbEvents = append(mlbEvents, os)
 	}
 
 	for _, ss := range *stasToBeExpanded {
@@ -85,57 +81,50 @@ func MLBDecisionMaker(stas []*nb.StationInfo, staLinks []nb.StationLinkInfo, ueL
 			Offset: nb.StationPowerOffset_PA_DB_3,
 		}
 		mlbReqs = append(mlbReqs, *tmpMlbReq)
-		mlbEvents = append(mlbEvents, ss)
 	}
 
 	var numTotalUes int32
-	for _, e := range staUeJointLinkList {
+	for _, e := range staUeJointLinks {
 		// for debug -- should be removed
 		log.Infof("STA(p:%s,e:%s) - numUEs:%d (threshold:%d * %f)\n", e.PlmnID, e.Ecid, e.NumUes, e.MaxNumUes, *threshold)
 		numTotalUes += e.NumUes
 	}
 	log.Infof("Total num of reported UEs: %d", numTotalUes)
 
-	// To-Do: For dynamic, sort UE's CQI values and pick UEs should be handed over:
-	// if max CQI < 10; - 1 dB, otherwise, -3 dB
-
-	// 3. Return values
-	return &mlbReqs, mlbEvents
+	return &mlbReqs, staUeJointLinks
 }
 
-// setUeLinks sets UELink info into StaUeJointLink struct.
-func setUeLinks(staJointList *[]StaUeJointLink, ueLinks []*nb.UELinkInfo) {
-	for _, l := range ueLinks {
-		tmpSta := getStaUeJointLink(l.GetEcgi().GetPlmnid(), l.GetEcgi().GetEcid(), staJointList)
-		tmpSta.NumUes++
+func countUEs(staJointList map[string]*StaUeJointLink, ueInfoList []*nb.UEInfo) {
+	for _, ue := range ueInfoList {
+		if _, ok := staJointList[ue.GetEcgi().String()]; ok {
+			staJointList[ue.GetEcgi().String()].NumUes++
+		} else {
+			log.Warnf("UE %s is connected to the unregistered eNB %s (no CellConfig message for %s)", ue.GetCrnti(), ue.GetEcgi().String(), ue.GetEcgi().String())
+		}
 	}
 }
 
 // getOverloadedStationList gets the list of overloaded stations.
-func getOverloadedStationList(staUeLinkList *[]StaUeJointLink, threshold *float64) *[]StaUeJointLink {
+func getOverloadedStationList(staUeJointLinks map[string]*StaUeJointLink, threshold *float64) *[]StaUeJointLink {
 	var resultOverloadedStations []StaUeJointLink
-
-	for i := 0; i < len(*staUeLinkList); i++ {
-		if float64((*staUeLinkList)[i].NumUes) > (*threshold)*float64((*staUeLinkList)[i].MaxNumUes) {
-			(*staUeLinkList)[i].Pa = -3
-			resultOverloadedStations = append(resultOverloadedStations, (*staUeLinkList)[i])
+	for _, v := range staUeJointLinks {
+		if float64(v.NumUes) > (*threshold)*float64(v.MaxNumUes) {
+			v.Pa = -3
+			resultOverloadedStations = append(resultOverloadedStations, *v)
 		}
 	}
-
 	return &resultOverloadedStations
 }
 
 // getStasToBeExpanded gets the list of stations which have the coverage to be Expanded.
-func getStasToBeExpanded(staUeLinkList *[]StaUeJointLink, overloadedStas *[]StaUeJointLink, staLinks *[]nb.StationLinkInfo) *[]StaUeJointLink {
+func getStasToBeExpanded(staUeJointLinks map[string]*StaUeJointLink, overloadedStas *[]StaUeJointLink, staLinks *[]nb.StationLinkInfo) *[]StaUeJointLink {
 	var resultStasToBeExpanded []StaUeJointLink
-
 	for _, os := range *overloadedStas {
 		nEcgis := getNeighborStaEcgi(os.PlmnID, os.Ecid, staLinks)
 		for _, n := range nEcgis {
-			tmpStaUeJointLink := getStaUeJointLink(n.GetPlmnid(), n.GetEcid(), staUeLinkList)
-			if (*tmpStaUeJointLink).Pa == 0 {
-				(*tmpStaUeJointLink).Pa = 3
-				resultStasToBeExpanded = append(resultStasToBeExpanded, *tmpStaUeJointLink)
+			if staUeJointLinks[n.String()].Pa == 0 {
+				staUeJointLinks[n.String()].Pa = 3
+				resultStasToBeExpanded = append(resultStasToBeExpanded, *staUeJointLinks[n.String()])
 			}
 		}
 	}
@@ -148,16 +137,6 @@ func getNeighborStaEcgi(plmnid string, ecid string, staLinks *[]nb.StationLinkIn
 	for _, s := range *staLinks {
 		if s.GetEcgi().GetPlmnid() == plmnid && s.GetEcgi().GetEcid() == ecid {
 			return s.GetNeighborECGI()
-		}
-	}
-	return nil
-}
-
-// getStaUeJointLink gets the StaUeJointLink having given plmnid and ecid.
-func getStaUeJointLink(plmnid string, ecid string, staUeLinkList *[]StaUeJointLink) *StaUeJointLink {
-	for i := 0; i < len(*staUeLinkList); i++ {
-		if (*staUeLinkList)[i].PlmnID == plmnid && (*staUeLinkList)[i].Ecid == ecid {
-			return &(*staUeLinkList)[i]
 		}
 	}
 	return nil

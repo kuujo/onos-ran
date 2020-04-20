@@ -26,6 +26,7 @@ func getGetCommand() *cobra.Command {
 	cmd.AddCommand(getGetStationsCommand())
 	cmd.AddCommand(getGetStationLinksCommand())
 	cmd.AddCommand(getGetUeLinksCommand())
+	cmd.AddCommand(getGetUEsCommand())
 	return cmd
 }
 
@@ -39,6 +40,7 @@ func getWatchCommand() *cobra.Command {
 	cmd.AddCommand(getWatchStationsCommand())
 	cmd.AddCommand(getWatchStationLinksCommand())
 	cmd.AddCommand(getWatchUeLinksCommand())
+	cmd.AddCommand(getWatchUEsCommand())
 	return cmd
 }
 

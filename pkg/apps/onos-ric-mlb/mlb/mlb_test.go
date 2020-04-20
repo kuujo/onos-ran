@@ -16,8 +16,9 @@ package mlbapploadbalance
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/onosproject/onos-ric/api/nb"
 )
@@ -33,7 +34,7 @@ func TestMLBDecisionMaker1(t *testing.T) {
 	// Define test cases
 	var tStas []*nb.StationInfo
 	var tStaLinks []nb.StationLinkInfo
-	var tUeLinks []*nb.UELinkInfo
+	var tUes []*nb.UEInfo
 
 	// StationInfo
 	for i := 1; i < 10; i++ {
@@ -246,165 +247,34 @@ func TestMLBDecisionMaker1(t *testing.T) {
 
 	// UELinkInfo
 	// UE1 - conn w/ STA8
-	tUeLink1 := &nb.UELinkInfo{
-		Ecgi: &nb.ECGI{
-			Plmnid: plmnid,
-			Ecid:   "0008",
-		},
+	tUeInfo1 := &nb.UEInfo{
 		Crnti: "00001",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0008",
-				},
-				CqiHist: 12,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0007",
-				},
-				CqiHist: 7,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 5,
-			},
-		},
-	}
-	// UE2 - conn w/ STA8
-	tUeLink2 := &nb.UELinkInfo{
 		Ecgi: &nb.ECGI{
 			Plmnid: plmnid,
 			Ecid:   "0008",
 		},
+		Imsi: "315010999900001",
+	}
+	tUeInfo2 := &nb.UEInfo{
 		Crnti: "00002",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0008",
-				},
-				CqiHist: 15,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0007",
-				},
-				CqiHist: 3,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 1,
-			},
-		},
-	}
-	// UE3 - conn w/ STA8
-	tUeLink3 := &nb.UELinkInfo{
 		Ecgi: &nb.ECGI{
 			Plmnid: plmnid,
 			Ecid:   "0008",
 		},
-		Crnti: "00003",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0008",
-				},
-				CqiHist: 10,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0007",
-				},
-				CqiHist: 5,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 9,
-			},
-		},
+		Imsi: "315010999900002",
 	}
-	/*
-		// UE4 - conn w/ STA8
-		tUeLink4 := &nb.UELinkInfo{
-			Ecgi: &nb.ECGI{
-				Plmnid: plmnid,
-				Ecid:   "0008",
-			},
-			Crnti: "00004",
-			ChannelQualities: []*nb.ChannelQuality{
-				&nb.ChannelQuality{
-					TargetEcgi: &nb.ECGI{
-						Plmnid: plmnid,
-						Ecid:   "0008",
-					},
-					CqiHist: 12,
-				},
-				&nb.ChannelQuality{
-					TargetEcgi: &nb.ECGI{
-						Plmnid: plmnid,
-						Ecid:   "0009",
-					},
-					CqiHist: 7,
-				},
-				&nb.ChannelQuality{
-					TargetEcgi: &nb.ECGI{
-						Plmnid: plmnid,
-						Ecid:   "0005",
-					},
-					CqiHist: 5,
-				},
-			},
-		}
-		// UE5 - conn w/ STA8
-		tUeLink5 := &nb.UELinkInfo{
-			Ecgi: &nb.ECGI{
-				Plmnid: plmnid,
-				Ecid:   "0008",
-			},
-			Crnti: "00005",
-			ChannelQualities: []*nb.ChannelQuality{
-				&nb.ChannelQuality{
-					TargetEcgi: &nb.ECGI{
-						Plmnid: plmnid,
-						Ecid:   "0008",
-					},
-					CqiHist: 10,
-				},
-				&nb.ChannelQuality{
-					TargetEcgi: &nb.ECGI{
-						Plmnid: plmnid,
-						Ecid:   "0009",
-					},
-					CqiHist: 3,
-				},
-				&nb.ChannelQuality{
-					TargetEcgi: &nb.ECGI{
-						Plmnid: plmnid,
-						Ecid:   "0005",
-					},
-					CqiHist: 9,
-				},
-			},
-		}
-	*/
-	tUeLinks = append(tUeLinks, tUeLink1)
-	tUeLinks = append(tUeLinks, tUeLink2)
-	tUeLinks = append(tUeLinks, tUeLink3)
+	tUeInfo3 := &nb.UEInfo{
+		Crnti: "00003",
+		Ecgi: &nb.ECGI{
+			Plmnid: plmnid,
+			Ecid:   "0008",
+		},
+		Imsi: "315010999900003",
+	}
+
+	tUes = append(tUes, tUeInfo1)
+	tUes = append(tUes, tUeInfo2)
+	tUes = append(tUes, tUeInfo3)
 	//tUeLinks = append(tUeLinks, *tUeLink4)
 	//tUeLinks = append(tUeLinks, *tUeLink5)
 	txPwrSta1 := nb.StationPowerOffset_PA_DB_0
@@ -417,7 +287,7 @@ func TestMLBDecisionMaker1(t *testing.T) {
 	txPwrSta8 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta9 := nb.StationPowerOffset_PA_DB_0
 
-	testResult, _ := MLBDecisionMaker(tStas, tStaLinks, tUeLinks, &threshold)
+	testResult, _ := MLBDecisionMaker(tStas, tStaLinks, tUes, &threshold)
 
 	assert.Equal(t, len(*testResult), 4)
 
@@ -465,7 +335,7 @@ func TestMLBDecisionMaker2(t *testing.T) {
 	// Define test cases
 	var tStas []*nb.StationInfo
 	var tStaLinks []nb.StationLinkInfo
-	var tUeLinks []*nb.UELinkInfo
+	var tUes []*nb.UEInfo
 
 	// StationInfo
 	for i := 1; i < 10; i++ {
@@ -677,200 +547,61 @@ func TestMLBDecisionMaker2(t *testing.T) {
 	tStaLinks = append(tStaLinks, *tStaLink9)
 
 	// UELinkInfo
-	// UE1 - conn w/ STA8
-	tUeLink1 := &nb.UELinkInfo{
-		Ecgi: &nb.ECGI{
-			Plmnid: plmnid,
-			Ecid:   "0008",
-		},
+	tUeInfo1 := &nb.UEInfo{
 		Crnti: "00001",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0008",
-				},
-				CqiHist: 12,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0007",
-				},
-				CqiHist: 7,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 5,
-			},
-		},
-	}
-	// UE2 - conn w/ STA8
-	tUeLink2 := &nb.UELinkInfo{
 		Ecgi: &nb.ECGI{
 			Plmnid: plmnid,
 			Ecid:   "0008",
 		},
+		Imsi: "315010999900001",
+	}
+	tUeInfo2 := &nb.UEInfo{
 		Crnti: "00002",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0008",
-				},
-				CqiHist: 15,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0007",
-				},
-				CqiHist: 3,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 1,
-			},
-		},
-	}
-	// UE3 - conn w/ STA8
-	tUeLink3 := &nb.UELinkInfo{
 		Ecgi: &nb.ECGI{
 			Plmnid: plmnid,
 			Ecid:   "0008",
 		},
+		Imsi: "315010999900002",
+	}
+	tUeInfo3 := &nb.UEInfo{
 		Crnti: "00003",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0008",
-				},
-				CqiHist: 10,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0007",
-				},
-				CqiHist: 5,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 9,
-			},
-		},
-	}
-
-	// UE4 - conn w/ STA8
-	tUeLink4 := &nb.UELinkInfo{
 		Ecgi: &nb.ECGI{
 			Plmnid: plmnid,
-			Ecid:   "0005",
+			Ecid:   "0008",
 		},
+		Imsi: "315010999900003",
+	}
+	tUeInfo4 := &nb.UEInfo{
 		Crnti: "00004",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 12,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0008",
-				},
-				CqiHist: 7,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0004",
-				},
-				CqiHist: 5,
-			},
-		},
-	}
-	// UE5 - conn w/ STA8
-	tUeLink5 := &nb.UELinkInfo{
 		Ecgi: &nb.ECGI{
 			Plmnid: plmnid,
 			Ecid:   "0005",
 		},
+		Imsi: "315010999900004",
+	}
+	tUeInfo5 := &nb.UEInfo{
 		Crnti: "00005",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 10,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0002",
-				},
-				CqiHist: 3,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0006",
-				},
-				CqiHist: 9,
-			},
-		},
-	}
-	// UE6 - conn w/ STA8
-	tUeLink6 := &nb.UELinkInfo{
 		Ecgi: &nb.ECGI{
 			Plmnid: plmnid,
 			Ecid:   "0005",
 		},
+		Imsi: "315010999900005",
+	}
+	tUeInfo6 := &nb.UEInfo{
 		Crnti: "00006",
-		ChannelQualities: []*nb.ChannelQuality{
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0005",
-				},
-				CqiHist: 10,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0004",
-				},
-				CqiHist: 3,
-			},
-			{
-				TargetEcgi: &nb.ECGI{
-					Plmnid: plmnid,
-					Ecid:   "0006",
-				},
-				CqiHist: 9,
-			},
+		Ecgi: &nb.ECGI{
+			Plmnid: plmnid,
+			Ecid:   "0005",
 		},
+		Imsi: "315010999900006",
 	}
 
-	tUeLinks = append(tUeLinks, tUeLink1)
-	tUeLinks = append(tUeLinks, tUeLink2)
-	tUeLinks = append(tUeLinks, tUeLink3)
-	tUeLinks = append(tUeLinks, tUeLink4)
-	tUeLinks = append(tUeLinks, tUeLink5)
-	tUeLinks = append(tUeLinks, tUeLink6)
+	tUes = append(tUes, tUeInfo1)
+	tUes = append(tUes, tUeInfo2)
+	tUes = append(tUes, tUeInfo3)
+	tUes = append(tUes, tUeInfo4)
+	tUes = append(tUes, tUeInfo5)
+	tUes = append(tUes, tUeInfo6)
 	txPwrSta1 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta2 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta3 := nb.StationPowerOffset_PA_DB_0
@@ -881,7 +612,7 @@ func TestMLBDecisionMaker2(t *testing.T) {
 	txPwrSta8 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta9 := nb.StationPowerOffset_PA_DB_0
 
-	testResult, _ := MLBDecisionMaker(tStas, tStaLinks, tUeLinks, &threshold)
+	testResult, _ := MLBDecisionMaker(tStas, tStaLinks, tUes, &threshold)
 
 	assert.Equal(t, len(*testResult), 7)
 

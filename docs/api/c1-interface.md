@@ -36,18 +36,18 @@
     - [StationLinkInfo](#interface.c1.StationLinkInfo)
     - [StationLinkListRequest](#interface.c1.StationLinkListRequest)
     - [StationListRequest](#interface.c1.StationListRequest)
+    - [UEInfo](#interface.c1.UEInfo)
     - [UELinkInfo](#interface.c1.UELinkInfo)
     - [UELinkListRequest](#interface.c1.UELinkListRequest)
+    - [UEListRequest](#interface.c1.UEListRequest)
   
     - [C1MessageType](#interface.c1.C1MessageType)
     - [C1RNIBType](#interface.c1.C1RNIBType)
     - [C1XICICPA](#interface.c1.C1XICICPA)
     - [StationPowerOffset](#interface.c1.StationPowerOffset)
   
-  
     - [C1InterfaceService](#interface.c1.C1InterfaceService)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -595,6 +595,23 @@ if ecgi is empty, stream all stations&#39; information
 
 
 
+<a name="interface.c1.UEInfo"></a>
+
+### UEInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| crnti | [string](#string) |  | Both crnti and ecgi are used as a key in our store. UE&#39;s local ID in serving station |
+| ecgi | [ECGI](#interface.c1.ECGI) |  | UE&#39;s serving station ID |
+| imsi | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="interface.c1.UELinkInfo"></a>
 
 ### UELinkInfo
@@ -627,6 +644,23 @@ if crnti and ecgi are empty, stream all UE links&#39; information
 | subscribe | [bool](#bool) |  | subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur after all uelinks have been streamed to the client |
 | noReplay | [bool](#bool) |  | noReplay - do not replay the list of UELinks from before the request Used with subscribe, to only get new changes |
 | noimsi | [bool](#bool) |  | noimsi - imsi is not needed in the response |
+
+
+
+
+
+
+<a name="interface.c1.UEListRequest"></a>
+
+### UEListRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| crnti | [string](#string) |  | crnti - optional UE&#39;s local ID in serving station - list for all UE local IDs if not present |
+| ecgi | [ECGI](#interface.c1.ECGI) |  | ecgi - optional UE&#39;s serving station identifier - list for all stations if not present |
+| subscribe | [bool](#bool) |  | subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur after all uelinks have been streamed to the client |
 
 
 
@@ -715,6 +749,7 @@ Enumerated Power offset - It is defined in E2 interface
 | ListStations | [StationListRequest](#interface.c1.StationListRequest) | [StationInfo](#interface.c1.StationInfo) stream | ListStations returns a stream of base station records. |
 | ListStationLinks | [StationLinkListRequest](#interface.c1.StationLinkListRequest) | [StationLinkInfo](#interface.c1.StationLinkInfo) stream | ListStationLinks returns a stream of links between neighboring base stations. |
 | ListUELinks | [UELinkListRequest](#interface.c1.UELinkListRequest) | [UELinkInfo](#interface.c1.UELinkInfo) stream | ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe. |
+| ListUEs | [UEListRequest](#interface.c1.UEListRequest) | [UEInfo](#interface.c1.UEInfo) stream |  |
 | TriggerHandOver | [HandOverRequest](#interface.c1.HandOverRequest) | [HandOverResponse](#interface.c1.HandOverResponse) | TriggerHandOver returns a hand-over response indicating success or failure. HO app will ask to handover to multiple UEs |
 | TriggerHandOverStream | [HandOverRequest](#interface.c1.HandOverRequest) stream | [HandOverResponse](#interface.c1.HandOverResponse) | TriggerHandOverStream is a version that stays open all the time and sends HO messages as they happen |
 | SetRadioPower | [RadioPowerRequest](#interface.c1.RadioPowerRequest) | [RadioPowerResponse](#interface.c1.RadioPowerResponse) | SetRadioPower returns a response indicating success or failure. MLB app will ask to change transmission power to multiple stations |

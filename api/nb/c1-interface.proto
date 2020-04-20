@@ -30,6 +30,8 @@ service C1InterfaceService {
     // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
     rpc ListUELinks(UELinkListRequest) returns (stream UELinkInfo);
 
+    rpc ListUEs(UEListRequest) returns (stream UEInfo);
+
     // TriggerHandOver returns a hand-over response indicating success or failure.
     // HO app will ask to handover to multiple UEs
     rpc TriggerHandOver(HandOverRequest) returns (HandOverResponse);
@@ -94,6 +96,28 @@ message StationLinkInfo {
     ECGI ecgi = 1;
     // list of neighbor stations' ID
     repeated ECGI neighborECGI = 2;
+}
+
+// if ECGI is empty, stream all UEs' information
+message UEListRequest {
+   // crnti - optional UE's local ID in serving station  - list for all UE local IDs if not present
+    string crnti = 1;
+
+    // ecgi - optional UE's serving station identifier - list for all stations if not present
+    ECGI ecgi = 2;
+
+    // subscribe indicates whether to subscribe to events (e.g. ADD, UPDATE, and REMOVE) that occur
+    // after all uelinks have been streamed to the client
+    bool subscribe = 3;
+}
+
+message UEInfo {
+    // Both crnti and ecgi are used as a key in our store.
+    // UE's local ID in serving station
+    string crnti = 1;
+    // UE's serving station ID
+    ECGI ecgi = 2;
+    string imsi = 3;
 }
 
 // if crnti and ecgi are empty, stream all UE links' information

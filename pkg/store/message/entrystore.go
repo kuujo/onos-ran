@@ -19,12 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/atomix/go-client/pkg/client/map"
+	"sync"
+	"time"
+
+	_map "github.com/atomix/go-client/pkg/client/map"
 	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-ric/api/store/message"
 	clocks "github.com/onosproject/onos-ric/pkg/store/time"
-	"sync"
-	"time"
 )
 
 func newEntryStore(dist _map.Map, id ID, clock clocks.LogicalClock) entryStore {
@@ -357,20 +358,29 @@ func (s *distributedEntryStore) writeDelete(revision Revision) {
 
 	// If the entry is already deleted, ignore the delete
 	if entry == nil {
+		ctx, cancel = context.WithTimeout(context.Background(), requestTimeout)
+		defer cancel()
+		_, err = s.dist.Remove(ctx, s.id.String())
+		if err != nil {
+			s.requeueDelete(revision)
+			return
+		}
 		return
 	}
 
-	// Decode the current entry and fail if decoding fails
-	current, err := decodeEntry(entry)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	if !revision.isZero() {
+		// Decode the current entry and fail if decoding fails
+		current, err := decodeEntry(entry)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-	// If the current entry is newer than the update entry, ignore the update
-	currentRevision := newRevision(current.Term, current.Timestamp)
-	if currentRevision.isNewerThan(revision) {
-		return
+		// If the current entry is newer than the update entry, ignore the update
+		currentRevision := newRevision(current.Term, current.Timestamp)
+		if currentRevision.isNewerThan(revision) {
+			return
+		}
 	}
 
 	// Remove the stored entry using an optimistic lock

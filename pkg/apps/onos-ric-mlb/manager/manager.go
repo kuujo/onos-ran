@@ -50,7 +50,7 @@ func (m *AppManager) Run() {
 
 // Close kills the channels and manager related objects.
 func (m *AppManager) Close() {
-	log.Info("Closing HO App Manager")
+	log.Info("Closing MLB App Manager")
 }
 
 // GetManager returns the initialized and running manager instance.
