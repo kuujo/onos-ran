@@ -537,6 +537,7 @@ HORequest message
 | crnti | [string](#string) |  |  |
 | ecgiS | [ECGI](#interface.e2.ECGI) |  |  |
 | ecgiT | [ECGI](#interface.e2.ECGI) |  |  |
+| crntis | [string](#string) | repeated |  |
 
 
 

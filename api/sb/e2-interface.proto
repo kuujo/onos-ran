@@ -242,6 +242,7 @@ message HORequest {
     string crnti = 1;
     ECGI ecgiS = 2;
     ECGI ecgiT = 3;
+    repeated string crntis = 4;
 }
 
 // HOFailure message
