@@ -87,7 +87,7 @@ func (s *Session) Run(ecgi sb.ECGI, endPoint sb.Endpoint,
 }
 
 // UeHandover ...
-func (s *Session) UeHandover(crnti string, srcEcgi sb.ECGI, dstEcgi sb.ECGI) error {
+func (s *Session) UeHandover(crnti []string, srcEcgi sb.ECGI, dstEcgi sb.ECGI) error {
 
 	hoReq := e2ap.RicControlRequest{
 		Hdr: &e2sm.RicControlHeader{
@@ -96,9 +96,9 @@ func (s *Session) UeHandover(crnti string, srcEcgi sb.ECGI, dstEcgi sb.ECGI) err
 		Msg: &e2sm.RicControlMessage{
 			S: &e2sm.RicControlMessage_HORequest{
 				HORequest: &sb.HORequest{
-					Crnti: crnti,
-					EcgiS: &srcEcgi,
-					EcgiT: &dstEcgi,
+					Crntis: crnti,
+					EcgiS:  &srcEcgi,
+					EcgiT:  &dstEcgi,
 				},
 			},
 		},

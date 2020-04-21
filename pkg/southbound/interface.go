@@ -54,5 +54,5 @@ type E2 interface {
 		enableMetrics bool)
 	RemoteAddress() sb.Endpoint
 	RRMConfig(pa sb.XICICPA) error
-	UeHandover(crnti string, srcEcgi sb.ECGI, dstEcgi sb.ECGI) error
+	UeHandover(crnti []string, srcEcgi sb.ECGI, dstEcgi sb.ECGI) error
 }

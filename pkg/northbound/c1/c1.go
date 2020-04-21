@@ -346,7 +346,7 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
 	}
 	log.Infof("Sending HO for %v:%s to Source %s", srcEcgi, crnti, srcSession.RemoteAddress())
-	err := srcSession.UeHandover(crnti, srcEcgi, dstEcgi)
+	err := srcSession.UeHandover([]string{crnti}, srcEcgi, dstEcgi)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +356,7 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
 	}
 	log.Infof("Sending HO for %v:%s to Dest %s", srcEcgi, crnti, dstSession.RemoteAddress())
-	err = dstSession.UeHandover(crnti, srcEcgi, dstEcgi)
+	err = dstSession.UeHandover([]string{crnti}, srcEcgi, dstEcgi)
 	if err != nil {
 		return nil, err
 	}
