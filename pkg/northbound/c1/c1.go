@@ -24,7 +24,6 @@ import (
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
-	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/onosproject/onos-ric/pkg/manager"
 	"github.com/onosproject/onos-ric/pkg/store/control"
 	"github.com/onosproject/onos-ric/pkg/store/telemetry"
@@ -338,27 +337,12 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		PlmnId: dst.GetPlmnid(),
 	}
 
-	hoReq := e2ap.RicControlRequest{
-		Hdr: &e2sm.RicControlHeader{
-			MessageType: sb.MessageType_HO_REQUEST,
-		},
-		Msg: &e2sm.RicControlMessage{
-			S: &e2sm.RicControlMessage_HORequest{
-				HORequest: &sb.HORequest{
-					Crnti: crnti,
-					EcgiS: &srcEcgi,
-					EcgiT: &dstEcgi,
-				},
-			},
-		},
-	}
-
 	srcSession, ok := manager.GetManager().SbSessions[srcEcgi]
 	if !ok {
 		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
 	}
 	log.Infof("Sending HO for %v:%s to Source %s", srcEcgi, crnti, srcSession.RemoteAddress())
-	err := srcSession.SendRicControlRequest(hoReq)
+	err := srcSession.UeHandover(crnti, srcEcgi, dstEcgi)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +352,7 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
 	}
 	log.Infof("Sending HO for %v:%s to Dest %s", srcEcgi, crnti, dstSession.RemoteAddress())
-	err = dstSession.SendRicControlRequest(hoReq)
+	err = dstSession.UeHandover(crnti, srcEcgi, dstEcgi)
 	if err != nil {
 		return nil, err
 	}
@@ -391,24 +375,24 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 		return nil, fmt.Errorf("SetRadioPower is missing values %v", req)
 	}
 	offset := req.GetOffset()
-	var pa []sb.XICICPA
+	var pa sb.XICICPA
 	switch offset {
 	case nb.StationPowerOffset_PA_DB_0:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_0)
+		pa = sb.XICICPA_XICIC_PA_DB_0
 	case nb.StationPowerOffset_PA_DB_1:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_1)
+		pa = sb.XICICPA_XICIC_PA_DB_1
 	case nb.StationPowerOffset_PA_DB_2:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_2)
+		pa = sb.XICICPA_XICIC_PA_DB_2
 	case nb.StationPowerOffset_PA_DB_3:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_3)
+		pa = sb.XICICPA_XICIC_PA_DB_3
 	case nb.StationPowerOffset_PA_DB_MINUS3:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS3)
+		pa = sb.XICICPA_XICIC_PA_DB_MINUS3
 	case nb.StationPowerOffset_PA_DB_MINUS6:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS6)
+		pa = sb.XICICPA_XICIC_PA_DB_MINUS6
 	case nb.StationPowerOffset_PA_DB_MINUS1DOT77:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUS1DOT77)
+		pa = sb.XICICPA_XICIC_PA_DB_MINUS1DOT77
 	case nb.StationPowerOffset_PA_DB_MINUX4DOT77:
-		pa = append(pa, sb.XICICPA_XICIC_PA_DB_MINUX4DOT77)
+		pa = sb.XICICPA_XICIC_PA_DB_MINUX4DOT77
 
 	}
 
@@ -417,24 +401,11 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 		PlmnId: req.GetEcgi().GetPlmnid(),
 	}
 
-	rrmConfigReq := e2ap.RicControlRequest{
-		Hdr: &e2sm.RicControlHeader{
-			MessageType: sb.MessageType_RRM_CONFIG,
-		},
-		Msg: &e2sm.RicControlMessage{
-			S: &e2sm.RicControlMessage_RRMConfig{
-				RRMConfig: &sb.RRMConfig{
-					Ecgi: &ecgi,
-					PA:   pa,
-				},
-			},
-		},
-	}
 	session, ok := manager.GetManager().SbSessions[ecgi]
 	if !ok {
 		return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
 	}
-	err := session.SendRicControlRequest(rrmConfigReq)
+	err := session.RRMConfig(pa)
 	if err != nil {
 		return nil, err
 	}

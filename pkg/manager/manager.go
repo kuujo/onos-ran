@@ -250,13 +250,13 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 		if device.Type == topodevice.ListResponse_NONE || device.Type == topodevice.ListResponse_ADDED {
 			ecgi := ecgiFromTopoID(device.GetDevice().GetID())
 			deviceEndpoint := sb.Endpoint(device.GetDevice().GetAddress())
-			session, err := southbound.NewSession(ecgi, deviceEndpoint, m.StoreRicControlResponse, m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics)
+			session, err := southbound.NewSession()
 			if err != nil {
 				log.Fatalf("Unable to create new session %s", err.Error())
 			}
 			if session != nil {
 				m.SbSessions[ecgi] = session
-				session.Run(device.GetDevice().GetTLS(), device.GetDevice().GetCredentials())
+				session.Run(ecgi, deviceEndpoint, device.GetDevice().GetTLS(), device.GetDevice().GetCredentials(), m.StoreRicControlResponse, m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics)
 			} else {
 				log.Fatalf("Error creating new session for %v", ecgi)
 			}

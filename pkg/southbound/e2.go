@@ -31,32 +31,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-// E2 ...
-type E2 interface {
-	Run(tls topodevice.TlsConfig, creds topodevice.Credentials)
-	RemoteAddress() sb.Endpoint
-	SendRicControlRequest(req e2ap.RicControlRequest) error
-}
-
 var log = logging.GetLogger("southbound")
 
-//MapHOEventMeasuredRIC ...
-var MapHOEventMeasuredRIC map[string]HOEventMeasuredRIC
+//mapHOEventMeasuredRIC ...
+var mapHOEventMeasuredRIC map[string]HOEventMeasuredRIC
 
-// MutexMapHOEventMeasuredRIC ...
-var MutexMapHOEventMeasuredRIC sync.RWMutex
-
-//ChanHOEvent ...
-var ChanHOEvent chan HOEventMeasuredRIC
-
-// TelemetryUpdateHandler - a function for the session to write back to manager without the import cycle
-type TelemetryUpdateHandler = func(e2ap.RicIndication)
-
-// RicControlResponseHandler - ricIndication messages to manager without the import cycle
-type RicControlResponseHandler = func(e2ap.RicIndication)
-
-// ControlUpdateHandler - a function for the session to write back to manager without the import cycle
-type ControlUpdateHandler = func(e2ap.RicIndication)
+// mutexmapHOEventMeasuredRIC ...
+var mutexmapHOEventMeasuredRIC sync.RWMutex
 
 // Session is responsible for managing connections to and interactions with the RAN southbound.
 type Session struct {
@@ -75,49 +56,87 @@ type Session struct {
 	EnableMetrics                 bool
 }
 
-// HOEventMeasuredRIC is struct including UE ID and its eNB ID
-type HOEventMeasuredRIC struct {
-	Timestamp   time.Time
-	Crnti       string
-	DestPlmnID  string
-	DestECID    string
-	ElapsedTime int64
-}
-
 // NewSession creates a new southbound session controller.
-func NewSession(ecgi sb.ECGI, endPoint sb.Endpoint,
-	storeRicControlResponse RicControlResponseHandler,
-	storeControlUpdate ControlUpdateHandler,
-	storeTelemetry TelemetryUpdateHandler,
-	enableMetrics bool) (E2, error) {
-	log.Infof("Creating Session for %v at %s", ecgi, endPoint)
-
+func NewSession() (E2, error) {
 	return &Session{
-		EndPoint:                      endPoint,
-		Ecgi:                          ecgi,
-		ricControlRequestChan:         make(chan e2ap.RicControlRequest),
-		ricIndicationChan:             make(chan e2ap.RicIndication),
-		controlIndications:            make(chan e2ap.RicIndication),
-		telemetryIndications:          make(chan e2ap.RicIndication),
-		RicControlResponseHandlerFunc: storeRicControlResponse,
-		ControlUpdateHandlerFunc:      storeControlUpdate,
-		TelemetryUpdateHandlerFunc:    storeTelemetry,
-		EnableMetrics:                 enableMetrics,
+		ricControlRequestChan: make(chan e2ap.RicControlRequest),
+		ricIndicationChan:     make(chan e2ap.RicIndication),
+		controlIndications:    make(chan e2ap.RicIndication),
+		telemetryIndications:  make(chan e2ap.RicIndication),
 	}, nil
 }
 
 // Run starts the southbound control loop.
-func (s *Session) Run(tls topodevice.TlsConfig, creds topodevice.Credentials) {
-	MapHOEventMeasuredRIC = make(map[string]HOEventMeasuredRIC)
+func (s *Session) Run(ecgi sb.ECGI, endPoint sb.Endpoint,
+	tls topodevice.TlsConfig, creds topodevice.Credentials,
+	storeRicControlResponse RicControlResponseHandler,
+	storeControlUpdate ControlUpdateHandler,
+	storeTelemetry TelemetryUpdateHandler,
+	enableMetrics bool) {
+	s.EndPoint = endPoint
+	s.Ecgi = ecgi
+	s.RicControlResponseHandlerFunc = storeRicControlResponse
+	s.ControlUpdateHandlerFunc = storeControlUpdate
+	s.TelemetryUpdateHandlerFunc = storeTelemetry
+	s.EnableMetrics = enableMetrics
+	mapHOEventMeasuredRIC = make(map[string]HOEventMeasuredRIC)
 	go s.manageConnections(tls, creds)
 	go s.recvTelemetryUpdates()
 	go s.recvUpdates()
 	go s.recvControlResponses()
 }
 
+// UeHandover ...
+func (s *Session) UeHandover(crnti string, srcEcgi sb.ECGI, dstEcgi sb.ECGI) error {
+
+	hoReq := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_HO_REQUEST,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_HORequest{
+				HORequest: &sb.HORequest{
+					Crnti: crnti,
+					EcgiS: &srcEcgi,
+					EcgiT: &dstEcgi,
+				},
+			},
+		},
+	}
+	err := s.sendRicControlRequest(hoReq)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // RemoteAddress ...
 func (s *Session) RemoteAddress() sb.Endpoint {
 	return s.EndPoint
+}
+
+// RRMConfig ...
+func (s *Session) RRMConfig(pa sb.XICICPA) error {
+	var p []sb.XICICPA
+	p = append(p, pa)
+	rrmConfigReq := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_RRM_CONFIG,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_RRMConfig{
+				RRMConfig: &sb.RRMConfig{
+					Ecgi: &s.Ecgi,
+					PA:   p,
+				},
+			},
+		},
+	}
+	err := s.sendRicControlRequest(rrmConfigReq)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Session) recvTelemetryUpdates() {
@@ -138,8 +157,8 @@ func (s *Session) recvControlResponses() {
 	}
 }
 
-// SendRicControlRequest sends the specified RicControlRequest on the control channel
-func (s *Session) SendRicControlRequest(req e2ap.RicControlRequest) error {
+// sendRicControlRequest sends the specified RicControlRequest on the control channel
+func (s *Session) sendRicControlRequest(req e2ap.RicControlRequest) error {
 
 	req.GetHdr().Ecgi = &s.Ecgi
 
@@ -294,12 +313,12 @@ func (s *Session) addReceivedHOEventMeasuredRIC(update *e2ap.RicIndication, tT t
 			DestECID:   bestStationID.GetEcid(),
 		}
 		key := fmt.Sprintf("%s:%s:%s:%s:%s", update.GetMsg().GetRadioMeasReportPerUE().GetCrnti(), servStationID.GetPlmnId(), servStationID.GetEcid(), bestStationID.GetPlmnId(), bestStationID.GetEcid())
-		MutexMapHOEventMeasuredRIC.Lock()
-		_, f := MapHOEventMeasuredRIC[key]
+		mutexmapHOEventMeasuredRIC.Lock()
+		_, f := mapHOEventMeasuredRIC[key]
 		if !f {
-			MapHOEventMeasuredRIC[key] = tmpHOEventMeasuredRIC
+			mapHOEventMeasuredRIC[key] = tmpHOEventMeasuredRIC
 		}
-		MutexMapHOEventMeasuredRIC.Unlock()
+		mutexmapHOEventMeasuredRIC.Unlock()
 	}
 }
 
@@ -309,14 +328,14 @@ func (s *Session) updateHOEventMeasuredRIC(req e2ap.RicControlRequest, tC time.T
 		req.GetMsg().GetHORequest().GetEcgiS().GetEcid(),
 		req.GetMsg().GetHORequest().GetEcgiT().GetPlmnId(),
 		req.GetMsg().GetHORequest().GetEcgiT().GetEcid())
-	MutexMapHOEventMeasuredRIC.Lock()
-	v, f := MapHOEventMeasuredRIC[key]
+	mutexmapHOEventMeasuredRIC.Lock()
+	v, f := mapHOEventMeasuredRIC[key]
 	if !f {
 		log.Warnf("Telemetry message is missing when calculating HO latency - %s", key)
 	} else {
 		v.ElapsedTime = tC.Sub(v.Timestamp).Microseconds()
 		ChanHOEvent <- v
-		delete(MapHOEventMeasuredRIC, key)
+		delete(mapHOEventMeasuredRIC, key)
 	}
-	MutexMapHOEventMeasuredRIC.Unlock()
+	mutexmapHOEventMeasuredRIC.Unlock()
 }
