@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetry
+package indications
 
 import (
 	"github.com/onosproject/onos-ric/api/sb"
@@ -39,6 +39,8 @@ func GetID(message *e2ap.RicIndication) ID {
 		crnti = message.GetMsg().GetRadioMeasReportPerUE().GetCrnti()
 	case sb.MessageType_RADIO_MEAS_REPORT_PER_CELL:
 		ecgi = *message.GetMsg().GetRadioMeasReportPerCell().GetEcgi()
+	case sb.MessageType_CELL_CONFIG_REPORT:
+		ecgi = *message.GetMsg().GetCellConfigReport().GetEcgi()
 	case sb.MessageType_UE_ADMISSION_REQUEST:
 		ecgi = *message.GetMsg().GetUEAdmissionRequest().GetEcgi()
 		crnti = message.GetMsg().GetUEAdmissionRequest().GetCrnti()

@@ -81,7 +81,7 @@ func exposeCtrUpdateInfo(mgr *manager.Manager) {
 func exposeCellConfig(mgr *manager.Manager) []prometheus.Counter {
 	var listCellConfigMsgs []prometheus.Counter
 
-	allControlUpdates, _ := mgr.GetControl()
+	allControlUpdates, _ := mgr.GetIndications()
 	for i := 0; i < len(allControlUpdates); i++ {
 		switch allControlUpdates[i].GetHdr().GetMessageType() {
 		case sb.MessageType_CELL_CONFIG_REPORT:
@@ -114,7 +114,7 @@ func exposeCellConfig(mgr *manager.Manager) []prometheus.Counter {
 // exposeUEAdmRequests exposes UEAdmissionRequest info
 func exposeUEAdmRequests(mgr *manager.Manager) []prometheus.Counter {
 	var listUEAdmRequestMsgs []prometheus.Counter
-	allControlUpdates, _ := mgr.GetUpdate()
+	allControlUpdates, _ := mgr.GetIndications()
 	for i := 0; i < len(allControlUpdates); i++ {
 		switch allControlUpdates[i].GetHdr().GetMessageType() {
 		case sb.MessageType_UE_ADMISSION_REQUEST:

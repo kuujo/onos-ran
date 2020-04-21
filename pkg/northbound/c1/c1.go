@@ -25,9 +25,7 @@ import (
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/pkg/manager"
-	"github.com/onosproject/onos-ric/pkg/store/control"
-	"github.com/onosproject/onos-ric/pkg/store/telemetry"
-	"github.com/onosproject/onos-ric/pkg/store/updates"
+	"github.com/onosproject/onos-ric/pkg/store/indications"
 	"google.golang.org/grpc"
 )
 
@@ -62,20 +60,20 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
-			watchCh := make(chan control.Event)
-			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {
+			watchCh := make(chan indications.Event)
+			if err := manager.GetManager().SubscribeIndications(watchCh); err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != control.EventDelete {
+					if event.Type != indications.EventDelete {
 						ch <- event.Message
 					}
 				}
 			}()
 		} else {
-			if err := manager.GetManager().ListControl(ch); err != nil {
+			if err := manager.GetManager().ListIndications(ch); err != nil {
 				return err
 			}
 		}
@@ -111,20 +109,20 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
-			watchCh := make(chan control.Event)
-			if err := manager.GetManager().SubscribeControl(watchCh); err != nil {
+			watchCh := make(chan indications.Event)
+			if err := manager.GetManager().SubscribeIndications(watchCh); err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != control.EventDelete {
+					if event.Type != indications.EventDelete {
 						ch <- event.Message
 					}
 				}
 			}()
 		} else {
-			if err := manager.GetManager().ListControl(ch); err != nil {
+			if err := manager.GetManager().ListIndications(ch); err != nil {
 				return err
 			}
 		}
@@ -166,20 +164,20 @@ func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_List
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
-			watchCh := make(chan updates.Event)
-			if err := manager.GetManager().SubscribeUpdate(watchCh); err != nil {
+			watchCh := make(chan indications.Event)
+			if err := manager.GetManager().SubscribeIndications(watchCh); err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != updates.EventDelete {
+					if event.Type != indications.EventDelete {
 						ch <- event.Message
 					}
 				}
 			}()
 		} else {
-			if err := manager.GetManager().ListUpdate(ch); err != nil {
+			if err := manager.GetManager().ListIndications(ch); err != nil {
 				return err
 			}
 		}
@@ -217,20 +215,26 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
-			watchCh := make(chan telemetry.Event)
-			if err := manager.GetManager().SubscribeTelemetry(watchCh, !req.NoReplay); err != nil {
+			watchCh := make(chan indications.Event)
+			var err error
+			if req.NoReplay {
+				err = manager.GetManager().SubscribeIndications(watchCh)
+			} else {
+				err = manager.GetManager().SubscribeIndications(watchCh, indications.WithReplay())
+			}
+			if err != nil {
 				return err
 			}
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != telemetry.EventDelete {
+					if event.Type != indications.EventDelete {
 						ch <- event.Message
 					}
 				}
 			}()
 		} else {
-			if err := manager.GetManager().ListTelemetry(ch); err != nil {
+			if err := manager.GetManager().ListIndications(ch); err != nil {
 				return err
 			}
 		}

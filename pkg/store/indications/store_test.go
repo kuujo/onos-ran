@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetry
+package indications
 
 import (
 	"testing"
@@ -22,12 +22,66 @@ import (
 	timestore "github.com/onosproject/onos-ric/pkg/store/time"
 
 	"github.com/onosproject/onos-ric/api/sb"
-	"github.com/onosproject/onos-ric/api/sb/e2ap"
+	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStore(t *testing.T) {
+func TestStoreUpdates(t *testing.T) {
+	mastershipStore, err := mastership.NewLocalStore("test", "1")
+	assert.NoError(t, err)
+	timeStore, err := timestore.NewStore(mastershipStore)
+	assert.NoError(t, err)
+	testStore, err := NewLocalStore(timeStore)
+	assert.NoError(t, err)
+	assert.NotNil(t, testStore)
+
+	defer testStore.Close()
+	defer timeStore.Close()
+	defer testStore.Close()
+
+	watchCh2 := make(chan Event)
+	err = testStore.Watch(watchCh2, WithReplay())
+	assert.NoError(t, err)
+
+	controlUpdate3 := &e2ap.RicIndication{
+		Hdr: &e2sm.RicIndicationHeader{
+			MessageType: sb.MessageType_UE_ADMISSION_REQUEST,
+		},
+		Msg: &e2sm.RicIndicationMessage{
+			S: &e2sm.RicIndicationMessage_UEAdmissionRequest{
+				UEAdmissionRequest: &sb.UEAdmissionRequest{
+					Ecgi: &sb.ECGI{
+						Ecid:   "test-ecid-3",
+						PlmnId: "test-plmnid-3",
+					},
+					Crnti: "test-crnti-3",
+				},
+			},
+		},
+	}
+	err = testStore.Put(GetID(controlUpdate3), controlUpdate3)
+	assert.Nil(t, err)
+
+	ecigTest3 := sb.ECGI{
+		Ecid:   "test-ecid-3",
+		PlmnId: "test-plmnid-3",
+	}
+	id3 := NewID(controlUpdate3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-3")
+	value3, err := testStore.Get(id3)
+	assert.Nil(t, err)
+	assert.Equal(t, value3.GetHdr().MessageType.String(), sb.MessageType_UE_ADMISSION_REQUEST.String())
+
+	event := <-watchCh2
+	assert.Equal(t, "test-ecid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.Ecid)
+	assert.Equal(t, "test-plmnid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.PlmnId)
+
+	err = testStore.Delete(id3)
+	assert.Nil(t, err)
+
+}
+
+func TestStoreTelemetry(t *testing.T) {
 	mastershipStore, err := mastership.NewLocalStore("test", "1")
 	assert.NoError(t, err)
 	timeStore, err := timestore.NewStore(mastershipStore)

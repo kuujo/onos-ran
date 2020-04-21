@@ -1,35 +1,13 @@
 package: github.com/onosproject/onos-ric/pkg/store
 stores:
-  - name: telemetry
+  - name: indications
     message:
       type:
         package: github.com/onosproject/onos-ric/api/sb/e2ap
         name: RicIndication
     storage:
       type: Cache
-      name: telemetry
+      name: indications
       cached: true
     target:
-      package: github.com/onosproject/onos-ric/pkg/store/telemetry
-  - name: control
-    message:
-      type:
-        package: github.com/onosproject/onos-ric/api/sb/e2ap
-        name: RicIndication
-    storage:
-      type: Cache
-      name: control
-      cached: true
-    target:
-      package: github.com/onosproject/onos-ric/pkg/store/control
-  - name: updates
-    message:
-      type:
-        package: github.com/onosproject/onos-ric/api/sb/e2ap
-        name: RicIndication
-    storage:
-      type: Cache
-      name: updates
-      cached: true
-    target:
-      package: github.com/onosproject/onos-ric/pkg/store/updates
+      package: github.com/onosproject/onos-ric/pkg/store/indications
