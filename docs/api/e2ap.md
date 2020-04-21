@@ -5,10 +5,7 @@
 
 - [api/sb/e2ap/e2ap.proto](#api/sb/e2ap/e2ap.proto)
     - [RicControlRequest](#interface.e2ap.RicControlRequest)
-    - [RicControlResponse](#interface.e2ap.RicControlResponse)
     - [RicIndication](#interface.e2ap.RicIndication)
-    - [RicSubscriptionDetails](#interface.e2ap.RicSubscriptionDetails)
-    - [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest)
   
     - [E2AP](#interface.e2ap.E2AP)
   
@@ -51,22 +48,6 @@ limitations under the License.
 
 
 
-<a name="interface.e2ap.RicControlResponse"></a>
-
-### RicControlResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| hdr | [interface.e2sm.RicControlHeader](#interface.e2sm.RicControlHeader) |  |  |
-| msg | [interface.e2sm.RicControlOutcome](#interface.e2sm.RicControlOutcome) |  |  |
-
-
-
-
-
-
 <a name="interface.e2ap.RicIndication"></a>
 
 ### RicIndication
@@ -77,37 +58,6 @@ limitations under the License.
 | ----- | ---- | ----- | ----------- |
 | hdr | [interface.e2sm.RicIndicationHeader](#interface.e2sm.RicIndicationHeader) |  |  |
 | msg | [interface.e2sm.RicIndicationMessage](#interface.e2sm.RicIndicationMessage) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicSubscriptionDetails"></a>
-
-### RicSubscriptionDetails
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| ricEventTriggerDefinition | [interface.e2sm.RicEventTriggerDefinition](#interface.e2sm.RicEventTriggerDefinition) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicSubscriptionRequest"></a>
-
-### RicSubscriptionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| ranFunctionID | [interface.e2sm.RanFunctionID](#interface.e2sm.RanFunctionID) |  |  |
-| ricSubscriptionDetails | [RicSubscriptionDetails](#interface.e2ap.RicSubscriptionDetails) |  |  |
 
 
 
@@ -128,8 +78,6 @@ limitations under the License.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | RicChan | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | RicChan is a bi-directonal stream for all messaging between RIC and E2-Node |
-| RicSubscription | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | ---- Below two rpcs are to be removed |
-| RicControl | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicControlResponse](#interface.e2ap.RicControlResponse) stream |  |
 
  
 

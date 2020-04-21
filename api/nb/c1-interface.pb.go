@@ -454,6 +454,7 @@ func (m *StationLinkInfo) GetNeighborECGI() []*ECGI {
 	return nil
 }
 
+// if ECGI is empty, stream all UEs' information
 type UEListRequest struct {
 	// crnti - optional UE's local ID in serving station  - list for all UE local IDs if not present
 	Crnti string `protobuf:"bytes,1,opt,name=crnti,proto3" json:"crnti,omitempty"`

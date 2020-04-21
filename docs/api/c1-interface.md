@@ -653,7 +653,7 @@ if crnti and ecgi are empty, stream all UE links&#39; information
 <a name="interface.c1.UEListRequest"></a>
 
 ### UEListRequest
-
+if ECGI is empty, stream all UEs&#39; information
 
 
 | Field | Type | Label | Description |
