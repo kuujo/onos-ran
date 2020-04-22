@@ -29,30 +29,7 @@ var log = logging.GetLogger("main")
 func main() {
 	onosricEndpoint := flag.String("onosricaddr", "onos-ric:5150", "endpoint:port of the ONOS RIC subsystem")
 	enableMetrics := flag.Bool("enableMetrics", true, "Enable gathering of metrics for Prometheus")
-	loglevel := flag.String("loglevel", "warn", "Initial log level - debug, info, warn, error")
-
 	flag.Parse()
-
-	// TODO: Replace this when config.yaml is available to set initial conditions
-	initialLogLevel := logging.WarnLevel
-	switch *loglevel {
-	case "debug":
-		initialLogLevel = logging.DebugLevel
-	case "info":
-		initialLogLevel = logging.InfoLevel
-	case "warn":
-		initialLogLevel = logging.WarnLevel
-	case "error":
-		initialLogLevel = logging.ErrorLevel
-	}
-	log.Infof("logs level: %s", initialLogLevel)
-
-	log.SetLevel(initialLogLevel)
-	logging.GetLogger("main").SetLevel(initialLogLevel)
-	logging.GetLogger("ho", "manager").SetLevel(initialLogLevel)
-	logging.GetLogger("ho", "southbound").SetLevel(initialLogLevel)
-
-	log.Info("Starting onos-ric")
 
 	log.Info("Starting HO Application")
 

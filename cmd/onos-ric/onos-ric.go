@@ -51,33 +51,8 @@ func main() {
 	certPath := flag.String("certPath", "", "path to client certificate")
 	topoEndpoint := flag.String("topoEndpoint", "onos-topo:5150", "topology service endpoint")
 	enableMetrics := flag.Bool("enableMetrics", true, "Enable gathering of metrics for Prometheus")
-	loglevel := flag.String("loglevel", "warn", "Initial log level - debug, info, warn, error")
 
 	flag.Parse()
-
-	// TODO: Replace this when config.yaml is available to set initial conditions
-	initialLogLevel := logging.WarnLevel
-	switch *loglevel {
-	case "debug":
-		initialLogLevel = logging.DebugLevel
-	case "info":
-		initialLogLevel = logging.InfoLevel
-	case "warn":
-		initialLogLevel = logging.WarnLevel
-	case "error":
-		initialLogLevel = logging.ErrorLevel
-	}
-	log.Infof("logs level: %s", initialLogLevel)
-
-	log.SetLevel(initialLogLevel)
-	logging.GetLogger("manager").SetLevel(initialLogLevel)
-	logging.GetLogger("store", "control").SetLevel(initialLogLevel)
-	logging.GetLogger("store", "updates").SetLevel(initialLogLevel)
-	logging.GetLogger("store", "telemetry").SetLevel(initialLogLevel)
-	logging.GetLogger("northbound").SetLevel(initialLogLevel)
-	logging.GetLogger("southbound").SetLevel(initialLogLevel)
-	logging.GetLogger("c1").SetLevel(initialLogLevel)
-
 	log.Info("Starting onos-ric")
 
 	opts, err := certs.HandleCertPaths(*caPath, *keyPath, *certPath, true)

@@ -17,7 +17,6 @@ package config
 import (
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	configlib "github.com/onosproject/onos-lib-go/pkg/config"
-	"github.com/onosproject/onos-lib-go/pkg/logging"
 )
 
 const defaultPartitions = 16
@@ -30,8 +29,6 @@ type Config struct {
 	Mastership MastershipConfig `yaml:"mastership,omitempty"`
 	// Atomix is the Atomix configuration
 	Atomix atomix.Config `yaml:"atomix,omitempty"`
-	// Logging is the logging configuration
-	Logging logging.Config `yaml:"logging,omitempty"`
 }
 
 // MastershipConfig is the configuration for store mastership
