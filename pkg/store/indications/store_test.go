@@ -72,13 +72,23 @@ func TestStoreUpdates(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, value3.GetHdr().MessageType.String(), sb.MessageType_UE_ADMISSION_REQUEST.String())
 
+	id4 := NewID(controlUpdate3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-none")
+	value4, err := testStore.Get(id4, WithRevision(Revision{}))
+	assert.Nil(t, err)
+	assert.Nil(t, value4)
+
 	event := <-watchCh2
 	assert.Equal(t, "test-ecid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.PlmnId)
 
+	err = testStore.Delete(id4, IfRevision(Revision{}))
+	assert.Nil(t, err)
+
 	err = testStore.Delete(id3)
 	assert.Nil(t, err)
 
+	err = testStore.Clear()
+	assert.Nil(t, err)
 }
 
 func TestStoreTelemetry(t *testing.T) {
