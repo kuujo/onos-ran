@@ -104,16 +104,14 @@ func exposeStdevLoad() {
 				}
 			}
 
-			numTotalUEsSqrt := 0
+			avgNumUEs := float64(numTotalUEs) / float64(numBSes)
+			var stdev float64
 
 			for _, v := range tmpMap {
-				numTotalUEsSqrt = numTotalUEsSqrt + (v * v)
+				stdev += math.Pow(float64(v)-avgNumUEs, 2)
 			}
 
-			// average
-			avgNumUEs := float64(numTotalUEs) / float64(numBSes)
-			avgSqrtNumUEs := float64(numTotalUEsSqrt) / float64(numBSes)
-			stdev := math.Sqrt(avgSqrtNumUEs - avgNumUEs*avgNumUEs)
+			stdev = math.Sqrt(stdev / float64(numBSes))
 
 			// expose Total Num UEs
 			go func() {

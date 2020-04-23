@@ -282,7 +282,6 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 					return err
 				}
 			default:
-				log.Errorf("Unhandled case %s", telemetry.GetHdr().GetMessageType())
 			}
 		}
 	} else {
