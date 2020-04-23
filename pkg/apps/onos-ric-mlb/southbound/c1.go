@@ -39,12 +39,14 @@ type MLBSessions struct {
 	client       nb.C1InterfaceServiceClient
 	RNIBCellInfo []*nb.StationInfo
 	UEInfoList   []*nb.UEInfo
-	MLBEventChan chan *MLBEvent
 }
+
+// ChanMLBEvent is a go channel to pass MLBEvent to exporter
+var ChanMLBEvent chan MLBEvent
 
 // MLBEvent is responsible for representing each MLB event
 type MLBEvent struct {
-	MLBReq    nb.RadioPowerRequest
+	MLBReqs   []nb.RadioPowerRequest
 	StartTime time.Time
 	EndTime   time.Time
 }
@@ -93,15 +95,65 @@ func (m *MLBSessions) manageConnection(conn *grpc.ClientConn) {
 	}
 
 	// run MLB procedure
-	m.runMLBProcedure()
+	if m.EnableMetric {
+		m.runMLBProcedureWithExporter()
+	} else {
+		m.runMLBProcedure()
+	}
 
 	conn.Close()
 }
 
-func (m *MLBSessions) runMLBProcedure() {
-
+func (m *MLBSessions) runMLBProcedureWithExporter() {
 	tStart := time.Now()
+	// get all R-NIB information
+	var wg sync.WaitGroup
 
+	var stationLinkInfoList []nb.StationLinkInfo
+	m.RNIBCellInfo = nil
+	m.UEInfoList = nil
+	// Fork three go-routines.
+	wg.Add(3)
+	go func() {
+		m.RNIBCellInfo = m.getListStations()
+		defer wg.Done()
+	}()
+	go func() {
+		stationLinkInfoList = m.getListStationLinks()
+		defer wg.Done()
+	}()
+	go func() {
+		m.UEInfoList = m.getListUEs()
+		defer wg.Done()
+	}()
+	// Wait until all go-routines join.
+	wg.Wait()
+
+	// if R-NIB (UELink) is not old one, start MLB procedure
+	// otherwise, skip this timeslot, because MLBDecisionMaker was already run before
+	mlbReqs, _ := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellInfo, stationLinkInfoList, m.UEInfoList, m.LoadThresh)
+
+	tEnd := time.Now()
+
+	numEvents := 0
+	for _, req := range *mlbReqs {
+		if req.Offset != nb.StationPowerOffset_PA_DB_0 {
+			numEvents++
+		}
+		m.sendRadioPowerOffset(req)
+	}
+
+	if numEvents > 0 {
+		tmp := &MLBEvent{
+			MLBReqs:   *mlbReqs,
+			StartTime: tStart,
+			EndTime:   tEnd,
+		}
+		ChanMLBEvent <- *tmp
+	}
+}
+
+func (m *MLBSessions) runMLBProcedure() {
 	// get all R-NIB information
 	var wg sync.WaitGroup
 
@@ -130,23 +182,9 @@ func (m *MLBSessions) runMLBProcedure() {
 	// if R-NIB (UELink) is not old one, start MLB procedure
 	// otherwise, skip this timeslot, because MLBDecisionMaker was already run before
 	mlbReqs, _ := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellInfo, stationLinkInfoList, m.UEInfoList, m.LoadThresh)
-	tEnd := time.Now()
 
 	for _, req := range *mlbReqs {
 		m.sendRadioPowerOffset(req)
-	}
-
-	if m.EnableMetric {
-		m.MLBEventChan = make(chan *MLBEvent)
-		for _, req := range *mlbReqs {
-			event := &MLBEvent{
-				StartTime: tStart,
-				EndTime:   tEnd,
-				MLBReq:    req,
-			}
-			m.MLBEventChan <- event
-		}
-		close(m.MLBEventChan)
 	}
 }
 

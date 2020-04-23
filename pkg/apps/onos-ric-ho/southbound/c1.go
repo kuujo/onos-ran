@@ -30,11 +30,26 @@ import (
 
 var log = logging.GetLogger("ho", "southbound")
 
+// ChanHOEvent is a go channel to pass HOEvent to exporter
+var ChanHOEvent chan HOEvent
+
+// HOEvent represents a single HO event
+type HOEvent struct {
+	TimeStamp   time.Time
+	CRNTI       string
+	SrcPlmnID   string
+	SrcEcid     string
+	DstPlmnID   string
+	DstEcid     string
+	ElapsedTime int64
+}
+
 // HOSessions is responsible for mapping connections to and interactions with the Northbound of ONOS RAN subsystem.
 type HOSessions struct {
-	ONOSRICAddr *string
-	client      nb.C1InterfaceServiceClient
-	hoReqChan   chan *nb.HandOverRequest
+	ONOSRICAddr    *string
+	EnableExporter bool
+	client         nb.C1InterfaceServiceClient
+	hoReqChan      chan *nb.HandOverRequest
 }
 
 // NewSession creates a new southbound session of HO application.
@@ -88,9 +103,13 @@ func (m *HOSessions) manageConnection(conn *grpc.ClientConn) {
 	defer conn.Close()
 
 	go m.openHandoverTriggersStream(m.hoReqChan)
-
+	var err error
 	// run Handover procedure
-	err := m.runHandoverProcedure()
+	if m.EnableExporter {
+		err = m.runHandoverProcedureWithExporter()
+	} else {
+		err = m.runHandoverProcedure()
+	}
 	log.Fatalf("Failed to watch UELinks %s. Closing", err.Error())
 }
 
@@ -106,6 +125,38 @@ func (m *HOSessions) runHandoverProcedure() error {
 		// HO procedure 3. send trigger message
 		if hoReq != nil {
 			m.hoReqChan <- hoReq
+		}
+	}
+	return nil
+}
+
+// runHandoverProcedure runs entire handover procedure - getting UELinkInfo, making decision, and sending trigger messages.
+func (m *HOSessions) runHandoverProcedureWithExporter() error {
+	ch := make(chan *nb.UELinkInfo)
+	if err := m.watchUELinks(ch); err != nil {
+		return err
+	}
+
+	for ueLink := range ch { // Block here and wait for UELink stream
+		tStart := time.Now()
+		// HO procedure 2. get requirement messages
+		hoReq := hoapphandover.HODecisionMaker(ueLink)
+		// HO procedure 3. send trigger message
+		if hoReq != nil {
+			m.hoReqChan <- hoReq
+		}
+		tEnd := time.Now()
+		if hoReq != nil {
+			tmp := &HOEvent{
+				TimeStamp:   tStart,
+				CRNTI:       hoReq.GetCrnti(),
+				SrcPlmnID:   hoReq.GetSrcStation().GetPlmnid(),
+				SrcEcid:     hoReq.GetSrcStation().GetEcid(),
+				DstPlmnID:   hoReq.GetDstStation().GetPlmnid(),
+				DstEcid:     hoReq.GetDstStation().GetEcid(),
+				ElapsedTime: tEnd.Sub(tStart).Microseconds(),
+			}
+			ChanHOEvent <- *tmp
 		}
 	}
 	return nil

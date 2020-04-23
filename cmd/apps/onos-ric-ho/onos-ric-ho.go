@@ -44,5 +44,6 @@ func main() {
 	}
 
 	appMgr.SB.ONOSRICAddr = onosricEndpoint
+	appMgr.SB.EnableExporter = *enableMetrics
 	appMgr.Run()
 }

@@ -331,7 +331,7 @@ func (s *Session) updateHOEventMeasuredRIC(req e2ap.RicControlRequest, tC time.T
 	mutexmapHOEventMeasuredRIC.Lock()
 	v, f := mapHOEventMeasuredRIC[key]
 	if !f {
-		log.Warnf("Telemetry message is missing when calculating HO latency - %s", key)
+		//log.Warnf("Telemetry message is missing when calculating HO latency - %s", key)
 	} else {
 		v.ElapsedTime = tC.Sub(v.Timestamp).Microseconds()
 		ChanHOEvent <- v

@@ -15,8 +15,9 @@
 package exporter
 
 import (
+	"fmt"
+	"math"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -36,9 +37,10 @@ var hoLatencyHistogram prometheus.Histogram
 // RunRICExposer runs Prometheus exposer
 func RunRICExposer(mgr *manager.Manager) {
 	southbound.ChanHOEvent = make(chan southbound.HOEventMeasuredRIC)
-	initHOHistogram(mgr)
-	exposeCtrUpdateInfo(mgr)
+	initHOHistogram()
+	//exposeCtrUpdateInfo(mgr)
 	exposeHOLatency()
+	exposeStdevLoad()
 	http.Handle("/metrics", promhttp.Handler())
 	err := http.ListenAndServe(":7000", nil)
 	if err != nil {
@@ -46,115 +48,18 @@ func RunRICExposer(mgr *manager.Manager) {
 	}
 }
 
-// exposeCtrUpdateInfo exposes Control Update info
-func exposeCtrUpdateInfo(mgr *manager.Manager) {
-	go func() {
-		for {
-			var wg sync.WaitGroup
-			wg.Add(2) // because there are four goroutines
-
-			var listRNIBCell []prometheus.Counter
-			var listRNIBUEAdmReq []prometheus.Counter
-
-			go func() {
-				listRNIBCell = exposeCellConfig(mgr)
-				defer wg.Done()
-			}()
-			go func() {
-				listRNIBUEAdmReq = exposeUEAdmRequests(mgr)
-				defer wg.Done()
-			}()
-			wg.Wait()
-
-			time.Sleep(1000 * time.Millisecond)
-			for i := 0; i < len(listRNIBCell); i++ {
-				prometheus.Unregister(listRNIBCell[i])
-			}
-			for i := 0; i < len(listRNIBUEAdmReq); i++ {
-				prometheus.Unregister(listRNIBUEAdmReq[i])
-			}
-		}
-	}()
-}
-
-// exposeCellConfig exposes CellConfig info
-func exposeCellConfig(mgr *manager.Manager) []prometheus.Counter {
-	var listCellConfigMsgs []prometheus.Counter
-
-	allControlUpdates, _ := mgr.GetIndications()
-	for i := 0; i < len(allControlUpdates); i++ {
-		switch allControlUpdates[i].GetHdr().GetMessageType() {
-		case sb.MessageType_CELL_CONFIG_REPORT:
-			tmp := promauto.NewCounter(prometheus.CounterOpts{
-				Name: "cell_config_info",
-				ConstLabels: prometheus.Labels{
-					"plmnid":                  allControlUpdates[i].GetMsg().GetCellConfigReport().GetEcgi().GetPlmnId(),
-					"ecid":                    allControlUpdates[i].GetMsg().GetCellConfigReport().GetEcgi().GetEcid(),
-					"pci":                     string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetPci()),
-					"earfcndl":                allControlUpdates[i].GetMsg().GetCellConfigReport().GetEarfcnDl(),
-					"earfcnul":                allControlUpdates[i].GetMsg().GetCellConfigReport().GetEarfcnUl(),
-					"rbsperttidl":             string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetRbsPerTtiDl()),
-					"rbsperttiul":             string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetRbsPerTtiUl()),
-					"numtxantenna":            string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetNumTxAntenna()),
-					"duplexmode":              allControlUpdates[i].GetMsg().GetCellConfigReport().GetDuplexMode(),
-					"maxnumconnectedues":      string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumConnectedUes()),
-					"maxnumconnectedbearers":  string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumConnectedBearers()),
-					"maxnumuesschedperrttidl": string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumUesSchedPerTtiDl()),
-					"maxnumuesschedperttiul":  string(allControlUpdates[i].GetMsg().GetCellConfigReport().GetMaxNumUesSchedPerTtiUl()),
-					"dlfsschedenable":         allControlUpdates[i].GetMsg().GetCellConfigReport().GetDlfsSchedEnable(),
-				},
-			})
-			listCellConfigMsgs = append(listCellConfigMsgs, tmp)
-		default:
-		}
-	}
-	return listCellConfigMsgs
-}
-
-// exposeUEAdmRequests exposes UEAdmissionRequest info
-func exposeUEAdmRequests(mgr *manager.Manager) []prometheus.Counter {
-	var listUEAdmRequestMsgs []prometheus.Counter
-	allControlUpdates, _ := mgr.GetIndications()
-	for i := 0; i < len(allControlUpdates); i++ {
-		switch allControlUpdates[i].GetHdr().GetMessageType() {
-		case sb.MessageType_UE_ADMISSION_REQUEST:
-			tmp := promauto.NewCounter(prometheus.CounterOpts{
-				Name: "ue_adm_req_info",
-				ConstLabels: prometheus.Labels{
-					"crnti":  allControlUpdates[i].GetMsg().GetUEAdmissionRequest().GetCrnti(),
-					"plmnid": allControlUpdates[i].GetMsg().GetUEAdmissionRequest().Ecgi.GetPlmnId(),
-					"ecid":   allControlUpdates[i].GetMsg().GetUEAdmissionRequest().GetEcgi().GetEcid(),
-				},
-			})
-			listUEAdmRequestMsgs = append(listUEAdmRequestMsgs, tmp)
-		default:
-		}
-	}
-	return listUEAdmRequestMsgs
-}
-
 func exposeHOLatency() {
 	go func() {
 		for {
+			time.Sleep(1 * time.Second)
 			for e := range southbound.ChanHOEvent {
-				tmp := promauto.NewCounter(prometheus.CounterOpts{
-					Name: "ho_events",
-					ConstLabels: prometheus.Labels{
-						"timestamp": e.Timestamp.Format(time.StampNano),
-						"crnti":     e.Crnti,
-						"plmnid":    e.DestPlmnID,
-						"ecid":      e.DestECID,
-					},
-				})
-				eTime := float64(e.ElapsedTime)
-				tmp.Add(eTime)
-				hoLatencyHistogram.Observe(eTime)
+				hoLatencyHistogram.Observe(float64(e.ElapsedTime))
 			}
 		}
 	}()
 }
 
-func initHOHistogram(mgr *manager.Manager) {
+func initHOHistogram() {
 	hoLatencyHistogram = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "ho_histogram",
@@ -162,4 +67,92 @@ func initHOHistogram(mgr *manager.Manager) {
 		},
 	)
 	prometheus.MustRegister(hoLatencyHistogram)
+}
+
+func exposeStdevLoad() {
+	totalNumUEsGuage := promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "total_num_ues",
+	})
+	totalNumBSGauge := promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "total_num_bses",
+	})
+	stdDevGauge := promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "stdev_ues",
+	})
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+
+			tNow := time.Now()
+			allIndication, _ := manager.GetManager().GetIndications()
+
+			tmpMap := make(map[sb.ECGI]int)
+			numTotalUEs := 0
+			numBSes := 0
+
+			for i := 0; i < len(allIndication); i++ {
+				switch allIndication[i].GetHdr().GetMessageType() {
+				case sb.MessageType_CELL_CONFIG_REPORT:
+					tmpMap[*allIndication[i].GetMsg().GetCellConfigReport().GetEcgi()] = 0
+					numBSes++
+				case sb.MessageType_UE_ADMISSION_REQUEST:
+					numTotalUEs++
+					if _, ok := tmpMap[*allIndication[i].GetMsg().GetUEAdmissionRequest().GetEcgi()]; ok {
+						tmpMap[*allIndication[i].GetMsg().GetUEAdmissionRequest().GetEcgi()]++
+					}
+				default:
+				}
+			}
+
+			numTotalUEsSqrt := 0
+
+			for _, v := range tmpMap {
+				numTotalUEsSqrt = numTotalUEsSqrt + (v * v)
+			}
+
+			// average
+			avgNumUEs := float64(numTotalUEs) / float64(numBSes)
+			avgSqrtNumUEs := float64(numTotalUEsSqrt) / float64(numBSes)
+			stdev := math.Sqrt(avgSqrtNumUEs - avgNumUEs*avgNumUEs)
+
+			// expose Total Num UEs
+			go func() {
+				historyTotalNumUEsCounter := promauto.NewCounter(prometheus.CounterOpts{
+					Name: "history_total_num_ues",
+					ConstLabels: prometheus.Labels{
+						"timestamp":      tNow.Format(time.StampNano),
+						"timestamp_nano": fmt.Sprintf("%d", tNow.UnixNano()),
+					},
+				})
+				totalNumUEsGuage.Set(float64(numTotalUEs))
+				historyTotalNumUEsCounter.Add(float64(numTotalUEs))
+			}()
+
+			// expose Total Num BSes
+			go func() {
+				historyTotalNumBSCounter := promauto.NewCounter(prometheus.CounterOpts{
+					Name: "history_total_num_bses",
+					ConstLabels: prometheus.Labels{
+						"timestamp":      tNow.Format(time.StampNano),
+						"timestamp_nano": fmt.Sprintf("%d", tNow.UnixNano()),
+					},
+				})
+				totalNumBSGauge.Set(float64(numBSes))
+				historyTotalNumBSCounter.Add(float64(numBSes))
+			}()
+
+			// expose Stdev(Connected UEs for each BS)
+			go func() {
+				historyStdevCounter := promauto.NewCounter(prometheus.CounterOpts{
+					Name: "history_stdev_ues",
+					ConstLabels: prometheus.Labels{
+						"timestamp":      tNow.Format(time.StampNano),
+						"timestamp_nano": fmt.Sprintf("%d", tNow.UnixNano()),
+					},
+				})
+				stdDevGauge.Set(stdev)
+				historyStdevCounter.Add(stdev)
+			}()
+		}
+	}()
 }
