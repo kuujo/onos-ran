@@ -6,6 +6,7 @@ require (
 	github.com/DataDog/mmh3 v0.0.0-20200316233529-f5b682d8c981
 	github.com/atomix/go-client v0.1.0
 	github.com/gogo/protobuf v1.3.1
+	github.com/golang/mock v1.3.1
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733
 	github.com/onosproject/helmit v0.6.0

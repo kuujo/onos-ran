@@ -71,16 +71,21 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		return nil, err
 	}
 
+	return InitializeManager(indicationsStore, deviceChangeStore, enableMetrics), nil
+}
+
+// InitializeManager initializes the manager structure with the given data
+func InitializeManager(indicationsStore indications.Store, deviceChangesStore device.Store, enableMetrics bool) *Manager {
 	mgr = Manager{
 		indicationsStore:   indicationsStore,
-		deviceChangesStore: deviceChangeStore,
+		deviceChangesStore: deviceChangesStore,
 		SbSessions:         make(map[sb.ECGI]southbound.E2),
 		enableMetrics:      enableMetrics,
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
 	}
-	return &mgr, nil
+	return &mgr
 }
 
 // Manager single point of entry for the RAN system.
