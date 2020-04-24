@@ -31,17 +31,35 @@ type BenchmarkSuite struct {
 
 // SetupSuite :: benchmark
 func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
-	err := helm.Chart("atomix-controller").
-		Release("atomix-controller").
+	err := helm.Chart("kubernetes-controller", "https://charts.atomix.io").
+		Release("onos-ric-atomix").
 		Set("scope", "Namespace").
 		Install(true)
 	if err != nil {
 		return err
 	}
 
+	err = helm.Chart("raft-storage-controller", "https://charts.atomix.io").
+		Release("onos-ric-raft").
+		Set("scope", "Namespace").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	err = helm.Chart("cache-storage-controller", "https://charts.atomix.io").
+		Release("onos-ric-cache").
+		Set("scope", "Namespace").
+		Install(true)
+	if err != nil {
+		return err
+	}
+
+	controller := "onos-ric-atomix-kubernetes-controller:5679"
+
 	err = helm.Chart("onos-topo").
 		Release("onos-topo").
-		Set("store.controller", "atomix-controller:5679").
+		Set("store.controller", controller).
 		Install(false)
 	if err != nil {
 		return err
@@ -49,7 +67,7 @@ func (s *BenchmarkSuite) SetupSuite(c *benchmark.Context) error {
 
 	err = helm.Chart("onos-ric").
 		Release("onos-ric").
-		Set("store.controller", "atomix-controller:5679").
+		Set("store.controller", controller).
 		Install(true)
 	if err != nil {
 		return err
