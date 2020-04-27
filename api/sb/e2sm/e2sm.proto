@@ -76,6 +76,7 @@ message RicControlMessage {
         interface.e2.RRMConfig rRMConfig = 1;
         interface.e2.HORequest hORequest = 2;
         interface.e2.CellConfigRequest cellConfigRequest = 3;
+        interface.e2.L2MeasConfig l2MeasConfig = 4;
     }
 }
 

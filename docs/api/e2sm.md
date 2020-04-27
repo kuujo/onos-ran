@@ -67,6 +67,7 @@ RICcontrolMessage ::= OCTET STRING
 | rRMConfig | [interface.e2.RRMConfig](#interface.e2.RRMConfig) |  |  |
 | hORequest | [interface.e2.HORequest](#interface.e2.HORequest) |  |  |
 | cellConfigRequest | [interface.e2.CellConfigRequest](#interface.e2.CellConfigRequest) |  |  |
+| l2MeasConfig | [interface.e2.L2MeasConfig](#interface.e2.L2MeasConfig) |  |  |
 
 
 
