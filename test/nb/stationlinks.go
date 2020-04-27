@@ -56,7 +56,7 @@ func readStationLinks(t *testing.T) map[string]*nb.StationLinkInfo {
 func (s *TestSuite) TestNBStationLinksAPI(t *testing.T) {
 
 	const (
-		expectedStationLinkCount = 9
+		expectedStationLinkCount = 12
 		expectedPLMNID           = defaultPlmnid
 	)
 
@@ -81,6 +81,9 @@ func (s *TestSuite) TestNBStationLinksAPI(t *testing.T) {
 		case cell6Name:
 		case cell7Name:
 		case cell8Name:
+		case cell9Name:
+		case cell10Name:
+		case cell11Name:
 			assert.Equal(t, id, link.GetEcgi().Ecid)
 			assert.Equal(t, expectedPLMNID, link.Ecgi.Plmnid)
 			for _, neighbor := range link.NeighborECGI {

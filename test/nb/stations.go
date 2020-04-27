@@ -55,7 +55,7 @@ func readStations(t *testing.T) map[string]*nb.StationInfo {
 func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
 
 	const (
-		expectedStationInfoCount          = 9
+		expectedStationInfoCount          = 12
 		expectedPLMNID                    = defaultPlmnid
 		expectedMaxNumConnectedUes uint32 = 5
 	)
@@ -79,6 +79,9 @@ func (s *TestSuite) TestNBStationsAPI(t *testing.T) {
 		case cell6Name:
 		case cell7Name:
 		case cell8Name:
+		case cell9Name:
+		case cell10Name:
+		case cell11Name:
 			assert.Equal(t, id, station.GetEcgi().Ecid)
 			assert.Equal(t, expectedPLMNID, station.Ecgi.Plmnid)
 			assert.Equal(t, expectedMaxNumConnectedUes, station.MaxNumConnectedUes)
