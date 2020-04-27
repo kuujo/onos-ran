@@ -17,7 +17,6 @@ package mlbappsouthbound
 import (
 	"context"
 	"io"
-	"sync"
 	"time"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -32,13 +31,16 @@ var log = logging.GetLogger("mlb", "southbound")
 
 // MLBSessions is responsible for mapping connnections to and interactions with the northbound of ONOS-RAN subsystem.
 type MLBSessions struct {
-	ONOSRICAddr  *string
-	LoadThresh   *float64
-	Period       *int64
-	EnableMetric bool
-	client       nb.C1InterfaceServiceClient
-	RNIBCellInfo []*nb.StationInfo
-	UEInfoList   []*nb.UEInfo
+	ONOSRICAddr    *string
+	LoadThresh     *float64
+	Period         *int64
+	EnableMetric   bool
+	client         nb.C1InterfaceServiceClient
+	RNIBCellInfo   []*nb.StationInfo
+	UEInfoList     []*nb.UEInfo
+	RNIBCellMap    map[string]*nb.StationInfo
+	UEInfoMap      map[string]*nb.UEInfo
+	StationLinkMap map[string]*nb.StationLinkInfo
 }
 
 // ChanMLBEvent is a go channel to pass MLBEvent to exporter
@@ -61,6 +63,11 @@ func NewSession() (*MLBSessions, error) {
 func (m *MLBSessions) Run() {
 	log.Info("Started MLB App Manager")
 
+	// Init maps
+	m.RNIBCellMap = make(map[string]*nb.StationInfo)
+	m.UEInfoMap = make(map[string]*nb.UEInfo)
+	m.StationLinkMap = make(map[string]*nb.StationLinkInfo)
+
 	m.manageConnections()
 }
 
@@ -82,7 +89,7 @@ func (m *MLBSessions) manageConnections() {
 		// If successful, manage this connection and don't return until it is
 		// no longer valid and all related resources have been properly cleaned-up.
 		m.manageConnection(conn)
-		time.Sleep(time.Duration(*m.Period) * time.Millisecond)
+		time.Sleep(100 * time.Millisecond) // Re-dial timer
 	}
 }
 
@@ -96,164 +103,207 @@ func (m *MLBSessions) manageConnection(conn *grpc.ClientConn) {
 
 	// run MLB procedure
 	if m.EnableMetric {
-		m.runMLBProcedureWithExporter()
+		errMLB := m.runMLBProcedureWithExporter()
+		if errMLB != nil {
+			log.Error(errMLB)
+		}
 	} else {
-		m.runMLBProcedure()
+		errMLB := m.runMLBProcedure()
+		if errMLB != nil {
+			log.Error(errMLB)
+		}
 	}
 
 	conn.Close()
 }
 
-func (m *MLBSessions) runMLBProcedureWithExporter() {
-	tStart := time.Now()
-	// get all R-NIB information
-	var wg sync.WaitGroup
+func (m *MLBSessions) runMLBProcedureWithExporter() error {
+	staCh := make(chan *nb.StationInfo)
+	staLinkCh := make(chan *nb.StationLinkInfo)
+	ueCh := make(chan *nb.UEInfo)
 
-	var stationLinkInfoList []nb.StationLinkInfo
-	m.RNIBCellInfo = nil
-	m.UEInfoList = nil
-	// Fork three go-routines.
-	wg.Add(3)
-	go func() {
-		m.RNIBCellInfo = m.getListStations()
-		defer wg.Done()
-	}()
-	go func() {
-		stationLinkInfoList = m.getListStationLinks()
-		defer wg.Done()
-	}()
-	go func() {
-		m.UEInfoList = m.getListUEs()
-		defer wg.Done()
-	}()
-	// Wait until all go-routines join.
-	wg.Wait()
-
-	// if R-NIB (UELink) is not old one, start MLB procedure
-	// otherwise, skip this timeslot, because MLBDecisionMaker was already run before
-	mlbReqs, _ := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellInfo, stationLinkInfoList, m.UEInfoList, m.LoadThresh)
-
-	tEnd := time.Now()
-
-	numEvents := 0
-	for _, req := range *mlbReqs {
-		if req.Offset != nb.StationPowerOffset_PA_DB_0 {
-			numEvents++
-		}
-		m.sendRadioPowerOffset(req)
+	if err := m.watchStations(staCh); err != nil {
+		return err
+	}
+	if err := m.watchStationLinks(staLinkCh); err != nil {
+		return err
+	}
+	if err := m.watchUEs(ueCh); err != nil {
+		return err
 	}
 
-	if numEvents > 0 {
-		tmp := &MLBEvent{
-			MLBReqs:   *mlbReqs,
-			StartTime: tStart,
-			EndTime:   tEnd,
+	go m.collectNetworkView(staCh, staLinkCh, ueCh)
+
+	// run MLB algorithm periodically
+	for {
+		tStart := time.Now()
+		mlbReqs, _ := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellMap, m.StationLinkMap, m.UEInfoMap, m.LoadThresh)
+		tEnd := time.Now()
+
+		numEvents := 0
+		for _, req := range *mlbReqs {
+			if req.Offset != nb.StationPowerOffset_PA_DB_0 {
+				numEvents++
+			}
+			m.sendRadioPowerOffset(req)
 		}
-		ChanMLBEvent <- *tmp
+
+		if numEvents > 0 {
+			tmp := MLBEvent{
+				MLBReqs:   *mlbReqs,
+				StartTime: tStart,
+				EndTime:   tEnd,
+			}
+			ChanMLBEvent <- tmp
+		}
+		time.Sleep(time.Duration(*m.Period) * time.Millisecond)
 	}
 }
 
-func (m *MLBSessions) runMLBProcedure() {
-	// get all R-NIB information
-	var wg sync.WaitGroup
+func (m *MLBSessions) runMLBProcedure() error {
+	staCh := make(chan *nb.StationInfo)
+	staLinkCh := make(chan *nb.StationLinkInfo)
+	ueCh := make(chan *nb.UEInfo)
 
-	var stationLinkInfoList []nb.StationLinkInfo
-	m.RNIBCellInfo = nil
-	m.UEInfoList = nil
+	if err := m.watchStations(staCh); err != nil {
+		return err
+	}
+	if err := m.watchStationLinks(staLinkCh); err != nil {
+		return err
+	}
+	if err := m.watchUEs(ueCh); err != nil {
+		return err
+	}
 
-	// Fork three go-routines.
-	wg.Add(3)
-	go func() {
-		m.RNIBCellInfo = m.getListStations()
-		defer wg.Done()
-	}()
-	go func() {
-		stationLinkInfoList = m.getListStationLinks()
-		defer wg.Done()
-	}()
-	go func() {
-		m.UEInfoList = m.getListUEs()
-		defer wg.Done()
-	}()
+	go m.collectNetworkView(staCh, staLinkCh, ueCh)
 
-	// Wait until all go-routines join.
-	wg.Wait()
+	// run MLB algorithm periodically
+	for {
+		mlbReqs, _ := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellMap, m.StationLinkMap, m.UEInfoMap, m.LoadThresh)
 
-	// if R-NIB (UELink) is not old one, start MLB procedure
-	// otherwise, skip this timeslot, because MLBDecisionMaker was already run before
-	mlbReqs, _ := mlbapploadbalance.MLBDecisionMaker(m.RNIBCellInfo, stationLinkInfoList, m.UEInfoList, m.LoadThresh)
+		for _, req := range *mlbReqs {
+			m.sendRadioPowerOffset(req)
+		}
 
-	for _, req := range *mlbReqs {
-		m.sendRadioPowerOffset(req)
+		time.Sleep(time.Duration(*m.Period) * time.Millisecond)
 	}
 }
 
-// getListStations gets list of stations from ONOS RAN subsystem.
-func (m *MLBSessions) getListStations() []*nb.StationInfo {
-	var stationInfoList []*nb.StationInfo
-	stream, err := m.client.ListStations(context.Background(), &nb.StationListRequest{})
+func (m *MLBSessions) collectNetworkView(staCh chan *nb.StationInfo, staLinkCh chan *nb.StationLinkInfo, ueCh chan *nb.UEInfo) {
+	go m.updateStaInfo(staCh)
+	go m.updateStaLinkInfo(staLinkCh)
+	go m.updateUEInfo(ueCh)
+}
+
+func (m *MLBSessions) updateStaInfo(staCh chan *nb.StationInfo) {
+	for sta := range staCh {
+		mlbapploadbalance.RNIBCellMapMutex.Lock()
+		m.RNIBCellMap[m.getStaID(sta)] = sta
+		mlbapploadbalance.RNIBCellMapMutex.Unlock()
+	}
+}
+
+func (m *MLBSessions) updateStaLinkInfo(staLinkCh chan *nb.StationLinkInfo) {
+	for staLink := range staLinkCh {
+		mlbapploadbalance.StaLinkMapMutex.Lock()
+		m.StationLinkMap[m.getStaLinkID(staLink)] = staLink
+		mlbapploadbalance.StaLinkMapMutex.Unlock()
+	}
+}
+
+func (m *MLBSessions) updateUEInfo(ueCh chan *nb.UEInfo) {
+	for ue := range ueCh {
+		mlbapploadbalance.UEMapMutex.Lock()
+		m.UEInfoMap[m.getUeID(ue)] = ue
+		mlbapploadbalance.UEMapMutex.Unlock()
+	}
+}
+
+func (m *MLBSessions) getStaID(sta *nb.StationInfo) string {
+	return sta.GetEcgi().String()
+}
+
+func (m *MLBSessions) getStaLinkID(staLink *nb.StationLinkInfo) string {
+	return staLink.GetEcgi().String()
+}
+
+func (m *MLBSessions) getUeID(ue *nb.UEInfo) string {
+	return ue.GetImsi()
+}
+
+func (m *MLBSessions) watchStations(ch chan<- *nb.StationInfo) error {
+	stream, err := m.client.ListStations(context.Background(), &nb.StationListRequest{
+		Subscribe: true,
+	})
 
 	if err != nil {
-		log.Error(err)
-		return nil
+		log.Errorf("Failed to get stream: %s", err)
+		return err
 	}
-	for {
-		stationInfo, err := stream.Recv()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Error(err)
-			break
+
+	go func() {
+		for {
+			staInfo, err := stream.Recv()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Error(err)
+			}
+			ch <- staInfo
 		}
-		// For debugging
-		stationInfoList = append(stationInfoList, stationInfo)
-	}
-	return stationInfoList
+	}()
+
+	return nil
 }
 
-// getListStationLinks gets list of the relationship among stations from ONOS RAN subsystem.
-func (m *MLBSessions) getListStationLinks() []nb.StationLinkInfo {
-	var stationLinkInfoList []nb.StationLinkInfo
-	stream, err := m.client.ListStationLinks(context.Background(), &nb.StationLinkListRequest{})
+func (m *MLBSessions) watchStationLinks(ch chan<- *nb.StationLinkInfo) error {
+	stream, err := m.client.ListStationLinks(context.Background(), &nb.StationLinkListRequest{
+		Subscribe: true,
+	})
 
 	if err != nil {
-		log.Error(err)
-		return nil
+		log.Errorf("Failed to get stream: %s", err)
+		return err
 	}
-	for {
-		stationLinkInfo, err := stream.Recv()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Error(err)
-			break
+
+	go func() {
+		for {
+			staLinkInfo, err := stream.Recv()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Error(err)
+			}
+			ch <- staLinkInfo
 		}
-		// For debugging
-		stationLinkInfoList = append(stationLinkInfoList, *stationLinkInfo)
-	}
-	return stationLinkInfoList
+	}()
+
+	return nil
 }
 
-func (m *MLBSessions) getListUEs() []*nb.UEInfo {
-	var ueInfoList []*nb.UEInfo
-	stream, err := m.client.ListUEs(context.Background(), &nb.UEListRequest{})
+func (m *MLBSessions) watchUEs(ch chan<- *nb.UEInfo) error {
+	stream, err := m.client.ListUEs(context.Background(), &nb.UEListRequest{
+		Subscribe: true,
+	})
 
 	if err != nil {
-		log.Error(err)
-		return nil
+		log.Errorf("Failed to get stream: %s", err)
+		return err
 	}
 
-	for {
-		ueInfo, err := stream.Recv()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Error(err)
-			break
+	go func() {
+		for {
+			ueInfo, err := stream.Recv()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Error(err)
+			}
+			ch <- ueInfo
 		}
-		ueInfoList = append(ueInfoList, ueInfo)
-	}
-	return ueInfoList
+	}()
+
+	return nil
 }
 
 // sendRadioPowerOffset sends power offset to appropriate stations.

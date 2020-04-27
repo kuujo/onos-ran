@@ -32,9 +32,9 @@ func TestMLBDecisionMaker1(t *testing.T) {
 	threshold := 0.5
 
 	// Define test cases
-	var tStas []*nb.StationInfo
-	var tStaLinks []nb.StationLinkInfo
-	var tUes []*nb.UEInfo
+	tStas := make(map[string]*nb.StationInfo)
+	tStaLinks := make(map[string]*nb.StationLinkInfo)
+	tUes := make(map[string]*nb.UEInfo)
 
 	// StationInfo
 	for i := 1; i < 10; i++ {
@@ -47,7 +47,7 @@ func TestMLBDecisionMaker1(t *testing.T) {
 			MaxNumConnectedUes: maxUes,
 		}
 
-		tStas = append(tStas, tmpSta)
+		tStas[tmpSta.Ecgi.String()] = tmpSta
 	}
 	// StationLinkInfo
 	// Sta1: 2, 4
@@ -235,15 +235,15 @@ func TestMLBDecisionMaker1(t *testing.T) {
 			},
 		},
 	}
-	tStaLinks = append(tStaLinks, *tStaLink1)
-	tStaLinks = append(tStaLinks, *tStaLink2)
-	tStaLinks = append(tStaLinks, *tStaLink3)
-	tStaLinks = append(tStaLinks, *tStaLink4)
-	tStaLinks = append(tStaLinks, *tStaLink5)
-	tStaLinks = append(tStaLinks, *tStaLink6)
-	tStaLinks = append(tStaLinks, *tStaLink7)
-	tStaLinks = append(tStaLinks, *tStaLink8)
-	tStaLinks = append(tStaLinks, *tStaLink9)
+	tStaLinks[tStaLink1.Ecgi.String()] = tStaLink1
+	tStaLinks[tStaLink2.Ecgi.String()] = tStaLink2
+	tStaLinks[tStaLink3.Ecgi.String()] = tStaLink3
+	tStaLinks[tStaLink4.Ecgi.String()] = tStaLink4
+	tStaLinks[tStaLink5.Ecgi.String()] = tStaLink5
+	tStaLinks[tStaLink6.Ecgi.String()] = tStaLink6
+	tStaLinks[tStaLink7.Ecgi.String()] = tStaLink7
+	tStaLinks[tStaLink8.Ecgi.String()] = tStaLink8
+	tStaLinks[tStaLink9.Ecgi.String()] = tStaLink9
 
 	// UELinkInfo
 	// UE1 - conn w/ STA8
@@ -272,11 +272,9 @@ func TestMLBDecisionMaker1(t *testing.T) {
 		Imsi: "315010999900003",
 	}
 
-	tUes = append(tUes, tUeInfo1)
-	tUes = append(tUes, tUeInfo2)
-	tUes = append(tUes, tUeInfo3)
-	//tUeLinks = append(tUeLinks, *tUeLink4)
-	//tUeLinks = append(tUeLinks, *tUeLink5)
+	tUes[tUeInfo1.Imsi] = tUeInfo1
+	tUes[tUeInfo2.Imsi] = tUeInfo2
+	tUes[tUeInfo3.Imsi] = tUeInfo3
 	txPwrSta1 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta2 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta3 := nb.StationPowerOffset_PA_DB_0
@@ -333,9 +331,9 @@ func TestMLBDecisionMaker2(t *testing.T) {
 	threshold := 0.5
 
 	// Define test cases
-	var tStas []*nb.StationInfo
-	var tStaLinks []nb.StationLinkInfo
-	var tUes []*nb.UEInfo
+	tStas := make(map[string]*nb.StationInfo)
+	tStaLinks := make(map[string]*nb.StationLinkInfo)
+	tUes := make(map[string]*nb.UEInfo)
 
 	// StationInfo
 	for i := 1; i < 10; i++ {
@@ -348,7 +346,7 @@ func TestMLBDecisionMaker2(t *testing.T) {
 			MaxNumConnectedUes: maxUes,
 		}
 
-		tStas = append(tStas, tmpSta)
+		tStas[tmpSta.Ecgi.String()] = tmpSta
 	}
 	// StationLinkInfo
 	// Sta1: 2, 4
@@ -536,15 +534,15 @@ func TestMLBDecisionMaker2(t *testing.T) {
 			},
 		},
 	}
-	tStaLinks = append(tStaLinks, *tStaLink1)
-	tStaLinks = append(tStaLinks, *tStaLink2)
-	tStaLinks = append(tStaLinks, *tStaLink3)
-	tStaLinks = append(tStaLinks, *tStaLink4)
-	tStaLinks = append(tStaLinks, *tStaLink5)
-	tStaLinks = append(tStaLinks, *tStaLink6)
-	tStaLinks = append(tStaLinks, *tStaLink7)
-	tStaLinks = append(tStaLinks, *tStaLink8)
-	tStaLinks = append(tStaLinks, *tStaLink9)
+	tStaLinks[tStaLink1.Ecgi.String()] = tStaLink1
+	tStaLinks[tStaLink2.Ecgi.String()] = tStaLink2
+	tStaLinks[tStaLink3.Ecgi.String()] = tStaLink3
+	tStaLinks[tStaLink4.Ecgi.String()] = tStaLink4
+	tStaLinks[tStaLink5.Ecgi.String()] = tStaLink5
+	tStaLinks[tStaLink6.Ecgi.String()] = tStaLink6
+	tStaLinks[tStaLink7.Ecgi.String()] = tStaLink7
+	tStaLinks[tStaLink8.Ecgi.String()] = tStaLink8
+	tStaLinks[tStaLink9.Ecgi.String()] = tStaLink9
 
 	// UELinkInfo
 	tUeInfo1 := &nb.UEInfo{
@@ -596,12 +594,12 @@ func TestMLBDecisionMaker2(t *testing.T) {
 		Imsi: "315010999900006",
 	}
 
-	tUes = append(tUes, tUeInfo1)
-	tUes = append(tUes, tUeInfo2)
-	tUes = append(tUes, tUeInfo3)
-	tUes = append(tUes, tUeInfo4)
-	tUes = append(tUes, tUeInfo5)
-	tUes = append(tUes, tUeInfo6)
+	tUes[tUeInfo1.Imsi] = tUeInfo1
+	tUes[tUeInfo2.Imsi] = tUeInfo2
+	tUes[tUeInfo3.Imsi] = tUeInfo3
+	tUes[tUeInfo4.Imsi] = tUeInfo4
+	tUes[tUeInfo5.Imsi] = tUeInfo5
+	tUes[tUeInfo6.Imsi] = tUeInfo6
 	txPwrSta1 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta2 := nb.StationPowerOffset_PA_DB_0
 	txPwrSta3 := nb.StationPowerOffset_PA_DB_0

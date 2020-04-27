@@ -53,10 +53,6 @@ type Server struct {
 
 // ListStations returns a stream of base station records.
 func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
-	if req.Subscribe {
-		return fmt.Errorf("subscribe not yet implemented")
-	}
-
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
@@ -103,9 +99,6 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
-	if req.Subscribe {
-		return fmt.Errorf("subscribe not yet implemented")
-	}
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
