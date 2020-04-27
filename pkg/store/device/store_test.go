@@ -16,6 +16,7 @@ package device
 
 import (
 	"github.com/golang/mock/gomock"
+	mockdevice "github.com/onosproject/onos-ric/test/onos-topo/api/device"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -45,7 +46,7 @@ func TestDeviceStore(t *testing.T) {
 		Version:  "1.0.0",
 	}
 
-	stream := NewMockDeviceService_ListClient(ctrl)
+	stream := mockdevice.NewMockDeviceService_ListClient(ctrl)
 	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device1}, nil)
 	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device2}, nil)
 	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device3}, nil)
@@ -55,7 +56,7 @@ func TestDeviceStore(t *testing.T) {
 	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device2}, nil)
 	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device3}, nil)
 
-	client := NewMockDeviceServiceClient(ctrl)
+	client := mockdevice.NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().List(gomock.Any(), gomock.Any()).Return(stream, nil)
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topodevice.GetResponse{Device: device1}, nil)
 
@@ -102,7 +103,7 @@ func TestUpdateDevice(t *testing.T) {
 	protocolState.ServiceState = topodevice.ServiceState_AVAILABLE
 	device1Connected.Protocols = append(device1Connected.Protocols, protocolState)
 
-	client := NewMockDeviceServiceClient(ctrl)
+	client := mockdevice.NewMockDeviceServiceClient(ctrl)
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(&topodevice.GetResponse{Device: device1}, nil)
 
 	store, err := NewStore(client)
@@ -112,7 +113,7 @@ func TestUpdateDevice(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, device1.ID, device.ID)
 
-	stream := NewMockDeviceService_ListClient(ctrl)
+	stream := mockdevice.NewMockDeviceService_ListClient(ctrl)
 	stream.EXPECT().Recv().Return(&topodevice.ListResponse{Device: device1}, nil)
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 

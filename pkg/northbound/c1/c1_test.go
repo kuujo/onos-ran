@@ -23,6 +23,8 @@ import (
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/onosproject/onos-ric/pkg/manager"
+	"github.com/onosproject/onos-ric/test/mocks/southbound"
+	"github.com/onosproject/onos-ric/test/mocks/store/indications"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
@@ -142,7 +144,7 @@ func generateRicIndicationRadioMeasReportPerUE(ID uint32) e2ap.RicIndication {
 const indicationsStoreItemsCount = 7
 
 func createMockIndicationsStore(t *testing.T) {
-	indicationsStore := NewMockStore(gomock.NewController(t))
+	indicationsStore := store.NewMockStore(gomock.NewController(t))
 
 	indicationsStore.EXPECT().List(gomock.Any()).DoAndReturn(
 		func(ch chan<- e2ap.RicIndication) error {
@@ -309,8 +311,8 @@ func Test_RadioPower(t *testing.T) {
 		{description: "StationPowerOffset_PA_DB_3", powerSetting: nb.StationPowerOffset_PA_DB_3, expectError: false},
 	}
 
-	e2 := NewMockE2(gomock.NewController(t))
-	e2.EXPECT().RRMConfig(gomock.Any()).Return(nil).AnyTimes()
+	mockE2 := e2.NewMockE2(gomock.NewController(t))
+	mockE2.EXPECT().RRMConfig(gomock.Any()).Return(nil).AnyTimes()
 
 	plmnid := IDToPlmnid(1)
 	ecid := IDToEcid(1)
@@ -318,7 +320,7 @@ func Test_RadioPower(t *testing.T) {
 	sbEcgi := sb.ECGI{PlmnId: plmnid, Ecid: ecid}
 
 	manager.InitializeManager(nil, nil, false)
-	manager.GetManager().SbSessions[sbEcgi] = e2
+	manager.GetManager().SbSessions[sbEcgi] = mockE2
 
 	conn := createServerConnection(t)
 	client := nb.NewC1InterfaceServiceClient(conn)

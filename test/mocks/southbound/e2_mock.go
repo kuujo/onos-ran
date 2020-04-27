@@ -2,7 +2,7 @@
 // Source: github.com/onosproject/onos-ric/pkg/southbound (interfaces: E2)
 
 // Package mock_southbound is a generated GoMock package.
-package c1
+package e2
 
 import (
 	gomock "github.com/golang/mock/gomock"

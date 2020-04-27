@@ -2,7 +2,7 @@
 // Source: github.com/onosproject/onos-ric/pkg/store/indications (interfaces: Store)
 
 // Package mock_indications is a generated GoMock package.
-package c1
+package store
 
 import (
 	gomock "github.com/golang/mock/gomock"
