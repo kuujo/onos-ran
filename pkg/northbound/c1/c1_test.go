@@ -17,20 +17,21 @@ package c1
 import (
 	"context"
 	"fmt"
+	"io"
+	"net"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-ric/api/nb"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/onosproject/onos-ric/pkg/manager"
-	"github.com/onosproject/onos-ric/test/mocks/southbound"
-	"github.com/onosproject/onos-ric/test/mocks/store/indications"
+	e2 "github.com/onosproject/onos-ric/test/mocks/southbound"
+	store "github.com/onosproject/onos-ric/test/mocks/store/indications"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
-	"io"
-	"net"
-	"testing"
 )
 
 var lis *bufconn.Listener

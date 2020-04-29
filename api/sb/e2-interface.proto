@@ -469,33 +469,26 @@ message RxSigMeasReport {
     repeated RXSigReport cellMeasReport = 3;
 }
 
-enum L2MeasReportIntervals {
-    L2_MEAS_REPORT_INTERVAL_NO_REPORT = 0;
-    L2_MEAS_REPORT_INTERVAL_MS_10 = 1;
-    L2_MEAS_REPORT_INTERVAL_MS_50 = 2;
-    L2_MEAS_REPORT_INTERVAL_MS_100 = 3;
-    L2_MEAS_REPORT_INTERVAL_MS_200 = 4;
-    L2_MEAS_REPORT_INTERVAL_MS_500 = 5;
-    L2_MEAS_REPORT_INTERVAL_MS_1024 = 6;
-    L2_MEAS_REPORT_INTERVAL_S_10 = 7;
-    L2_MEAS_REPORT_INTERVAL_MIN_1 = 8;
-    L2_MEAS_REPORT_INTERVAL_MIN_2 = 9;
-    L2_MEAS_REPORT_INTERVAL_MIN_5 = 10;
+enum L2MeasReportInterval {
+    NO_REPORT = 0;
+    MS_10 = 1;
+    MS_50 = 2;
+    MS_100 = 3;
+    MS_200 = 4;
+    MS_500 = 5;
+    MS_1024 = 6;
+    S_10 = 7;
+    MIN_1 = 8;
+    MIN_2 = 9;
+    MIN_5 = 10;
 }
 
-message L2ReportInterval {
-    L2MeasReportIntervals tRadioMeasReportPerUe = 1;
-    L2MeasReportIntervals tRadioMeasReportPerCell = 2;
-    L2MeasReportIntervals tSchedMeasReportPerUe = 3;
-    L2MeasReportIntervals tSchedMeasReportPerCell = 4;
-    L2MeasReportIntervals tPdcpMeasReportPerUe = 5;
-}
-
-// L2MeasConfig message
 message L2MeasConfig {
-    ECGI ecgi = 1;
-    repeated string crnti = 2;
-    L2ReportInterval reportIntervals = 3;
+    L2MeasReportInterval radioMeasReportPerUe = 1;
+    L2MeasReportInterval radioMeasReportPerCell = 2;
+    L2MeasReportInterval schedMeasReportPerUe = 3;
+    L2MeasReportInterval schedMeasReportPerCell = 4;
+    L2MeasReportInterval pdcpMeasReportPerUe = 5;
 }
 
 // L2MeasureReports (periodic) messages

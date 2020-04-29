@@ -84,6 +84,7 @@ func InitializeManager(indicationsStore indications.Store, deviceChangesStore de
 		topoMonitor: monitor.NewTopoMonitorBuilder().
 			SetTopoChannel(make(chan *topodevice.ListResponse)).
 			Build(),
+		e2Chan: make(chan southbound.E2),
 	}
 	return &mgr
 }
@@ -95,6 +96,7 @@ type Manager struct {
 	SbSessions         map[sb.ECGI]southbound.E2
 	topoMonitor        monitor.TopoMonitor
 	enableMetrics      bool
+	e2Chan             chan southbound.E2 // TBD - Make this into a dispatcher
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store
@@ -165,6 +167,8 @@ func (m *Manager) SubscribeIndications(ch chan<- indications.Event, opts ...indi
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
 
+	config.NewE2Config().Run(m.e2Chan)
+
 	m.topoMonitor.TopoEventHandler(m.topoEventHandler)
 
 	err := mgr.deviceChangesStore.Watch(m.topoMonitor.TopoChannel())
@@ -189,7 +193,7 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 			}
 			if session != nil {
 				m.SbSessions[ecgi] = session
-				session.Run(ecgi, deviceEndpoint, device.GetDevice().GetTLS(), device.GetDevice().GetCredentials(), m.StoreRicControlResponse, m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics)
+				session.Run(ecgi, deviceEndpoint, device.GetDevice().GetTLS(), device.GetDevice().GetCredentials(), m.StoreRicControlResponse, m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics, m.e2Chan)
 			} else {
 				log.Fatalf("Error creating new session for %v", ecgi)
 			}

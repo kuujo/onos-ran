@@ -51,8 +51,11 @@ type E2 interface {
 		storeRicControlResponse RicControlResponseHandler,
 		storeControlUpdate ControlUpdateHandler,
 		storeTelemetry TelemetryUpdateHandler,
-		enableMetrics bool)
+		enableMetrics bool,
+		e2Chan chan E2)
 	RemoteAddress() sb.Endpoint
+	Setup() error
 	RRMConfig(pa sb.XICICPA) error
 	UeHandover(crnti []string, srcEcgi sb.ECGI, dstEcgi sb.ECGI) error
+	L2MeasConfig(l2ReportInterval *sb.L2MeasConfig) error
 }

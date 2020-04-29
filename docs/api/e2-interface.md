@@ -29,7 +29,6 @@
     - [HOFailure](#interface.e2.HOFailure)
     - [HORequest](#interface.e2.HORequest)
     - [L2MeasConfig](#interface.e2.L2MeasConfig)
-    - [L2ReportInterval](#interface.e2.L2ReportInterval)
     - [MeasCell](#interface.e2.MeasCell)
     - [MeasID](#interface.e2.MeasID)
     - [MeasIdAction](#interface.e2.MeasIdAction)
@@ -81,7 +80,7 @@
     - [DCCapDrbType](#interface.e2.DCCapDrbType)
     - [ERABDirection](#interface.e2.ERABDirection)
     - [ERABType](#interface.e2.ERABType)
-    - [L2MeasReportIntervals](#interface.e2.L2MeasReportIntervals)
+    - [L2MeasReportInterval](#interface.e2.L2MeasReportInterval)
     - [MeasIdActionPR](#interface.e2.MeasIdActionPR)
     - [MessageType](#interface.e2.MessageType)
     - [PerParamReportIntervalMs](#interface.e2.PerParamReportIntervalMs)
@@ -547,33 +546,16 @@ HORequest message
 <a name="interface.e2.L2MeasConfig"></a>
 
 ### L2MeasConfig
-L2MeasConfig message
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| ecgi | [ECGI](#interface.e2.ECGI) |  |  |
-| crnti | [string](#string) | repeated |  |
-| reportIntervals | [L2ReportInterval](#interface.e2.L2ReportInterval) |  |  |
-
-
-
-
-
-
-<a name="interface.e2.L2ReportInterval"></a>
-
-### L2ReportInterval
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| tRadioMeasReportPerUe | [L2MeasReportIntervals](#interface.e2.L2MeasReportIntervals) |  |  |
-| tRadioMeasReportPerCell | [L2MeasReportIntervals](#interface.e2.L2MeasReportIntervals) |  |  |
-| tSchedMeasReportPerUe | [L2MeasReportIntervals](#interface.e2.L2MeasReportIntervals) |  |  |
-| tSchedMeasReportPerCell | [L2MeasReportIntervals](#interface.e2.L2MeasReportIntervals) |  |  |
-| tPdcpMeasReportPerUe | [L2MeasReportIntervals](#interface.e2.L2MeasReportIntervals) |  |  |
+| radioMeasReportPerUe | [L2MeasReportInterval](#interface.e2.L2MeasReportInterval) |  |  |
+| radioMeasReportPerCell | [L2MeasReportInterval](#interface.e2.L2MeasReportInterval) |  |  |
+| schedMeasReportPerUe | [L2MeasReportInterval](#interface.e2.L2MeasReportInterval) |  |  |
+| schedMeasReportPerCell | [L2MeasReportInterval](#interface.e2.L2MeasReportInterval) |  |  |
+| pdcpMeasReportPerUe | [L2MeasReportInterval](#interface.e2.L2MeasReportInterval) |  |  |
 
 
 
@@ -1438,24 +1420,24 @@ UEReleaseInd message
 
 
 
-<a name="interface.e2.L2MeasReportIntervals"></a>
+<a name="interface.e2.L2MeasReportInterval"></a>
 
-### L2MeasReportIntervals
+### L2MeasReportInterval
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| L2_MEAS_REPORT_INTERVAL_NO_REPORT | 0 |  |
-| L2_MEAS_REPORT_INTERVAL_MS_10 | 1 |  |
-| L2_MEAS_REPORT_INTERVAL_MS_50 | 2 |  |
-| L2_MEAS_REPORT_INTERVAL_MS_100 | 3 |  |
-| L2_MEAS_REPORT_INTERVAL_MS_200 | 4 |  |
-| L2_MEAS_REPORT_INTERVAL_MS_500 | 5 |  |
-| L2_MEAS_REPORT_INTERVAL_MS_1024 | 6 |  |
-| L2_MEAS_REPORT_INTERVAL_S_10 | 7 |  |
-| L2_MEAS_REPORT_INTERVAL_MIN_1 | 8 |  |
-| L2_MEAS_REPORT_INTERVAL_MIN_2 | 9 |  |
-| L2_MEAS_REPORT_INTERVAL_MIN_5 | 10 |  |
+| NO_REPORT | 0 |  |
+| MS_10 | 1 |  |
+| MS_50 | 2 |  |
+| MS_100 | 3 |  |
+| MS_200 | 4 |  |
+| MS_500 | 5 |  |
+| MS_1024 | 6 |  |
+| S_10 | 7 |  |
+| MIN_1 | 8 |  |
+| MIN_2 | 9 |  |
+| MIN_5 | 10 |  |
 
 
 

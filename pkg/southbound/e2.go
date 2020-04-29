@@ -41,19 +41,18 @@ var mutexmapHOEventMeasuredRIC sync.RWMutex
 
 // Session is responsible for managing connections to and interactions with the RAN southbound.
 type Session struct {
-	EndPoint sb.Endpoint
-	Ecgi     sb.ECGI
-	client   e2ap.E2APClient
-
-	ricControlRequestChan chan e2ap.RicControlRequest
-	ricIndicationChan     chan e2ap.RicIndication
-	controlIndications    chan e2ap.RicIndication
-	telemetryIndications  chan e2ap.RicIndication
-
+	EndPoint                      sb.Endpoint
+	Ecgi                          sb.ECGI
+	client                        e2ap.E2APClient
+	ricControlRequestChan         chan e2ap.RicControlRequest
+	ricIndicationChan             chan e2ap.RicIndication
+	controlIndications            chan e2ap.RicIndication
+	telemetryIndications          chan e2ap.RicIndication
 	RicControlResponseHandlerFunc RicControlResponseHandler
 	ControlUpdateHandlerFunc      ControlUpdateHandler
 	TelemetryUpdateHandlerFunc    TelemetryUpdateHandler
 	EnableMetrics                 bool
+	e2Chan                        chan E2
 }
 
 // NewSession creates a new southbound session controller.
@@ -72,18 +71,39 @@ func (s *Session) Run(ecgi sb.ECGI, endPoint sb.Endpoint,
 	storeRicControlResponse RicControlResponseHandler,
 	storeControlUpdate ControlUpdateHandler,
 	storeTelemetry TelemetryUpdateHandler,
-	enableMetrics bool) {
+	enableMetrics bool,
+	e2Chan chan E2) {
 	s.EndPoint = endPoint
 	s.Ecgi = ecgi
 	s.RicControlResponseHandlerFunc = storeRicControlResponse
 	s.ControlUpdateHandlerFunc = storeControlUpdate
 	s.TelemetryUpdateHandlerFunc = storeTelemetry
 	s.EnableMetrics = enableMetrics
+	s.e2Chan = e2Chan
 	mapHOEventMeasuredRIC = make(map[string]HOEventMeasuredRIC)
 	go s.manageConnections(tls, creds)
 	go s.recvTelemetryUpdates()
 	go s.recvUpdates()
 	go s.recvControlResponses()
+}
+
+// Setup ...
+func (s *Session) Setup() error {
+	req := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_CELL_CONFIG_REQUEST,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_CellConfigRequest{
+				CellConfigRequest: &sb.CellConfigRequest{},
+			},
+		},
+	}
+	err := s.sendRicControlRequest(req)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // UeHandover ...
@@ -133,6 +153,31 @@ func (s *Session) RRMConfig(pa sb.XICICPA) error {
 		},
 	}
 	err := s.sendRicControlRequest(rrmConfigReq)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// L2MeasConfig ...
+func (s *Session) L2MeasConfig(l2MeasConfig *sb.L2MeasConfig) error {
+	req := e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_L2_MEAS_CONFIG,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_L2MeasConfig{
+				L2MeasConfig: l2MeasConfig,
+				/*
+							L2MeasConfig: &l2ReportInterval,
+							},
+						},
+					},
+				*/
+			},
+		},
+	}
+	err := s.sendRicControlRequest(req)
 	if err != nil {
 		return err
 	}
@@ -239,26 +284,7 @@ func (s *Session) ricChan(errors chan error) {
 		}
 	}()
 
-	cellConfigReq := e2ap.RicControlRequest{
-		Hdr: &e2sm.RicControlHeader{
-			MessageType: sb.MessageType_CELL_CONFIG_REQUEST,
-		},
-		Msg: &e2sm.RicControlMessage{
-			S: &e2sm.RicControlMessage_CellConfigRequest{
-				CellConfigRequest: &sb.CellConfigRequest{
-					Ecgi: &sb.ECGI{
-						PlmnId: s.Ecgi.GetPlmnId(),
-						Ecid:   s.Ecgi.GetEcid()},
-				},
-			},
-		},
-	}
-
-	err = stream.Send(&cellConfigReq)
-	if err != nil {
-		waitc <- err
-		return
-	}
+	s.e2Chan <- s
 
 	for {
 		req := <-s.ricControlRequestChan

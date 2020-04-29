@@ -18,6 +18,7 @@ build:
 generate: # @HELP generate store interfaces and implementations
 generate:
 	go run github.com/onosproject/onos-ric/cmd/onos-ric-generate ./build/generate/stores.yaml
+	mockgen github.com/onosproject/onos-ric/pkg/southbound E2 > test/mocks/southbound/e2_mock.go
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters
