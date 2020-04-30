@@ -53,6 +53,7 @@ type Session struct {
 	TelemetryUpdateHandlerFunc    TelemetryUpdateHandler
 	EnableMetrics                 bool
 	e2Chan                        chan E2
+	connection                    *grpc.ClientConn
 }
 
 // NewSession creates a new southbound session controller.
@@ -184,6 +185,16 @@ func (s *Session) L2MeasConfig(l2MeasConfig *sb.L2MeasConfig) error {
 	return nil
 }
 
+// Close - close the session if cell is removed from topo
+func (s *Session) Close() {
+	s.connection.Close()
+	close(s.ricControlRequestChan)
+	close(s.controlIndications)
+	close(s.ricIndicationChan)
+	close(s.telemetryIndications)
+	// Don't close(s.e2Chan) - common to all sessions
+}
+
 func (s *Session) recvTelemetryUpdates() {
 	for update := range s.telemetryIndications {
 		s.TelemetryUpdateHandlerFunc(update)
@@ -227,11 +238,12 @@ func (s *Session) manageConnections(tls topodevice.TlsConfig, creds topodevice.C
 		opts := []grpc.DialOption{
 			grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100 * time.Millisecond)),
 		}
-		connection, err := southbound.Connect(context.Background(), string(s.EndPoint), tls.GetCert(), tls.GetKey(), opts...)
+		var err error
+		s.connection, err = southbound.Connect(context.Background(), string(s.EndPoint), tls.GetCert(), tls.GetKey(), opts...)
 		if err == nil {
 			// If successful, manage this connection and don't return until it is
 			// no longer valid and all related resources have been properly cleaned-up.
-			s.manageConnection(connection)
+			s.manageConnection(s.connection)
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -298,7 +310,7 @@ func (s *Session) ricChan(errors chan error) {
 
 func (s *Session) handleRicIndication(update *e2ap.RicIndication) {
 	msgType := update.GetHdr().GetMessageType()
-	log.Infof("ricIndication %T", msgType)
+	log.Infof("ricIndication %T %s", msgType, msgType)
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REPORT:
 		msg := update.GetMsg().GetCellConfigReport()

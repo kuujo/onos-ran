@@ -16,6 +16,7 @@
 package manager
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -59,10 +60,6 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 	indicationsStore, err := indications.NewDistributedStore(config, timeStore)
 	if err != nil {
 		return nil, err
-	}
-	// Should always clear out the stores on startup because it will be out of sync with ran-simulator
-	if err = indicationsStore.Clear(); err != nil {
-		log.Error("Error clearing indications store %s", err.Error())
 	}
 
 	deviceChangeStore, err := device.NewTopoStore(topoEndPoint, opts...)
@@ -179,23 +176,64 @@ func (m *Manager) Run() {
 
 func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 	log.Infof("Watching topo channel")
-	for device := range topoChannel {
-		log.Infof("Device received %s", device.GetDevice().GetID())
+	for device := range topoChannel { // Block here waiting for topo events
 		if device.GetDevice().GetType() != ranSimulatorType {
 			continue
 		}
 		if device.Type == topodevice.ListResponse_NONE || device.Type == topodevice.ListResponse_ADDED {
-			ecgi := ecgiFromTopoID(device.GetDevice().GetID())
+			ecgi, err := ecgiFromTopoID(device.GetDevice().GetID())
+			if err != nil {
+				log.Warnf("Topo device event rejected %s", err)
+				continue
+			}
+			log.Infof("Topo Device added %s", ecgi.String())
 			deviceEndpoint := sb.Endpoint(device.GetDevice().GetAddress())
 			session, err := southbound.NewSession()
 			if err != nil {
-				log.Fatalf("Unable to create new session %s", err.Error())
+				log.Errorf("Unable to create new session %s", err.Error())
+				continue
 			}
 			if session != nil {
 				m.SbSessions[ecgi] = session
-				session.Run(ecgi, deviceEndpoint, device.GetDevice().GetTLS(), device.GetDevice().GetCredentials(), m.StoreRicControlResponse, m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics, m.e2Chan)
+				session.Run(ecgi, deviceEndpoint, device.GetDevice().GetTLS(),
+					device.GetDevice().GetCredentials(), m.StoreRicControlResponse,
+					m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics, m.e2Chan)
 			} else {
-				log.Fatalf("Error creating new session for %v", ecgi)
+				log.Errorf("Error creating new session for %v", ecgi)
+				continue
+			}
+		} else if device.Type == topodevice.ListResponse_REMOVED {
+			ecgi, err := ecgiFromTopoID(device.GetDevice().GetID())
+			if err != nil {
+				log.Warnf("Topo device event rejected %s", err)
+				continue
+			}
+			log.Infof("Topo Device removing %s", ecgi.String())
+			session, ok := m.SbSessions[ecgi]
+			if !ok {
+				log.Warnf("Unable to find session for %s", ecgi.String())
+				continue
+			}
+			session.Close()
+			delete(m.SbSessions, ecgi)
+			// Delete all entries in the indicationStore for this cell
+			ricIndications := make(chan e2ap.RicIndication)
+			if err := m.ListIndications(ricIndications); err != nil {
+				log.Warnf("Unable to list indications %s", err)
+				continue
+			}
+			for ricIndication := range ricIndications {
+				switch ricIndication.GetHdr().GetMessageType() {
+				case sb.MessageType_CELL_CONFIG_REPORT:
+					cellConfigReport := ricIndication.GetMsg().GetCellConfigReport()
+					if cellConfigReport.GetEcgi().String() == ecgi.String() {
+						ricIndication := ricIndication // pin
+						if err := m.indicationsStore.Delete(indications.GetID(&ricIndication)); err != nil {
+							log.Warnf("Unable to delete CELL_CONFIG_REPORT indication %s", err)
+							continue
+						}
+					}
+				}
 			}
 		} else {
 			log.Warnf("Topo device event not yet handled %s %v", device.String())
@@ -262,8 +300,11 @@ func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti str
 	return nil
 }
 
-// ecgiFromTopoID topo device is formatted like "001001-0001786" PlmnId:Ecid
-func ecgiFromTopoID(id topodevice.ID) sb.ECGI {
+// ecgiFromTopoID topo device is formatted like "315010-0001786" PlmnId:Ecid
+func ecgiFromTopoID(id topodevice.ID) (sb.ECGI, error) {
+	if !strings.Contains(string(id), "-") {
+		return sb.ECGI{}, fmt.Errorf("unexpected format for Cell ID %s", id)
+	}
 	parts := strings.Split(string(id), "-")
-	return sb.ECGI{Ecid: parts[1], PlmnId: parts[0]}
+	return sb.ECGI{Ecid: parts[1], PlmnId: parts[0]}, nil
 }

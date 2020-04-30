@@ -36,6 +36,18 @@ func (m *MockE2) EXPECT() *MockE2MockRecorder {
 	return m.recorder
 }
 
+// Close mocks base method
+func (m *MockE2) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close
+func (mr *MockE2MockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockE2)(nil).Close))
+}
+
 // L2MeasConfig mocks base method
 func (m *MockE2) L2MeasConfig(arg0 *sb.L2MeasConfig) error {
 	m.ctrl.T.Helper()
