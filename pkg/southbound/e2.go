@@ -233,8 +233,8 @@ func (s *Session) sendRicControlRequest(req e2ap.RicControlRequest) error {
 
 func (s *Session) manageConnections(tls topodevice.TlsConfig, creds topodevice.Credentials) {
 	for {
-		// Attempt to create connection to the simulator
-		log.Infof("Connecting to simulator...%s with context", s.EndPoint)
+		// Attempt to create connection to the E2Node
+		log.Infof("Connecting to E2Node...%s with context", s.EndPoint)
 		opts := []grpc.DialOption{
 			grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100 * time.Millisecond)),
 		}
@@ -255,7 +255,7 @@ func (s *Session) manageConnection(connection *grpc.ClientConn) {
 	if s.client == nil {
 		return
 	}
-	log.Infof("Connected to simulator on %s", s.EndPoint)
+	log.Infof("Connected to E2Node on %s", s.EndPoint)
 	// Setup coordination channel
 	errors := make(chan error)
 
@@ -274,7 +274,7 @@ func (s *Session) manageConnection(connection *grpc.ClientConn) {
 	//close(s.updates)
 
 	close(errors)
-	log.Info("Disconnected from simulator %s", s.EndPoint)
+	log.Info("Disconnected from E2Node %s", s.EndPoint)
 }
 
 func (s *Session) ricChan(errors chan error) {

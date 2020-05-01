@@ -59,17 +59,20 @@ onos-ric-base-docker: # @HELP build onos-ric base Docker image
 		-t onosproject/onos-ric-base:${ONOS_RIC_VERSION}
 	@rm -rf vendor
 
-onos-ric-docker: onos-ric-base-docker # @HELP build onos-ric Docker image
+onos-ric-docker: # @HELP build onos-ric Docker image
+onos-ric-docker: onos-ric-base-docker
 	docker build . -f build/onos-ric/Dockerfile \
 		--build-arg ONOS_RIC_BASE_VERSION=${ONOS_RIC_VERSION} \
 		-t onosproject/onos-ric:${ONOS_RIC_VERSION}
 
-onos-ric-ho-docker: onos-ric-base-docker # @HELP build onos-ric-ho Docker image
+onos-ric-ho-docker: # @HELP build onos-ric-ho Docker image
+onos-ric-ho-docker: onos-ric-base-docker
 	docker build . -f build/apps/onos-ric-ho/Dockerfile \
 		--build-arg ONOS_RIC_BASE_VERSION=${ONOS_RIC_HO_VERSION} \
 		-t onosproject/onos-ric-ho:${ONOS_RIC_HO_VERSION}
 
-onos-ric-mlb-docker: onos-ric-base-docker # @HELP build onos-ric-mlb Docker image
+onos-ric-mlb-docker: # @HELP build onos-ric-mlb Docker image
+onos-ric-mlb-docker: onos-ric-base-docker
 	docker build . -f build/apps/onos-ric-mlb/Dockerfile \
 		--build-arg ONOS_RIC_BASE_VERSION=${ONOS_RIC_MLB_VERSION} \
 		-t onosproject/onos-ric-mlb:${ONOS_RIC_MLB_VERSION}

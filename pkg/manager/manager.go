@@ -33,7 +33,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const ranSimulatorType = topodevice.Type("RanSimulator")
+const e2NodeType = topodevice.Type("E2Node")
 
 var log = logging.GetLogger("manager")
 var mgr Manager
@@ -177,7 +177,7 @@ func (m *Manager) Run() {
 func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 	log.Infof("Watching topo channel")
 	for device := range topoChannel { // Block here waiting for topo events
-		if device.GetDevice().GetType() != ranSimulatorType {
+		if device.GetDevice().GetType() != e2NodeType {
 			continue
 		}
 		if device.Type == topodevice.ListResponse_NONE || device.Type == topodevice.ListResponse_ADDED {
@@ -300,11 +300,14 @@ func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti str
 	return nil
 }
 
-// ecgiFromTopoID topo device is formatted like "315010-0001786" PlmnId:Ecid
+// ecgiFromTopoID topo device is formatted like "315010-0001786" PlmnId-Ecid
 func ecgiFromTopoID(id topodevice.ID) (sb.ECGI, error) {
 	if !strings.Contains(string(id), "-") {
-		return sb.ECGI{}, fmt.Errorf("unexpected format for Cell ID %s", id)
+		return sb.ECGI{}, fmt.Errorf("unexpected format for E2Node ID %s", id)
 	}
 	parts := strings.Split(string(id), "-")
+	if len(parts) != 2 {
+		return sb.ECGI{}, fmt.Errorf("unexpected format for E2Node ID %s", id)
+	}
 	return sb.ECGI{Ecid: parts[1], PlmnId: parts[0]}, nil
 }
