@@ -29,9 +29,14 @@ var log = logging.GetLogger("main")
 func main() {
 	onosricEndpoint := flag.String("onosricaddr", "onos-ric:5150", "endpoint:port of the ONOS RIC subsystem")
 	enableMetrics := flag.Bool("enableMetrics", true, "Enable gathering of metrics for Prometheus")
+	hystCqi := flag.Int("hystCqi", 0, "Hysteresis CQI value")
+	a3OffsetCqi := flag.Int("a3offsetCqi", 0, "A3-Offset CQI value")
+	timeToTriggerMs := flag.Int("timeToTrigger", 0, "Time to Trigger value [ms]")
+
 	flag.Parse()
 
 	log.Info("Starting HO Application")
+	log.Infof("Handover parameters - Hysteresis CQI: %d, A3-Offset: %d, Time To Trigger: %d ms", *hystCqi, *a3OffsetCqi, *timeToTriggerMs)
 
 	appMgr, err := hoappmanager.NewManager()
 	if err != nil {
@@ -45,5 +50,8 @@ func main() {
 
 	appMgr.SB.ONOSRICAddr = onosricEndpoint
 	appMgr.SB.EnableExporter = *enableMetrics
+	appMgr.SB.HystCqi = *hystCqi
+	appMgr.SB.A3OffsetCqi = *a3OffsetCqi
+	appMgr.SB.TTTMs = *timeToTriggerMs
 	appMgr.Run()
 }

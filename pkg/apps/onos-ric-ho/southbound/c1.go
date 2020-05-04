@@ -48,6 +48,9 @@ type HOEvent struct {
 type HOSessions struct {
 	ONOSRICAddr    *string
 	EnableExporter bool
+	HystCqi        int
+	A3OffsetCqi    int
+	TTTMs          int
 	client         nb.C1InterfaceServiceClient
 	hoReqChan      chan *nb.HandOverRequest
 }
@@ -120,12 +123,7 @@ func (m *HOSessions) runHandoverProcedure() error {
 		return err
 	}
 	for ueLink := range ch { // Block here and wait for UELink stream
-		// HO procedure 2. get requirement messages
-		hoReq := hoapphandover.HODecisionMaker(ueLink)
-		// HO procedure 3. send trigger message
-		if hoReq != nil {
-			m.hoReqChan <- hoReq
-		}
+		go hoapphandover.HODecisionMakerWithHOParams(ueLink, m.hoReqChan, m.HystCqi, m.A3OffsetCqi, m.TTTMs)
 	}
 	return nil
 }
@@ -138,26 +136,8 @@ func (m *HOSessions) runHandoverProcedureWithExporter() error {
 	}
 
 	for ueLink := range ch { // Block here and wait for UELink stream
-		tStart := time.Now()
-		// HO procedure 2. get requirement messages
-		hoReq := hoapphandover.HODecisionMaker(ueLink)
-		// HO procedure 3. send trigger message
-		if hoReq != nil {
-			m.hoReqChan <- hoReq
-		}
-		tEnd := time.Now()
-		if hoReq != nil {
-			tmp := &HOEvent{
-				TimeStamp:   tStart,
-				CRNTI:       hoReq.GetCrnti(),
-				SrcPlmnID:   hoReq.GetSrcStation().GetPlmnid(),
-				SrcEcid:     hoReq.GetSrcStation().GetEcid(),
-				DstPlmnID:   hoReq.GetDstStation().GetPlmnid(),
-				DstEcid:     hoReq.GetDstStation().GetEcid(),
-				ElapsedTime: tEnd.Sub(tStart).Microseconds(),
-			}
-			ChanHOEvent <- *tmp
-		}
+		go hoapphandover.HODecisionMakerWithHOParams(ueLink, m.hoReqChan, m.HystCqi, m.A3OffsetCqi, m.TTTMs)
+		// TODO: add exporter code here:
 	}
 	return nil
 }
@@ -176,6 +156,7 @@ func (m *HOSessions) watchUELinks(ch chan<- *nb.UELinkInfo) error {
 	}
 
 	go func() {
+		hoapphandover.InitA3EventMap()
 		for {
 			ueInfo, err := stream.Recv()
 
