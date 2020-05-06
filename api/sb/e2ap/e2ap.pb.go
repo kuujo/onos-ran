@@ -27,6 +27,94 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type RicSubscriptionRequest struct {
+	Hdr *e2sm.RicSubscriptionHeader  `protobuf:"bytes,1,opt,name=hdr,proto3" json:"hdr,omitempty"`
+	Msg *e2sm.RicSubscriptionMessage `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
+}
+
+func (m *RicSubscriptionRequest) Reset()         { *m = RicSubscriptionRequest{} }
+func (m *RicSubscriptionRequest) String() string { return proto.CompactTextString(m) }
+func (*RicSubscriptionRequest) ProtoMessage()    {}
+func (*RicSubscriptionRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_69a5acb4866023e9, []int{0}
+}
+func (m *RicSubscriptionRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RicSubscriptionRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RicSubscriptionRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RicSubscriptionRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RicSubscriptionRequest.Merge(m, src)
+}
+func (m *RicSubscriptionRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RicSubscriptionRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RicSubscriptionRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RicSubscriptionRequest proto.InternalMessageInfo
+
+func (m *RicSubscriptionRequest) GetHdr() *e2sm.RicSubscriptionHeader {
+	if m != nil {
+		return m.Hdr
+	}
+	return nil
+}
+
+func (m *RicSubscriptionRequest) GetMsg() *e2sm.RicSubscriptionMessage {
+	if m != nil {
+		return m.Msg
+	}
+	return nil
+}
+
+type RicSubscriptionResponse struct {
+}
+
+func (m *RicSubscriptionResponse) Reset()         { *m = RicSubscriptionResponse{} }
+func (m *RicSubscriptionResponse) String() string { return proto.CompactTextString(m) }
+func (*RicSubscriptionResponse) ProtoMessage()    {}
+func (*RicSubscriptionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_69a5acb4866023e9, []int{1}
+}
+func (m *RicSubscriptionResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RicSubscriptionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RicSubscriptionResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RicSubscriptionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RicSubscriptionResponse.Merge(m, src)
+}
+func (m *RicSubscriptionResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RicSubscriptionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RicSubscriptionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RicSubscriptionResponse proto.InternalMessageInfo
+
 type RicIndication struct {
 	Hdr *e2sm.RicIndicationHeader  `protobuf:"bytes,1,opt,name=hdr,proto3" json:"hdr,omitempty"`
 	Msg *e2sm.RicIndicationMessage `protobuf:"bytes,2,opt,name=msg,proto3" json:"msg,omitempty"`
@@ -36,7 +124,7 @@ func (m *RicIndication) Reset()         { *m = RicIndication{} }
 func (m *RicIndication) String() string { return proto.CompactTextString(m) }
 func (*RicIndication) ProtoMessage()    {}
 func (*RicIndication) Descriptor() ([]byte, []int) {
-	return fileDescriptor_69a5acb4866023e9, []int{0}
+	return fileDescriptor_69a5acb4866023e9, []int{2}
 }
 func (m *RicIndication) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -88,7 +176,7 @@ func (m *RicControlRequest) Reset()         { *m = RicControlRequest{} }
 func (m *RicControlRequest) String() string { return proto.CompactTextString(m) }
 func (*RicControlRequest) ProtoMessage()    {}
 func (*RicControlRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_69a5acb4866023e9, []int{1}
+	return fileDescriptor_69a5acb4866023e9, []int{3}
 }
 func (m *RicControlRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -132,6 +220,8 @@ func (m *RicControlRequest) GetMsg() *e2sm.RicControlMessage {
 }
 
 func init() {
+	proto.RegisterType((*RicSubscriptionRequest)(nil), "interface.e2ap.RicSubscriptionRequest")
+	proto.RegisterType((*RicSubscriptionResponse)(nil), "interface.e2ap.RicSubscriptionResponse")
 	proto.RegisterType((*RicIndication)(nil), "interface.e2ap.RicIndication")
 	proto.RegisterType((*RicControlRequest)(nil), "interface.e2ap.RicControlRequest")
 }
@@ -139,25 +229,30 @@ func init() {
 func init() { proto.RegisterFile("api/sb/e2ap/e2ap.proto", fileDescriptor_69a5acb4866023e9) }
 
 var fileDescriptor_69a5acb4866023e9 = []byte{
-	// 283 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x90, 0x31, 0x4b, 0xc4, 0x30,
-	0x18, 0x86, 0x1b, 0x4f, 0x14, 0x22, 0x0a, 0x66, 0x90, 0x72, 0x60, 0x38, 0xab, 0xc3, 0x2d, 0xa6,
-	0xd2, 0xc3, 0xdb, 0x55, 0x04, 0x1d, 0x04, 0xed, 0xe6, 0x98, 0xa6, 0x9f, 0x6d, 0xc4, 0x26, 0x35,
-	0xc9, 0x6d, 0xe2, 0x6f, 0xf0, 0x67, 0x39, 0xde, 0xe8, 0x28, 0xed, 0x1f, 0x91, 0x56, 0xd1, 0x1c,
-	0x9e, 0x2e, 0x1f, 0x21, 0x3c, 0xcf, 0xfb, 0xbd, 0x09, 0xde, 0xe1, 0xb5, 0x8c, 0x6d, 0x16, 0x43,
-	0xc2, 0xeb, 0x7e, 0xb0, 0xda, 0x68, 0xa7, 0xc9, 0x96, 0x54, 0x0e, 0xcc, 0x1d, 0x17, 0xc0, 0xba,
-	0xdb, 0xe1, 0xb4, 0x90, 0xae, 0x9c, 0x65, 0x4c, 0xe8, 0x2a, 0xd6, 0x4a, 0xdb, 0xda, 0xe8, 0x7b,
-	0x10, 0xae, 0x3f, 0x1f, 0x1a, 0x29, 0xe2, 0xef, 0x1c, 0x5b, 0xf5, 0xe3, 0x33, 0x27, 0x7a, 0xc6,
-	0x9b, 0xa9, 0x14, 0x97, 0x2a, 0x97, 0x82, 0x3b, 0xa9, 0x15, 0x39, 0xc6, 0x83, 0x32, 0x37, 0x21,
-	0x1a, 0xa1, 0xf1, 0x46, 0xb2, 0xcf, 0xfc, 0x35, 0xb6, 0x62, 0x0b, 0xec, 0x05, 0xf0, 0x1c, 0x4c,
-	0xda, 0xf1, 0x64, 0x8a, 0x07, 0x95, 0x2d, 0xc2, 0x95, 0x5e, 0x3b, 0xf8, 0x57, 0xbb, 0x02, 0x6b,
-	0x79, 0x01, 0x69, 0x27, 0x44, 0x4f, 0x78, 0x3b, 0x95, 0xe2, 0x4c, 0x2b, 0x67, 0xf4, 0x43, 0x0a,
-	0x8f, 0x33, 0xb0, 0x8e, 0x24, 0x7e, 0x87, 0xd1, 0x92, 0xb0, 0x2f, 0xde, 0x2f, 0x30, 0xf1, 0x0b,
-	0xec, 0xfd, 0xed, 0xf8, 0xdb, 0x93, 0x5b, 0xbc, 0x7a, 0x9e, 0x9c, 0x5c, 0x93, 0x1b, 0xbc, 0xde,
-	0x11, 0x25, 0x57, 0x64, 0x51, 0xe5, 0x35, 0xfb, 0x55, 0x6f, 0xb8, 0xbb, 0x04, 0xf9, 0x79, 0x5e,
-	0x14, 0x8c, 0xd1, 0x11, 0x3a, 0x0d, 0x5f, 0x1b, 0x8a, 0xe6, 0x0d, 0x45, 0xef, 0x0d, 0x45, 0x2f,
-	0x2d, 0x0d, 0xe6, 0x2d, 0x0d, 0xde, 0x5a, 0x1a, 0x64, 0x6b, 0xfd, 0xcf, 0x4f, 0x3e, 0x02, 0x00,
-	0x00, 0xff, 0xff, 0x80, 0xc5, 0xa2, 0x85, 0xdb, 0x01, 0x00, 0x00,
+	// 354 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x3d, 0x4e, 0xc3, 0x30,
+	0x18, 0x86, 0x63, 0x8a, 0x40, 0x32, 0x3f, 0x12, 0x1e, 0x4a, 0xa9, 0x44, 0xd4, 0x86, 0xbf, 0x2e,
+	0x24, 0x28, 0x15, 0x85, 0x15, 0x10, 0x12, 0x0c, 0x48, 0x60, 0x4e, 0xe0, 0xb8, 0xa6, 0x35, 0x22,
+	0xb6, 0xb1, 0xdd, 0x0d, 0x71, 0x01, 0x16, 0x0e, 0xc4, 0x01, 0x18, 0x3b, 0x32, 0xa2, 0xf6, 0x22,
+	0x28, 0xa1, 0x50, 0x17, 0x02, 0x5d, 0xac, 0x28, 0x79, 0x9f, 0xef, 0x7b, 0xf4, 0xc6, 0xb0, 0x4c,
+	0x14, 0x8f, 0x4c, 0x12, 0xb1, 0x98, 0xa8, 0xfc, 0x08, 0x95, 0x96, 0x56, 0xa2, 0x65, 0x2e, 0x2c,
+	0xd3, 0x37, 0x84, 0xb2, 0x30, 0x7b, 0x5b, 0x6d, 0x75, 0xb8, 0xed, 0xf6, 0x92, 0x90, 0xca, 0x34,
+	0x92, 0x42, 0x1a, 0xa5, 0xe5, 0x2d, 0xa3, 0x36, 0x7f, 0xde, 0xd5, 0x9c, 0x46, 0xdf, 0x73, 0x4c,
+	0x9a, 0x1f, 0x9f, 0x73, 0x82, 0x27, 0x00, 0xcb, 0x98, 0xd3, 0xeb, 0x5e, 0x62, 0xa8, 0xe6, 0xca,
+	0x72, 0x29, 0x30, 0xbb, 0xef, 0x31, 0x63, 0xd1, 0x01, 0x2c, 0x75, 0xdb, 0xba, 0x02, 0x6a, 0xa0,
+	0xb1, 0x10, 0x6f, 0x85, 0xee, 0x42, 0x93, 0x86, 0x3f, 0xa0, 0x33, 0x46, 0xda, 0x4c, 0xe3, 0x8c,
+	0x40, 0x87, 0xb0, 0x94, 0x9a, 0x4e, 0x65, 0x26, 0x07, 0xb7, 0xa7, 0x80, 0x17, 0xcc, 0x18, 0xd2,
+	0x61, 0x38, 0x43, 0x82, 0x35, 0xb8, 0xfa, 0x4b, 0xc6, 0x28, 0x29, 0x0c, 0x0b, 0x1e, 0xe1, 0x12,
+	0xe6, 0xf4, 0x5c, 0xb4, 0x39, 0x25, 0xd9, 0x07, 0xb4, 0xef, 0xea, 0x6d, 0x14, 0x6c, 0x19, 0x67,
+	0x5d, 0xb9, 0x96, 0x2b, 0xb7, 0xf9, 0x2f, 0x36, 0xa1, 0xf6, 0x00, 0x57, 0x30, 0xa7, 0x27, 0x52,
+	0x58, 0x2d, 0xef, 0xbe, 0x2a, 0x8a, 0x5d, 0x87, 0x5a, 0xc1, 0xb0, 0x51, 0xde, 0x15, 0x68, 0xba,
+	0x02, 0xf5, 0xbf, 0x19, 0x77, 0x7b, 0xfc, 0x02, 0xe0, 0xec, 0x69, 0x7c, 0x74, 0x89, 0x08, 0x5c,
+	0x1c, 0x37, 0x94, 0x30, 0x34, 0x59, 0x2f, 0x51, 0x61, 0xf1, 0xcf, 0xac, 0xee, 0x4c, 0xcd, 0x8d,
+	0x7a, 0xf6, 0xd0, 0x15, 0x9c, 0xcf, 0x2c, 0xba, 0x44, 0xa0, 0x7a, 0x01, 0x35, 0x59, 0x41, 0x75,
+	0xbd, 0x20, 0x32, 0xae, 0x30, 0xf0, 0x1a, 0x60, 0x0f, 0x1c, 0x57, 0x5e, 0x07, 0x3e, 0xe8, 0x0f,
+	0x7c, 0xf0, 0x3e, 0xf0, 0xc1, 0xf3, 0xd0, 0xf7, 0xfa, 0x43, 0xdf, 0x7b, 0x1b, 0xfa, 0x5e, 0x32,
+	0x97, 0x5f, 0xc3, 0xe6, 0x47, 0x00, 0x00, 0x00, 0xff, 0xff, 0xea, 0x8f, 0xb8, 0x86, 0xe8, 0x02,
+	0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -172,7 +267,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type E2APClient interface {
-	// RicChan is a bi-directonal stream for all messaging between RIC and E2-Node
+	RicSubscribe(ctx context.Context, in *RicSubscriptionRequest, opts ...grpc.CallOption) (*RicSubscriptionResponse, error)
+	// RicChan is a bi-directonal stream for all E2AP Control
+	// and E2AP Indication messaging between RIC and E2-Node
 	RicChan(ctx context.Context, opts ...grpc.CallOption) (E2AP_RicChanClient, error)
 }
 
@@ -182,6 +279,15 @@ type e2APClient struct {
 
 func NewE2APClient(cc *grpc.ClientConn) E2APClient {
 	return &e2APClient{cc}
+}
+
+func (c *e2APClient) RicSubscribe(ctx context.Context, in *RicSubscriptionRequest, opts ...grpc.CallOption) (*RicSubscriptionResponse, error) {
+	out := new(RicSubscriptionResponse)
+	err := c.cc.Invoke(ctx, "/interface.e2ap.E2AP/RicSubscribe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *e2APClient) RicChan(ctx context.Context, opts ...grpc.CallOption) (E2AP_RicChanClient, error) {
@@ -217,7 +323,9 @@ func (x *e2APRicChanClient) Recv() (*RicIndication, error) {
 
 // E2APServer is the server API for E2AP service.
 type E2APServer interface {
-	// RicChan is a bi-directonal stream for all messaging between RIC and E2-Node
+	RicSubscribe(context.Context, *RicSubscriptionRequest) (*RicSubscriptionResponse, error)
+	// RicChan is a bi-directonal stream for all E2AP Control
+	// and E2AP Indication messaging between RIC and E2-Node
 	RicChan(E2AP_RicChanServer) error
 }
 
@@ -225,12 +333,33 @@ type E2APServer interface {
 type UnimplementedE2APServer struct {
 }
 
+func (*UnimplementedE2APServer) RicSubscribe(ctx context.Context, req *RicSubscriptionRequest) (*RicSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RicSubscribe not implemented")
+}
 func (*UnimplementedE2APServer) RicChan(srv E2AP_RicChanServer) error {
 	return status.Errorf(codes.Unimplemented, "method RicChan not implemented")
 }
 
 func RegisterE2APServer(s *grpc.Server, srv E2APServer) {
 	s.RegisterService(&_E2AP_serviceDesc, srv)
+}
+
+func _E2AP_RicSubscribe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RicSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(E2APServer).RicSubscribe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interface.e2ap.E2AP/RicSubscribe",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(E2APServer).RicSubscribe(ctx, req.(*RicSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _E2AP_RicChan_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -262,7 +391,12 @@ func (x *e2APRicChanServer) Recv() (*RicControlRequest, error) {
 var _E2AP_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "interface.e2ap.E2AP",
 	HandlerType: (*E2APServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RicSubscribe",
+			Handler:    _E2AP_RicSubscribe_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "RicChan",
@@ -272,6 +406,76 @@ var _E2AP_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "api/sb/e2ap/e2ap.proto",
+}
+
+func (m *RicSubscriptionRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RicSubscriptionRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RicSubscriptionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Msg != nil {
+		{
+			size, err := m.Msg.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintE2Ap(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Hdr != nil {
+		{
+			size, err := m.Hdr.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintE2Ap(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RicSubscriptionResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RicSubscriptionResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RicSubscriptionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
 }
 
 func (m *RicIndication) Marshal() (dAtA []byte, err error) {
@@ -379,6 +583,32 @@ func encodeVarintE2Ap(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *RicSubscriptionRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Hdr != nil {
+		l = m.Hdr.Size()
+		n += 1 + l + sovE2Ap(uint64(l))
+	}
+	if m.Msg != nil {
+		l = m.Msg.Size()
+		n += 1 + l + sovE2Ap(uint64(l))
+	}
+	return n
+}
+
+func (m *RicSubscriptionResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
 func (m *RicIndication) Size() (n int) {
 	if m == nil {
 		return 0
@@ -418,6 +648,184 @@ func sovE2Ap(x uint64) (n int) {
 }
 func sozE2Ap(x uint64) (n int) {
 	return sovE2Ap(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *RicSubscriptionRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowE2Ap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RicSubscriptionRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RicSubscriptionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Hdr", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowE2Ap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Hdr == nil {
+				m.Hdr = &e2sm.RicSubscriptionHeader{}
+			}
+			if err := m.Hdr.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowE2Ap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Msg == nil {
+				m.Msg = &e2sm.RicSubscriptionMessage{}
+			}
+			if err := m.Msg.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipE2Ap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RicSubscriptionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowE2Ap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RicSubscriptionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RicSubscriptionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipE2Ap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthE2Ap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *RicIndication) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)

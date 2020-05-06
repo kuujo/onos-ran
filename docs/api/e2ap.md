@@ -6,6 +6,8 @@
 - [api/sb/e2ap/e2ap.proto](#api/sb/e2ap/e2ap.proto)
     - [RicControlRequest](#interface.e2ap.RicControlRequest)
     - [RicIndication](#interface.e2ap.RicIndication)
+    - [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest)
+    - [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse)
   
     - [E2AP](#interface.e2ap.E2AP)
   
@@ -63,6 +65,32 @@ limitations under the License.
 
 
 
+
+<a name="interface.e2ap.RicSubscriptionRequest"></a>
+
+### RicSubscriptionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| hdr | [interface.e2sm.RicSubscriptionHeader](#interface.e2sm.RicSubscriptionHeader) |  |  |
+| msg | [interface.e2sm.RicSubscriptionMessage](#interface.e2sm.RicSubscriptionMessage) |  |  |
+
+
+
+
+
+
+<a name="interface.e2ap.RicSubscriptionResponse"></a>
+
+### RicSubscriptionResponse
+
+
+
+
+
+
  
 
  
@@ -77,7 +105,8 @@ limitations under the License.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| RicChan | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | RicChan is a bi-directonal stream for all messaging between RIC and E2-Node |
+| RicSubscribe | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) | [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse) |  |
+| RicChan | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | RicChan is a bi-directonal stream for all E2AP Control and E2AP Indication messaging between RIC and E2-Node |
 
  
 

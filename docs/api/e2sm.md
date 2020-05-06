@@ -7,11 +7,12 @@
     - [RicControlHeader](#interface.e2sm.RicControlHeader)
     - [RicControlMessage](#interface.e2sm.RicControlMessage)
     - [RicControlOutcome](#interface.e2sm.RicControlOutcome)
-    - [RicEventTriggerDefinition](#interface.e2sm.RicEventTriggerDefinition)
     - [RicIndicationHeader](#interface.e2sm.RicIndicationHeader)
     - [RicIndicationMessage](#interface.e2sm.RicIndicationMessage)
+    - [RicSubscriptionHeader](#interface.e2sm.RicSubscriptionHeader)
+    - [RicSubscriptionMessage](#interface.e2sm.RicSubscriptionMessage)
   
-    - [RanFunctionID](#interface.e2sm.RanFunctionID)
+    - [SubscriptionMessageType](#interface.e2sm.SubscriptionMessageType)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -92,24 +93,6 @@ RICcontrolMessage ::= OCTET STRING
 
 
 
-<a name="interface.e2sm.RicEventTriggerDefinition"></a>
-
-### RicEventTriggerDefinition
--- **************************************************************
--- Following IE defined in E2SM
--- **************************************************************
-RICeventTriggerDefinition ::= OCTET STRING
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| l2MeasConfig | [interface.e2.L2MeasConfig](#interface.e2.L2MeasConfig) |  |  |
-
-
-
-
-
-
 <a name="interface.e2sm.RicIndicationHeader"></a>
 
 ### RicIndicationHeader
@@ -147,25 +130,48 @@ RICindicationMessage ::= OCTET STRING
 
 
 
+
+<a name="interface.e2sm.RicSubscriptionHeader"></a>
+
+### RicSubscriptionHeader
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| messageType | [SubscriptionMessageType](#interface.e2sm.SubscriptionMessageType) |  |  |
+
+
+
+
+
+
+<a name="interface.e2sm.RicSubscriptionMessage"></a>
+
+### RicSubscriptionMessage
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| l2MeasConfig | [interface.e2.L2MeasConfig](#interface.e2.L2MeasConfig) |  |  |
+
+
+
+
+
  
 
 
-<a name="interface.e2sm.RanFunctionID"></a>
+<a name="interface.e2sm.SubscriptionMessageType"></a>
 
-### RanFunctionID
--- **************************************************************
--- Following IE defined in E2SM
--- **************************************************************
-RANfunctionDefinition ::= OCTET STRING
+### SubscriptionMessageType
 
-RANfunctionID ::= INTEGER (0..4095)
-
-RANfunctionRevision ::= INTEGER (0..4095)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| RAN_FUNCTION_ID_INVALID | 0 |  |
-| RAN_FUNCTION_ID_L2_MEAS | 1 |  |
+| UNKNOWN_MESSAGE | 0 |  |
+| L2_MEAS_CONFIG | 1 |  |
 
 
  

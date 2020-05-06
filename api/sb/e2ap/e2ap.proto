@@ -66,8 +66,83 @@ import "github.com/onosproject/onos-ric/api/sb/e2sm/e2sm.proto";
 
 service E2AP {
 
-    // RicChan is a bi-directonal stream for all messaging between RIC and E2-Node
+    // E2 AP defines three primary messages, Subscription, Indication and Control.
+    // Indication is any message that is sent by E2 Node to RIC.
+    // Control are control plane messages sent by RIC to E2 Node , e.g. Hand-over request message
+    // Subscription are configuration messages sent by RIC to E2 Node to subscribe to events/reports from E2 Node (e.g. telemetry)
+
+    // RicSubscribe is a unary service for the RIC to subscribe to events/reports from E2 Node
+    rpc RicSubscribe (RicSubscriptionRequest) returns (RicSubscriptionResponse) {}
+
+    // RicChan is a bi-directonal stream for all E2AP Control
+    // and E2AP Indication messaging between RIC and E2-Node
     rpc RicChan (stream RicControlRequest) returns (stream RicIndication) {}
+}
+
+
+//-- **************************************************************
+//--
+//-- RIC SUBSCRIPTION REQUEST
+//--
+//-- **************************************************************
+//RICsubscriptionRequest ::= SEQUENCE {
+//    protocolIEs                    ProtocolIE-Container    {{RICsubscriptionRequest-IEs}},
+//    ...
+//}
+//
+//RICsubscriptionRequest-IEs E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICrequestID                CRITICALITY reject    TYPE RICrequestID                    PRESENCE mandatory}|
+//    { ID id-RANfunctionID                CRITICALITY reject    TYPE RANfunctionID                    PRESENCE mandatory}|
+//    { ID id-RICsubscriptionDetails        CRITICALITY reject    TYPE RICsubscriptionDetails            PRESENCE mandatory},
+//    ...
+//}
+//
+//
+//RICsubscriptionDetails ::= SEQUENCE {
+//    ricEventTriggerDefinition    RICeventTriggerDefinition,
+//    ricAction-ToBeSetup-List    RICactions-ToBeSetup-List,
+//    ...
+//}
+//
+//RICactions-ToBeSetup-List ::= SEQUENCE (SIZE(1..maxofRICactionID)) OF ProtocolIE-SingleContainer { {RICaction-ToBeSetup-ItemIEs} }
+//
+//RICaction-ToBeSetup-ItemIEs     E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICaction-ToBeSetup-Item    CRITICALITY ignore     TYPE RICaction-ToBeSetup-Item     PRESENCE mandatory },
+//    ...
+//}
+//
+//RICaction-ToBeSetup-Item ::= SEQUENCE {
+//    ricActionID                    RICactionID,
+//    ricActionType                RICactionType,
+//    ricActionDefinition            RICactionDefinition     OPTIONAL,
+//    ricSubsequentAction            RICsubsequentAction     OPTIONAL,
+//    ...
+//}
+
+message RicSubscriptionRequest {
+	interface.e2sm.RicSubscriptionHeader hdr = 1;
+	interface.e2sm.RicSubscriptionMessage msg = 2;
+}
+
+//-- **************************************************************
+//--
+//-- RIC SUBSCRIPTION RESPONSE
+//--
+//-- **************************************************************
+//RICsubscriptionResponse ::= SEQUENCE {
+//    protocolIEs                    ProtocolIE-Container{{RICsubscriptionResponse-IEs}},
+//    ...
+//}
+//
+//RICsubscriptionResponse-IEs E2AP-PROTOCOL-IES ::= {
+//    { ID id-RICrequestID                CRITICALITY reject        TYPE RICrequestID                PRESENCE mandatory } |
+//    { ID id-RANfunctionID                CRITICALITY reject        TYPE RANfunctionID                PRESENCE mandatory } |
+//    { ID id-RICactions-Admitted            CRITICALITY reject        TYPE RICaction-Admitted-List    PRESENCE mandatory } |
+//    { ID id-RICactions-NotAdmitted        CRITICALITY reject        TYPE RICaction-NotAdmitted-List    PRESENCE optional },
+//    ...    
+//}
+
+message RicSubscriptionResponse {
 }
 
 //-- **************************************************************
