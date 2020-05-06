@@ -209,10 +209,10 @@ func getTargetCellInfo(ueInfo *nb.UELinkInfo, enterEvent bool, hystCQI int, a3Of
 func calcCQIDelta(sCellCQI uint32, nCellCQI uint32, enterEvent bool, hystCQI int, a3OffsetCQI int) int {
 	if enterEvent {
 		// equation when entering A3 event
-		return int(nCellCQI) - int(sCellCQI) + a3OffsetCQI + hystCQI
+		return int(nCellCQI) - (int(sCellCQI) + a3OffsetCQI + hystCQI)
 	}
 	// equation when leaving A3 event
-	return int(nCellCQI) - int(sCellCQI) + a3OffsetCQI - hystCQI
+	return int(nCellCQI) - (int(sCellCQI) + a3OffsetCQI - hystCQI)
 }
 
 // getSCellCQI find out serving cell's CQI value from UELinkInfo message
