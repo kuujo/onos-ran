@@ -38,16 +38,31 @@ const e2NodeType = topodevice.Type("E2Node")
 var log = logging.GetLogger("manager")
 var mgr Manager
 
+// MastershipStoreFactory creates the mastership store
+var MastershipStoreFactory = func(configuration config.Config) (mastership.Store, error) {
+	return mastership.NewDistributedStore(configuration)
+}
+
+// IndicationsStoreFactory creates the indications store
+var IndicationsStoreFactory = func(configuration config.Config, timeStore time.Store) (indications.Store, error) {
+	return indications.NewDistributedStore(configuration, timeStore)
+}
+
+// DeviceStoreFactory creates the device store
+var DeviceStoreFactory = func(topoEndPoint string, opts ...grpc.DialOption) (device.Store, error) {
+	return device.NewTopoStore(topoEndPoint, opts...)
+}
+
 // NewManager initializes the RAN subsystem.
 func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption) (*Manager, error) {
 	log.Info("Creating Manager")
 
-	config, err := config.GetConfig()
+	configuration, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	mastershipStore, err := mastership.NewDistributedStore(config)
+	mastershipStore, err := MastershipStoreFactory(configuration)
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +72,12 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		return nil, err
 	}
 
-	indicationsStore, err := indications.NewDistributedStore(config, timeStore)
+	indicationsStore, err := IndicationsStoreFactory(configuration, timeStore)
 	if err != nil {
 		return nil, err
 	}
 
-	deviceChangeStore, err := device.NewTopoStore(topoEndPoint, opts...)
+	deviceChangeStore, err := DeviceStoreFactory(topoEndPoint, opts...)
 	if err != nil {
 		log.Info("Error in device change store")
 		return nil, err

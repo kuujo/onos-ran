@@ -37,6 +37,11 @@ type MastershipConfig struct {
 	Partitions int `yaml:"partitions,omitempty"`
 }
 
+// WithConfig passes in a predefined Config to use for testing
+func WithConfig(newConfig *Config) {
+	config = newConfig
+}
+
 // GetPartitions returns the number of store partitions
 func (c MastershipConfig) GetPartitions() int {
 	partitions := c.Partitions
