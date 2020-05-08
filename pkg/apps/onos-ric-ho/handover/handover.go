@@ -91,9 +91,11 @@ func HODecisionMakerWithHOParams(ueInfo *nb.UELinkInfo, hoReqChan chan *nb.HandO
 	}
 
 	// According to UELinkInfo message, HO is necessary
+	A3EventMapMutex.RLock()
 	var a3 *a3Event
-	A3EventMapMutex.Lock()
-	if _, ok := A3EventMap[getUEID(ueInfo.Crnti, ueInfo.Ecgi)]; !ok {
+	_, ok := A3EventMap[getUEID(ueInfo.Crnti, ueInfo.Ecgi)]
+	A3EventMapMutex.RUnlock()
+	if !ok {
 		// Start A3Event
 		a3 = &a3Event{
 			chanUELinkInfo:    make(chan *nb.UELinkInfo),
@@ -104,14 +106,21 @@ func HODecisionMakerWithHOParams(ueInfo *nb.UELinkInfo, hoReqChan chan *nb.HandO
 			a3OffsetCQI:       a3OffsetCQI,
 			timeToTrigger:     TTTMs,
 		}
+		A3EventMapMutex.Lock()
 		A3EventMap[getUEID(ueInfo.Crnti, ueInfo.Ecgi)] = a3
+		A3EventMapMutex.Unlock()
 		go startA3Event(a3, hoReqChan)
 	} else {
 		// A3Event was started and new UELinkInfo message arrives for the UE
-		a3 = A3EventMap[getUEID(ueInfo.Crnti, ueInfo.Ecgi)]
-		a3.chanUELinkInfo <- ueInfo
+		A3EventMapMutex.RLock()
+		if a3, ok := A3EventMap[getUEID(ueInfo.Crnti, ueInfo.Ecgi)]; ok {
+			select {
+			case a3.chanUELinkInfo <- ueInfo: // if channel is ready
+			default: // the case if channel has a problem (e.g., closed channel)
+			}
+		}
+		A3EventMapMutex.RUnlock()
 	}
-	A3EventMapMutex.Unlock()
 }
 
 // startA3Event starts A3 handover event; normally it will be initiated as a goroutine

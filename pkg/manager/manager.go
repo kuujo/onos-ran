@@ -279,7 +279,7 @@ func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
 	switch update.GetHdr().MessageType {
 	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
 		msg := update.GetMsg()
-		log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
+		log.Infof("RadioMeasReport plmnid:%s ecid:%s crnti:%s cqis:%d(ecid:%s),%d(ecid:%s),%d(ecid:%s),%d(ecid:%s)",
 			msg.GetRadioMeasReportPerUE().GetEcgi().GetPlmnId(),
 			msg.GetRadioMeasReportPerUE().GetEcgi().GetEcid(),
 			msg.GetRadioMeasReportPerUE().GetCrnti(),
@@ -289,6 +289,8 @@ func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
 			msg.GetRadioMeasReportPerUE().RadioReportServCells[1].GetEcgi().GetEcid(),
 			msg.GetRadioMeasReportPerUE().RadioReportServCells[2].CqiHist[0],
 			msg.GetRadioMeasReportPerUE().RadioReportServCells[2].GetEcgi().GetEcid(),
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[3].CqiHist[0],
+			msg.GetRadioMeasReportPerUE().RadioReportServCells[3].GetEcgi().GetEcid(),
 		)
 	default:
 		log.Fatalf("Telemetry update has unexpected type %T", update.GetHdr().GetMessageType())

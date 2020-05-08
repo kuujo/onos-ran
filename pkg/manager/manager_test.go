@@ -101,6 +101,10 @@ func generateRicIndicationRadioMeasReportPerUE(ID uint32) e2ap.RicIndication {
 			Ecgi:    IDToECGI(ID + 1000),
 			CqiHist: []uint32{1, 2, 3},
 		},
+		{
+			Ecgi:    IDToECGI(ID + 1000),
+			CqiHist: []uint32{1, 2, 3},
+		},
 	}
 	return e2ap.RicIndication{
 		Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE},
