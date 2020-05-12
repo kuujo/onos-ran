@@ -51,6 +51,7 @@ type Session struct {
 	RicControlResponseHandlerFunc RicControlResponseHandler
 	ControlUpdateHandlerFunc      ControlUpdateHandler
 	TelemetryUpdateHandlerFunc    TelemetryUpdateHandler
+	TopoUpdateHandler             TopoUpdateHandler
 	EnableMetrics                 bool
 	e2Chan                        chan E2
 	connection                    *grpc.ClientConn
@@ -72,6 +73,7 @@ func (s *Session) Run(ecgi sb.ECGI, endPoint sb.Endpoint,
 	storeRicControlResponse RicControlResponseHandler,
 	storeControlUpdate ControlUpdateHandler,
 	storeTelemetry TelemetryUpdateHandler,
+	topoUpdateHandler TopoUpdateHandler,
 	enableMetrics bool,
 	e2Chan chan E2) {
 	s.EndPoint = endPoint
@@ -79,6 +81,7 @@ func (s *Session) Run(ecgi sb.ECGI, endPoint sb.Endpoint,
 	s.RicControlResponseHandlerFunc = storeRicControlResponse
 	s.ControlUpdateHandlerFunc = storeControlUpdate
 	s.TelemetryUpdateHandlerFunc = storeTelemetry
+	s.TopoUpdateHandler = topoUpdateHandler
 	s.EnableMetrics = enableMetrics
 	s.e2Chan = e2Chan
 	mapHOEventMeasuredRIC = make(map[string]HOEventMeasuredRIC)
@@ -261,6 +264,13 @@ func (s *Session) manageConnection(connection *grpc.ClientConn) {
 
 	go s.ricChan(errors)
 
+	s.TopoUpdateHandler(&s.Ecgi, &topodevice.ProtocolState{
+		Protocol:          topodevice.Protocol_E2AP,
+		ConnectivityState: topodevice.ConnectivityState_REACHABLE,
+		ChannelState:      topodevice.ChannelState_CONNECTED,
+		ServiceState:      topodevice.ServiceState_AVAILABLE,
+	})
+
 	// Wait for the first error on the coordination channel.
 	for i := 0; i < 2; i++ {
 		<-errors
@@ -268,6 +278,13 @@ func (s *Session) manageConnection(connection *grpc.ClientConn) {
 
 	// Clean-up the connection, forcing other consumers to terminate and clean-up.
 	_ = connection.Close()
+
+	s.TopoUpdateHandler(&s.Ecgi, &topodevice.ProtocolState{
+		Protocol:          topodevice.Protocol_E2AP,
+		ConnectivityState: topodevice.ConnectivityState_UNKNOWN_CONNECTIVITY_STATE,
+		ChannelState:      topodevice.ChannelState_DISCONNECTED,
+		ServiceState:      topodevice.ServiceState_UNAVAILABLE,
+	})
 
 	// FIXME: should be done separately
 	//close(s.responses)

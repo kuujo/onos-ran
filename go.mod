@@ -12,8 +12,9 @@ require (
 	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733
 	github.com/mattn/goveralls v0.0.5 // indirect
 	github.com/onosproject/helmit v0.6.0
-	github.com/onosproject/onos-lib-go v0.6.1
+	github.com/onosproject/onos-lib-go v0.6.2-0.20200423170352-3f5043096615
 	github.com/onosproject/onos-topo v0.6.0
+	github.com/onosproject/ran-simulator v0.6.3 // indirect
 	github.com/prometheus/client_golang v1.4.1
 	github.com/spf13/cobra v0.0.6
 	github.com/stretchr/testify v1.5.1

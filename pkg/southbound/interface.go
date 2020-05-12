@@ -44,6 +44,9 @@ type RicControlResponseHandler = func(e2ap.RicIndication)
 // ControlUpdateHandler - a function for the session to write back to manager without the import cycle
 type ControlUpdateHandler = func(e2ap.RicIndication)
 
+// TopoUpdateHandler - a function for the session to write back to manager without the import cycle
+type TopoUpdateHandler = func(ecgi *sb.ECGI, state *topodevice.ProtocolState)
+
 // E2 ...
 type E2 interface {
 	Run(ecgi sb.ECGI, endPoint sb.Endpoint,
@@ -51,6 +54,7 @@ type E2 interface {
 		storeRicControlResponse RicControlResponseHandler,
 		storeControlUpdate ControlUpdateHandler,
 		storeTelemetry TelemetryUpdateHandler,
+		topoUpdateHandler TopoUpdateHandler,
 		enableMetrics bool,
 		e2Chan chan E2)
 	RemoteAddress() sb.Endpoint

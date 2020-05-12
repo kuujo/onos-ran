@@ -91,15 +91,15 @@ func (mr *MockE2MockRecorder) RemoteAddress() *gomock.Call {
 }
 
 // Run mocks base method
-func (m *MockE2) Run(arg0 sb.ECGI, arg1 sb.Endpoint, arg2 device.TlsConfig, arg3 device.Credentials, arg4, arg5, arg6 func(e2ap.RicIndication), arg7 bool, arg8 chan southbound.E2) {
+func (m *MockE2) Run(arg0 sb.ECGI, arg1 sb.Endpoint, arg2 device.TlsConfig, arg3 device.Credentials, arg4, arg5, arg6 func(e2ap.RicIndication), arg7 func(*sb.ECGI, *device.ProtocolState), arg8 bool, arg9 chan southbound.E2) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	m.ctrl.Call(m, "Run", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 }
 
 // Run indicates an expected call of Run
-func (mr *MockE2MockRecorder) Run(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8 interface{}) *gomock.Call {
+func (mr *MockE2MockRecorder) Run(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockE2)(nil).Run), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockE2)(nil).Run), arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 }
 
 // Setup mocks base method

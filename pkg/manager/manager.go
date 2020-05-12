@@ -201,7 +201,8 @@ func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
 				m.SbSessions[ecgi] = session
 				session.Run(ecgi, deviceEndpoint, device.GetDevice().GetTLS(),
 					device.GetDevice().GetCredentials(), m.StoreRicControlResponse,
-					m.StoreControlUpdate, m.StoreTelemetry, m.enableMetrics, m.e2Chan)
+					m.StoreControlUpdate, m.StoreTelemetry, m.UpdateTopoProtocolState,
+					m.enableMetrics, m.e2Chan)
 			} else {
 				log.Errorf("Error creating new session for %v", ecgi)
 				continue
@@ -306,6 +307,32 @@ func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti str
 	return nil
 }
 
+// UpdateTopoProtocolState - update topo with details of connectedness
+func (m *Manager) UpdateTopoProtocolState(ecgi *sb.ECGI, state *topodevice.ProtocolState) {
+	topoID := topoIDFromEcgi(ecgi)
+	topoDev, err := m.deviceChangesStore.Get(topoID)
+	if err != nil {
+		log.Warnf("unable to get topoDevice")
+		return
+	}
+	for i, p := range topoDev.Protocols {
+		if p.Protocol == state.Protocol {
+			topoDev.Protocols[i] = state
+			_, err = m.deviceChangesStore.Update(topoDev)
+			if err != nil {
+				log.Warnf("unable to update topoDevice")
+			}
+			return
+		}
+	}
+	// Not found? add it
+	topoDev.Protocols = append(topoDev.Protocols, state)
+	_, err = m.deviceChangesStore.Update(topoDev)
+	if err != nil {
+		log.Warnf("unable to update topoDevice")
+	}
+}
+
 // ecgiFromTopoID topo device is formatted like "315010-0001786" PlmnId-Ecid
 func ecgiFromTopoID(id topodevice.ID) (sb.ECGI, error) {
 	if !strings.Contains(string(id), "-") {
@@ -316,4 +343,9 @@ func ecgiFromTopoID(id topodevice.ID) (sb.ECGI, error) {
 		return sb.ECGI{}, fmt.Errorf("unexpected format for E2Node ID %s", id)
 	}
 	return sb.ECGI{Ecid: parts[1], PlmnId: parts[0]}, nil
+}
+
+// topoIDFromEcgi topo device is formatted like "315010-0001786" PlmnId-Ecid
+func topoIDFromEcgi(ecgi *sb.ECGI) topodevice.ID {
+	return topodevice.ID(fmt.Sprintf("%s-%s", ecgi.GetPlmnId(), ecgi.GetEcid()))
 }
