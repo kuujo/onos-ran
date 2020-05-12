@@ -25,8 +25,7 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/indications"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
-	"github.com/onosproject/onos-ric/pkg/store/time"
-	store "github.com/onosproject/onos-ric/test/mocks/store/device"
+	"github.com/onosproject/onos-ric/test/mocks/store/device"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"sync"
@@ -47,8 +46,8 @@ func makeNewManager(t *testing.T) *Manager {
 	MastershipStoreFactory = func(configuration config.Config) (mastership.Store, error) {
 		return mastership.NewLocalStore("cluster1", "node1")
 	}
-	IndicationsStoreFactory = func(configuration config.Config, timeStore time.Store) (indications.Store, error) {
-		return indications.NewLocalStore(timeStore)
+	IndicationsStoreFactory = func(configuration config.Config) (indications.Store, error) {
+		return indications.NewLocalStore()
 	}
 	DeviceStoreFactory = func(topoEndPoint string, opts ...grpc.DialOption) (store device.Store, err error) {
 		return mockTopoStore, nil

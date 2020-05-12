@@ -28,7 +28,6 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/indications"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
-	"github.com/onosproject/onos-ric/pkg/store/time"
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 )
@@ -44,8 +43,8 @@ var MastershipStoreFactory = func(configuration config.Config) (mastership.Store
 }
 
 // IndicationsStoreFactory creates the indications store
-var IndicationsStoreFactory = func(configuration config.Config, timeStore time.Store) (indications.Store, error) {
-	return indications.NewDistributedStore(configuration, timeStore)
+var IndicationsStoreFactory = func(configuration config.Config) (indications.Store, error) {
+	return indications.NewDistributedStore(configuration)
 }
 
 // DeviceStoreFactory creates the device store
@@ -62,17 +61,7 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		return nil, err
 	}
 
-	mastershipStore, err := MastershipStoreFactory(configuration)
-	if err != nil {
-		return nil, err
-	}
-
-	timeStore, err := time.NewStore(mastershipStore)
-	if err != nil {
-		return nil, err
-	}
-
-	indicationsStore, err := IndicationsStoreFactory(configuration, timeStore)
+	indicationsStore, err := IndicationsStoreFactory(configuration)
 	if err != nil {
 		return nil, err
 	}

@@ -18,26 +18,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onosproject/onos-ric/pkg/store/mastership"
-	timestore "github.com/onosproject/onos-ric/pkg/store/time"
-
 	"github.com/onosproject/onos-ric/api/sb"
-	e2ap "github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestStoreUpdates(t *testing.T) {
-	mastershipStore, err := mastership.NewLocalStore("test", "1")
-	assert.NoError(t, err)
-	timeStore, err := timestore.NewStore(mastershipStore)
-	assert.NoError(t, err)
-	testStore, err := NewLocalStore(timeStore)
+	testStore, err := NewLocalStore()
 	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
 
-	defer testStore.Close()
-	defer timeStore.Close()
 	defer testStore.Close()
 
 	watchCh2 := make(chan Event)
@@ -73,7 +64,7 @@ func TestStoreUpdates(t *testing.T) {
 	assert.Equal(t, value3.GetHdr().MessageType.String(), sb.MessageType_UE_ADMISSION_REQUEST.String())
 
 	id4 := NewID(controlUpdate3.GetHdr().GetMessageType(), ecigTest3.GetPlmnId(), ecigTest3.GetEcid(), "test-crnti-none")
-	value4, err := testStore.Get(id4, WithRevision(Revision{}))
+	value4, err := testStore.Get(id4)
 	assert.Nil(t, err)
 	assert.Nil(t, value4)
 
@@ -81,7 +72,7 @@ func TestStoreUpdates(t *testing.T) {
 	assert.Equal(t, "test-ecid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-3", event.Message.GetMsg().GetUEAdmissionRequest().Ecgi.PlmnId)
 
-	err = testStore.Delete(id4, IfRevision(Revision{}))
+	err = testStore.Delete(id4)
 	assert.Nil(t, err)
 
 	err = testStore.Delete(id3)
@@ -92,17 +83,11 @@ func TestStoreUpdates(t *testing.T) {
 }
 
 func TestStoreTelemetry(t *testing.T) {
-	mastershipStore, err := mastership.NewLocalStore("test", "1")
-	assert.NoError(t, err)
-	timeStore, err := timestore.NewStore(mastershipStore)
-	assert.NoError(t, err)
-	testStore, err := NewLocalStore(timeStore)
+	testStore, err := NewLocalStore()
 	assert.NoError(t, err)
 	assert.NotNil(t, testStore)
 
 	defer testStore.Close()
-	defer timeStore.Close()
-	defer mastershipStore.Close()
 
 	watchCh1 := make(chan Event)
 	err = testStore.Watch(watchCh1)
