@@ -208,6 +208,7 @@ func getTargetCellInfo(ueInfo *nb.UELinkInfo, enterEvent bool, hystCQI int, a3Of
 		if tmpCQIDelta > bestCQIDelta {
 			bestECGI = chanQuality.TargetEcgi
 			bestCQIDelta = tmpCQIDelta
+			bestCQI = chanQuality.CqiHist
 		}
 	}
 
