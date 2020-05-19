@@ -16,6 +16,7 @@
 package manager
 
 import (
+	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
@@ -26,6 +27,7 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"github.com/onosproject/onos-ric/pkg/store/requests"
 	"google.golang.org/grpc"
+	"sync"
 )
 
 var log = logging.GetLogger("manager")
@@ -113,48 +115,50 @@ func (m *Manager) StoreRicControlRequest(deviceID device.ID, request *e2ap.RicCo
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store
-func (m *Manager) StoreRicControlResponse(update e2ap.RicIndication) {
+func (m *Manager) StoreRicControlResponse(update e2ap.RicIndication) error {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REPORT:
-		err := m.indicationsStore.Record(indications.New(&update))
-		if err != nil {
-			log.Errorf("%s", err)
-		}
+		return m.indicationsStore.Record(indications.New(&update))
 	default:
-		log.Errorf("RicControlResponse has unexpected type %d", msgType)
+		return fmt.Errorf("RicControlResponse has unexpected type %d", msgType)
 	}
 }
 
 // StoreControlUpdate - put the control update in the atomix store
-func (m *Manager) StoreControlUpdate(update e2ap.RicIndication) {
+func (m *Manager) StoreControlUpdate(update e2ap.RicIndication) error {
 	log.Infof("Got messageType %s", update.GetHdr().MessageType)
 	switch update.GetHdr().GetMessageType() {
 	case sb.MessageType_UE_ADMISSION_REQUEST:
 		msg := update.GetMsg().GetUEAdmissionRequest()
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti(), msg.GetImsi())
-		err := m.indicationsStore.Record(indications.New(&update))
-		if err != nil {
-			log.Errorf("%v", err)
-		}
+		return m.indicationsStore.Record(indications.New(&update))
 	case sb.MessageType_UE_RELEASE_IND:
 		msg := update.GetMsg().GetUEReleaseInd()
 		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-
+		errs := make(chan error, 2)
+		wg := &sync.WaitGroup{}
+		wg.Add(2)
 		go func() {
 			err := m.DeleteTelemetry(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-			if err != nil {
-				log.Errorf("%s", err)
-			}
+			errs <- err
+			wg.Done()
 		}()
 		go func() {
 			err := m.DeleteUEAdmissionRequest(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-			if err != nil {
-				log.Errorf("%s", err)
-			}
+			errs <- err
+			wg.Done()
 		}()
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	default:
-		log.Errorf("ControlReport has unexpected type %T", update.GetHdr().GetMessageType())
+		return fmt.Errorf("ControlReport has unexpected type %T", update.GetHdr().GetMessageType())
 	}
 }
 
@@ -233,10 +237,10 @@ func GetManager() *Manager {
 
 // StoreTelemetry - put the telemetry update in the atomix store
 // Only handles MessageType_RADIO_MEAS_REPORT_PER_UE at the moment
-func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
+func (m *Manager) StoreTelemetry(update e2ap.RicIndication) error {
 	err := m.indicationsStore.Record(indications.New(&update))
 	if err != nil {
-		log.Errorf("Could not put message %v in telemetry store %s", update, err.Error())
+		return err
 	}
 
 	switch update.GetHdr().MessageType {
@@ -255,8 +259,9 @@ func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
 			msg.GetRadioMeasReportPerUE().RadioReportServCells[3].CqiHist[0],
 			msg.GetRadioMeasReportPerUE().RadioReportServCells[3].GetEcgi().GetEcid(),
 		)
+		return nil
 	default:
-		log.Errorf("Telemetry update has unexpected type %T", update.GetHdr().GetMessageType())
+		return fmt.Errorf("telemetry update has unexpected type %T", update.GetHdr().GetMessageType())
 	}
 }
 

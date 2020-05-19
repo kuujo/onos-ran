@@ -169,7 +169,8 @@ func Test_TelemetrySubscribe(t *testing.T) {
 		wg.Done()
 	}()
 
-	newManager.StoreTelemetry(telemetryMessage)
+	err = newManager.StoreTelemetry(telemetryMessage)
+	assert.NoError(t, err, "error storing telemetry %v", err)
 	err = newManager.DeleteTelemetry(IDToPlmnid(1), IDToEcid(1), IDToCrnti(1))
 	assert.NoError(t, err, "error deleting telemetry %v", err)
 
@@ -186,11 +187,12 @@ func Test_ListIndications(t *testing.T) {
 	newManager := makeNewManager(t)
 
 	telemetryMessage := generateRicIndicationRadioMeasReportPerUE(1)
-	newManager.StoreTelemetry(telemetryMessage)
+	err := newManager.StoreTelemetry(telemetryMessage)
+	assert.NoError(t, err, "error storing telemetry %v", err)
 
 	ch := make(chan e2ap.RicIndication)
 
-	err := newManager.ListIndications(ch)
+	err = newManager.ListIndications(ch)
 	assert.NoError(t, err)
 
 	var wg sync.WaitGroup
@@ -211,7 +213,8 @@ func Test_GetIndications(t *testing.T) {
 	newManager := makeNewManager(t)
 
 	telemetryMessage := generateRicIndicationRadioMeasReportPerUE(1)
-	newManager.StoreTelemetry(telemetryMessage)
+	err := newManager.StoreTelemetry(telemetryMessage)
+	assert.NoError(t, err, "error storing telemetry %v", err)
 
 	inds, err := newManager.GetIndications()
 	assert.NoError(t, err)
@@ -223,7 +226,8 @@ func Test_StoreControlUpdateUEAdmission(t *testing.T) {
 	newManager := makeNewManager(t)
 
 	UEAdmissionMessage := generateRicIndicationsUEAdmissionRequest(55)
-	newManager.StoreControlUpdate(UEAdmissionMessage)
+	err := newManager.StoreControlUpdate(UEAdmissionMessage)
+	assert.NoError(t, err)
 
 	inds, err := newManager.GetIndications()
 	assert.NoError(t, err)
@@ -237,7 +241,8 @@ func Test_StoreControlUpdateUERelease(t *testing.T) {
 
 	// Add a UE
 	UEAdmissionMessage := generateRicIndicationsUEAdmissionRequest(55)
-	newManager.StoreControlUpdate(UEAdmissionMessage)
+	err := newManager.StoreControlUpdate(UEAdmissionMessage)
+	assert.NoError(t, err)
 
 	// Check that the UE made it into the store
 	indsBefore, err := newManager.GetIndications()
@@ -248,7 +253,8 @@ func Test_StoreControlUpdateUERelease(t *testing.T) {
 
 	// Now release the UE
 	UEReleaseMessage := generateRicIndicationsUEReleaseRequest(55)
-	newManager.StoreControlUpdate(UEReleaseMessage)
+	err = newManager.StoreControlUpdate(UEReleaseMessage)
+	assert.NoError(t, err)
 
 	time.Sleep(2 * time.Second)
 
@@ -265,7 +271,8 @@ func Test_GetUEAdmissionByID(t *testing.T) {
 
 	// Add a UE
 	UEAdmissionMessage := generateRicIndicationsUEAdmissionRequest(ID)
-	newManager.StoreControlUpdate(UEAdmissionMessage)
+	err := newManager.StoreControlUpdate(UEAdmissionMessage)
+	assert.NoError(t, err)
 
 	// Check that the UE made it into the store
 	crnti := IDToCrnti(ID)
