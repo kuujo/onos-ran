@@ -24,7 +24,6 @@ import (
 
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/pkg/manager"
-	"github.com/onosproject/onos-ric/pkg/southbound"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -34,12 +33,20 @@ var log = logging.GetLogger("exporter")
 
 var hoLatencyHistogram prometheus.Histogram
 
+// HOEventMeasuredRIC is struct including UE ID and its eNB ID
+type HOEventMeasuredRIC struct {
+	Timestamp   time.Time
+	Crnti       string
+	DestPlmnID  string
+	DestECID    string
+	ElapsedTime int64
+}
+
 // RunRICExposer runs Prometheus exposer
-func RunRICExposer(mgr *manager.Manager) {
-	southbound.ChanHOEvent = make(chan southbound.HOEventMeasuredRIC)
+func RunRICExposer(ch <-chan HOEventMeasuredRIC) {
 	initHOHistogram()
 	//exposeCtrUpdateInfo(mgr)
-	exposeHOLatency()
+	go exposeHOLatency(ch)
 	exposeStdevLoad()
 	http.Handle("/metrics", promhttp.Handler())
 	err := http.ListenAndServe(":7000", nil)
@@ -48,15 +55,13 @@ func RunRICExposer(mgr *manager.Manager) {
 	}
 }
 
-func exposeHOLatency() {
-	go func() {
-		for {
-			time.Sleep(1 * time.Second)
-			for e := range southbound.ChanHOEvent {
-				hoLatencyHistogram.Observe(float64(e.ElapsedTime))
-			}
+func exposeHOLatency(ch <-chan HOEventMeasuredRIC) {
+	for {
+		time.Sleep(1 * time.Second)
+		for e := range ch {
+			hoLatencyHistogram.Observe(float64(e.ElapsedTime))
 		}
-	}()
+	}
 }
 
 func initHOHistogram() {

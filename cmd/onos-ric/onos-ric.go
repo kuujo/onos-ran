@@ -60,11 +60,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mgr, err := manager.NewManager(*topoEndpoint, *enableMetrics, opts)
+	mgr, err := manager.NewManager(*topoEndpoint, opts)
 
 	if *enableMetrics {
 		log.Info("Starting ONOS-RIC Exposer")
-		go exporter.RunRICExposer(mgr)
+		// TODO: Pass handover event channel to appropriate producer
+		ch := make(chan exporter.HOEventMeasuredRIC)
+		go exporter.RunRICExposer(ch)
 	}
 
 	if err != nil {

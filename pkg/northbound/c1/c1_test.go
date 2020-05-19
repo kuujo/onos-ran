@@ -17,6 +17,7 @@ package c1
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-ric/pkg/store/indications"
 	"io"
 	"net"
 	"testing"
@@ -27,7 +28,6 @@ import (
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
 	"github.com/onosproject/onos-ric/pkg/manager"
-	e2 "github.com/onosproject/onos-ric/test/mocks/southbound"
 	store "github.com/onosproject/onos-ric/test/mocks/store/indications"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -79,44 +79,48 @@ func checkEcgi(t *testing.T, ecgi *nb.ECGI, ID uint32) {
 	assert.Equal(t, IDToPlmnid(ID), ecgi.Plmnid)
 }
 
-func generateRicIndicationCellConfigReport(ID uint32) e2ap.RicIndication {
-	return e2ap.RicIndication{
-		Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_CELL_CONFIG_REPORT},
-		Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_CellConfigReport{CellConfigReport: &sb.CellConfigReport{
-			Ecgi: &sb.ECGI{
-				PlmnId: IDToPlmnid(ID),
-				Ecid:   IDToEcid(ID),
-			},
-			Pci:                    (ID * 10) + 1,
-			CandScells:             nil,
-			EarfcnDl:               "",
-			EarfcnUl:               "",
-			RbsPerTtiDl:            (ID * 10) + 2,
-			RbsPerTtiUl:            (ID * 10) + 3,
-			NumTxAntenna:           (ID * 10) + 4,
-			DuplexMode:             "",
-			MaxNumConnectedUes:     (ID * 10) + 5,
-			MaxNumConnectedBearers: (ID * 10) + 6,
-			MaxNumUesSchedPerTtiDl: (ID * 10) + 7,
-			MaxNumUesSchedPerTtiUl: (ID * 10) + 8,
-			DlfsSchedEnable:        "",
-		}}},
+func generateRicIndicationCellConfigReport(ID uint32) indications.Indication {
+	return indications.Indication{
+		RicIndication: &e2ap.RicIndication{
+			Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_CELL_CONFIG_REPORT},
+			Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_CellConfigReport{CellConfigReport: &sb.CellConfigReport{
+				Ecgi: &sb.ECGI{
+					PlmnId: IDToPlmnid(ID),
+					Ecid:   IDToEcid(ID),
+				},
+				Pci:                    (ID * 10) + 1,
+				CandScells:             nil,
+				EarfcnDl:               "",
+				EarfcnUl:               "",
+				RbsPerTtiDl:            (ID * 10) + 2,
+				RbsPerTtiUl:            (ID * 10) + 3,
+				NumTxAntenna:           (ID * 10) + 4,
+				DuplexMode:             "",
+				MaxNumConnectedUes:     (ID * 10) + 5,
+				MaxNumConnectedBearers: (ID * 10) + 6,
+				MaxNumUesSchedPerTtiDl: (ID * 10) + 7,
+				MaxNumUesSchedPerTtiUl: (ID * 10) + 8,
+				DlfsSchedEnable:        "",
+			}}},
+		},
 	}
 }
 
-func generateRicIndicationCellUEAdmissionRequest(ID uint32) e2ap.RicIndication {
-	return e2ap.RicIndication{
-		Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_UE_ADMISSION_REQUEST},
-		Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_UEAdmissionRequest{UEAdmissionRequest: &sb.UEAdmissionRequest{
-			Ecgi: &sb.ECGI{
-				PlmnId: IDToPlmnid(ID),
-				Ecid:   IDToEcid(ID),
-			},
-		}}},
+func generateRicIndicationCellUEAdmissionRequest(ID uint32) indications.Indication {
+	return indications.Indication{
+		RicIndication: &e2ap.RicIndication{
+			Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_UE_ADMISSION_REQUEST},
+			Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_UEAdmissionRequest{UEAdmissionRequest: &sb.UEAdmissionRequest{
+				Ecgi: &sb.ECGI{
+					PlmnId: IDToPlmnid(ID),
+					Ecid:   IDToEcid(ID),
+				},
+			}}},
+		},
 	}
 }
 
-func generateRicIndicationRadioMeasReportPerUE(ID uint32) e2ap.RicIndication {
+func generateRicIndicationRadioMeasReportPerUE(ID uint32) indications.Indication {
 	radioReportServCells := []*sb.RadioRepPerServCell{
 		{
 			Ecgi: &sb.ECGI{
@@ -129,16 +133,18 @@ func generateRicIndicationRadioMeasReportPerUE(ID uint32) e2ap.RicIndication {
 			PucchSinrHist: nil,
 		},
 	}
-	return e2ap.RicIndication{
-		Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE},
-		Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_RadioMeasReportPerUE{RadioMeasReportPerUE: &sb.RadioMeasReportPerUE{
-			Ecgi: &sb.ECGI{
-				PlmnId: IDToPlmnid(ID),
-				Ecid:   IDToEcid(ID),
-			},
-			Crnti:                IDToCrnti(ID),
-			RadioReportServCells: radioReportServCells,
-		}}},
+	return indications.Indication{
+		RicIndication: &e2ap.RicIndication{
+			Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_RADIO_MEAS_REPORT_PER_UE},
+			Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_RadioMeasReportPerUE{RadioMeasReportPerUE: &sb.RadioMeasReportPerUE{
+				Ecgi: &sb.ECGI{
+					PlmnId: IDToPlmnid(ID),
+					Ecid:   IDToEcid(ID),
+				},
+				Crnti:                IDToCrnti(ID),
+				RadioReportServCells: radioReportServCells,
+			}}},
+		},
 	}
 }
 
@@ -148,7 +154,7 @@ func createMockIndicationsStore(t *testing.T) {
 	indicationsStore := store.NewMockStore(gomock.NewController(t))
 
 	indicationsStore.EXPECT().List(gomock.Any()).DoAndReturn(
-		func(ch chan<- e2ap.RicIndication) error {
+		func(ch chan<- indications.Indication) error {
 			go func() {
 				for i := 1; i <= indicationsStoreItemsCount; i++ {
 					ch <- generateRicIndicationCellConfigReport(uint32(i))
@@ -160,8 +166,8 @@ func createMockIndicationsStore(t *testing.T) {
 
 			return nil
 		})
-	indicationsStore.EXPECT().Get(gomock.Any()).Return(nil, nil).AnyTimes()
-	manager.InitializeManager(indicationsStore, nil, false)
+	indicationsStore.EXPECT().Lookup(gomock.Any()).Return(nil, nil).AnyTimes()
+	manager.InitializeManager(indicationsStore, nil, nil)
 }
 
 func checkListStationsResponse(t *testing.T, info *nb.StationInfo, ID uint32) {
@@ -295,6 +301,7 @@ func Test_ListUELinks(t *testing.T) {
 	assert.NoError(t, conn.Close())
 }
 
+/*
 func Test_RadioPower(t *testing.T) {
 	testCases := []struct {
 		description  string
@@ -348,3 +355,4 @@ func Test_RadioPower(t *testing.T) {
 
 	assert.NoError(t, conn.Close())
 }
+*/

@@ -43,6 +43,23 @@ type Revision uint64
 // ID is a message identifier
 type ID string
 
+// New creates a new indication
+func New(indication *e2ap.RicIndication) *Indication {
+	return &Indication{
+		ID:            GetID(indication),
+		RicIndication: indication,
+	}
+}
+
+// Indication is an indication message
+type Indication struct {
+	*e2ap.RicIndication
+	// ID is the unique indication identifier
+	ID ID
+	// Revision is the indication revision number
+	Revision Revision
+}
+
 // NewID creates a new telemetry store ID
 func NewID(messageType sb.MessageType, plmnidn, ecid, crnti string) ID {
 	return ID(fmt.Sprintf("%s:%s:%s:%s", messageType, plmnidn, ecid, crnti))
@@ -72,10 +89,9 @@ func GetID(message *e2ap.RicIndication) ID {
 type Event struct {
 	// Type is the event type
 	Type EventType
-	// ID is the message identifier
-	ID ID
-	// Message is the event message
-	Message e2ap.RicIndication
+
+	// Indication is the indication
+	Indication Indication
 }
 
 // EventType is a store event type
@@ -96,17 +112,17 @@ const (
 type Store interface {
 	io.Closer
 
-	// Gets a message based on a given ID
-	Get(ID, ...GetOption) (*e2ap.RicIndication, error)
+	// Lookup looks up an indication by ID
+	Lookup(ID, ...LookupOption) (*Indication, error)
 
-	// Puts a message to the store
-	Put(ID, *e2ap.RicIndication, ...PutOption) error
+	// Record records an indication in the store
+	Record(*Indication, ...RecordOption) error
 
-	// Removes a message from the store
-	Delete(ID, ...DeleteOption) error
+	// Discard discards an indication from the store
+	Discard(ID, ...DiscardOption) error
 
 	// List all of the last up to date messages
-	List(ch chan<- e2ap.RicIndication) error
+	List(ch chan<- Indication) error
 
 	// Watch watches the store for changes
 	Watch(ch chan<- Event, opts ...WatchOption) error
@@ -166,7 +182,7 @@ type store struct {
 	dist _map.Map
 }
 
-func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicIndication, error) {
+func (s *store) Lookup(id ID, opts ...LookupOption) (*Indication, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	entry, err := s.dist.Get(ctx, string(id))
@@ -175,44 +191,40 @@ func (s *store) Get(id ID, opts ...GetOption) (*e2ap.RicIndication, error) {
 	} else if entry == nil {
 		return nil, nil
 	}
-	return decode(entry.Value)
+	indication, err := decode(entry.Value)
+	if err != nil {
+		return nil, err
+	}
+	return &Indication{
+		ID:            id,
+		Revision:      Revision(entry.Version),
+		RicIndication: indication,
+	}, nil
 }
 
-func (s *store) Put(id ID, message *e2ap.RicIndication, opts ...PutOption) error {
-	putOpts := &putOptions{}
-	for _, opt := range opts {
-		opt.applyPut(putOpts)
-	}
+func (s *store) Record(indication *Indication, opts ...RecordOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	bytes, err := encode(message)
+	bytes, err := encode(indication.RicIndication)
 	if err != nil {
 		return err
 	}
-	options := []_map.PutOption{}
-	if putOpts.revision > 0 {
-		options = append(options, _map.IfVersion(int64(putOpts.revision)))
+	entry, err := s.dist.Put(ctx, string(indication.ID), bytes)
+	if err != nil {
+		return err
 	}
-	_, err = s.dist.Put(ctx, string(id), bytes, options...)
+	indication.Revision = Revision(entry.Version)
 	return err
 }
 
-func (s *store) Delete(id ID, opts ...DeleteOption) error {
-	deleteOpts := &deleteOptions{}
-	for _, opt := range opts {
-		opt.applyDelete(deleteOpts)
-	}
-	options := []_map.RemoveOption{}
-	if deleteOpts.revision > 0 {
-		options = append(options, _map.IfVersion(int64(deleteOpts.revision)))
-	}
+func (s *store) Discard(id ID, opts ...DiscardOption) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
-	_, err := s.dist.Remove(ctx, string(id), options...)
+	_, err := s.dist.Remove(ctx, string(id))
 	return err
 }
 
-func (s *store) List(ch chan<- e2ap.RicIndication) error {
+func (s *store) List(ch chan<- Indication) error {
 	entryCh := make(chan *_map.Entry)
 	if err := s.dist.Entries(context.Background(), entryCh); err != nil {
 		return err
@@ -220,9 +232,13 @@ func (s *store) List(ch chan<- e2ap.RicIndication) error {
 	go func() {
 		defer close(ch)
 		for entry := range entryCh {
-			message, err := decode(entry.Value)
+			indication, err := decode(entry.Value)
 			if err == nil {
-				ch <- *message
+				ch <- Indication{
+					ID:            ID(entry.Key),
+					Revision:      Revision(entry.Version),
+					RicIndication: indication,
+				}
 			}
 		}
 	}()
@@ -247,7 +263,7 @@ func (s *store) Watch(ch chan<- Event, opts ...WatchOption) error {
 	}
 	go func() {
 		for event := range eventCh {
-			message, err := decode(event.Entry.Value)
+			indication, err := decode(event.Entry.Value)
 			if err == nil {
 				var eventType EventType
 				switch event.Type {
@@ -261,8 +277,12 @@ func (s *store) Watch(ch chan<- Event, opts ...WatchOption) error {
 					eventType = EventDelete
 				}
 				ch <- Event{
-					Type:    eventType,
-					Message: *message,
+					Type: eventType,
+					Indication: Indication{
+						ID:            ID(event.Entry.Key),
+						Revision:      Revision(event.Entry.Version),
+						RicIndication: indication,
+					},
 				}
 			}
 		}

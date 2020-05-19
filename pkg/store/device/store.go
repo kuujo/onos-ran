@@ -17,27 +17,95 @@ package device
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
+	"github.com/onosproject/onos-ric/api/sb"
 	"io"
+	"strings"
 	"time"
 
 	topodevice "github.com/onosproject/onos-topo/api/device"
 	"google.golang.org/grpc"
 )
 
+var log = logging.GetLogger("store", "device")
+
+const e2NodeType = topodevice.Type("E2Node")
+
+// ID is a topology service device identifier
+type ID sb.ECGI
+
+// newID creates a new device identifier
+func newID(id topodevice.ID) (ID, error) {
+	if !strings.Contains(string(id), "-") {
+		return ID{}, fmt.Errorf("unexpected format for E2Node ID %s", id)
+	}
+	parts := strings.Split(string(id), "-")
+	if len(parts) != 2 {
+		return ID{}, fmt.Errorf("unexpected format for E2Node ID %s", id)
+	}
+	return ID(sb.ECGI{Ecid: parts[1], PlmnId: parts[0]}), nil
+}
+
+// getDeviceID returns the topo device identifier for the given device ID
+func getDeviceID(id ID) topodevice.ID {
+	return topodevice.ID(fmt.Sprintf("%s-%s", id.PlmnId, id.Ecid))
+}
+
+// newDevice creates a new device
+func newDevice(device *topodevice.Device) (*Device, error) {
+	id, err := newID(device.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &Device{
+		ID:     id,
+		Device: device,
+	}, nil
+}
+
+// Device is a topology service device
+type Device struct {
+	ID ID
+	*topodevice.Device
+}
+
+// EventType is a device event type
+type EventType string
+
+const (
+	// EventNone is an event indicating the replay of an existing device
+	EventNone EventType = ""
+	// EventAdded indicates a newly added device
+	EventAdded EventType = "added"
+	// EventUpdated indicates an updated device
+	EventUpdated EventType = "updated"
+	// EventRemoved indicates a removed device
+	EventRemoved EventType = "removed"
+)
+
+// Event is a device event
+type Event struct {
+	// Type is the event type
+	Type EventType
+
+	// Device is the updated device
+	Device Device
+}
+
 // Store is a device store
 type Store interface {
 	// Get gets a device by ID
-	Get(topodevice.ID) (*topodevice.Device, error)
+	Get(ID) (*Device, error)
 
 	// Update updates a given device
-	Update(*topodevice.Device) (*topodevice.Device, error)
+	Update(*Device) (*Device, error)
 
 	// List lists the devices in the store
-	List(chan<- *topodevice.Device) error
+	List(chan<- Device) error
 
 	// Watch watches the device store for changes
-	Watch(chan<- *topodevice.ListResponse) error
+	Watch(chan<- Event) error
 }
 
 // NewTopoStore returns a new topo-based device store
@@ -68,32 +136,36 @@ type topoStore struct {
 	client topodevice.DeviceServiceClient
 }
 
-func (s *topoStore) Get(id topodevice.ID) (*topodevice.Device, error) {
+func (s *topoStore) Get(id ID) (*Device, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	response, err := s.client.Get(ctx, &topodevice.GetRequest{
-		ID: id,
+		ID: getDeviceID(id),
 	})
 	if err != nil {
 		return nil, err
+	} else if !isE2Device(response.Device) {
+		return nil, nil
 	}
-	return response.Device, nil
+	return newDevice(response.Device)
 }
 
-func (s *topoStore) Update(updatedDevice *topodevice.Device) (*topodevice.Device, error) {
+func (s *topoStore) Update(device *Device) (*Device, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	updateReq := &topodevice.UpdateRequest{
-		Device: updatedDevice,
+	request := &topodevice.UpdateRequest{
+		Device: device.Device,
 	}
-	response, err := s.client.Update(ctx, updateReq)
+	response, err := s.client.Update(ctx, request)
 	if err != nil {
 		return nil, err
+	} else if !isE2Device(response.Device) {
+		return nil, nil
 	}
-	return response.Device, nil
+	return newDevice(response.Device)
 }
 
-func (s *topoStore) List(ch chan<- *topodevice.Device) error {
+func (s *topoStore) List(ch chan<- Device) error {
 	list, err := s.client.List(context.Background(), &topodevice.ListRequest{})
 	if err != nil {
 		return err
@@ -108,13 +180,20 @@ func (s *topoStore) List(ch chan<- *topodevice.Device) error {
 			if err != nil {
 				break
 			}
-			ch <- response.Device
+			if isE2Device(response.Device) {
+				device, err := newDevice(response.Device)
+				if err != nil {
+					log.Error(err)
+				} else {
+					ch <- *device
+				}
+			}
 		}
 	}()
 	return nil
 }
 
-func (s *topoStore) Watch(ch chan<- *topodevice.ListResponse) error {
+func (s *topoStore) Watch(ch chan<- Event) error {
 	list, err := s.client.List(context.Background(), &topodevice.ListRequest{
 		Subscribe: true,
 	})
@@ -130,10 +209,35 @@ func (s *topoStore) Watch(ch chan<- *topodevice.ListResponse) error {
 			if err != nil {
 				break
 			}
-			ch <- response
+			if isE2Device(response.Device) {
+				var eventType EventType
+				switch response.Type {
+				case topodevice.ListResponse_NONE:
+					eventType = EventNone
+				case topodevice.ListResponse_ADDED:
+					eventType = EventAdded
+				case topodevice.ListResponse_UPDATED:
+					eventType = EventUpdated
+				case topodevice.ListResponse_REMOVED:
+					eventType = EventRemoved
+				}
+				device, err := newDevice(response.Device)
+				if err != nil {
+					log.Error(err)
+				} else {
+					ch <- Event{
+						Type:   eventType,
+						Device: *device,
+					}
+				}
+			}
 		}
 	}()
 	return nil
+}
+
+func isE2Device(device *topodevice.Device) bool {
+	return device.GetType() == e2NodeType
 }
 
 // getTopoConn gets a gRPC connection to the topology service

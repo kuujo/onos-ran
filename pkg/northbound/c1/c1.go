@@ -17,7 +17,10 @@ package c1
 import (
 	"context"
 	"fmt"
+	"github.com/onosproject/onos-ric/api/sb/e2sm"
+	"github.com/onosproject/onos-ric/pkg/store/device"
 	"io"
+	"sync"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	service "github.com/onosproject/onos-lib-go/pkg/northbound"
@@ -64,7 +67,7 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 				defer close(ch)
 				for event := range watchCh {
 					if event.Type != indications.EventDelete {
-						ch <- event.Message
+						ch <- *event.Indication.RicIndication
 					}
 				}
 			}()
@@ -110,7 +113,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 				defer close(ch)
 				for event := range watchCh {
 					if event.Type != indications.EventDelete {
-						ch <- event.Message
+						ch <- *event.Indication.RicIndication
 					}
 				}
 			}()
@@ -165,7 +168,7 @@ func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_List
 				defer close(ch)
 				for event := range watchCh {
 					if event.Type != indications.EventDelete {
-						ch <- event.Message
+						ch <- *event.Indication.RicIndication
 					}
 				}
 			}()
@@ -222,7 +225,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 				defer close(ch)
 				for event := range watchCh {
 					if event.Type != indications.EventDelete {
-						ch <- event.Message
+						ch <- *event.Indication.RicIndication
 					}
 				}
 			}()
@@ -327,40 +330,67 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		Ecid:   src.GetEcid(),
 		PlmnId: src.GetPlmnid(),
 	}
+	srcDeviceID := device.ID(srcEcgi)
 
 	dstEcgi := sb.ECGI{
 		Ecid:   dst.GetEcid(),
 		PlmnId: dst.GetPlmnid(),
 	}
+	dstDeviceID := device.ID(dstEcgi)
 
-	srcSession, ok := manager.GetManager().SbSessions[srcEcgi]
-	if !ok {
-		return nil, fmt.Errorf("session not found for HO source %v", srcEcgi)
-	}
-	log.Infof("Sending HO for %v:%s to Source %s", srcEcgi, crnti, srcSession.RemoteAddress())
-	err := srcSession.UeHandover([]string{crnti}, srcEcgi, dstEcgi)
-	if err != nil {
-		return nil, err
-	}
-
-	dstSession, ok := manager.GetManager().SbSessions[dstEcgi]
-	if !ok {
-		return nil, fmt.Errorf("session not found for HO dest %v", dstEcgi)
-	}
-	log.Infof("Sending HO for %v:%s to Dest %s", srcEcgi, crnti, dstSession.RemoteAddress())
-	err = dstSession.UeHandover([]string{crnti}, srcEcgi, dstEcgi)
-	if err != nil {
-		return nil, err
+	hoReq := &e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_HO_REQUEST,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_HORequest{
+				HORequest: &sb.HORequest{
+					Crntis: []string{crnti},
+					EcgiS:  &srcEcgi,
+					EcgiT:  &dstEcgi,
+				},
+			},
+		},
 	}
 
-	err = manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
-	if err != nil {
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	errCh := make(chan error)
+	go func() {
+		err := manager.GetManager().StoreRicControlRequest(srcDeviceID, hoReq)
+		if err != nil {
+			errCh <- err
+		}
+		wg.Done()
+	}()
+	go func() {
+		err := manager.GetManager().StoreRicControlRequest(dstDeviceID, hoReq)
+		if err != nil {
+			errCh <- err
+		}
+		wg.Done()
+	}()
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+
+	for err := range errCh {
 		return nil, err
 	}
-	err = manager.GetManager().DeleteUEAdmissionRequest(src.GetPlmnid(), src.GetEcid(), crnti)
-	if err != nil {
-		return nil, err
-	}
+
+	go func() {
+		err := manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	}()
+	go func() {
+		err := manager.GetManager().DeleteUEAdmissionRequest(src.GetPlmnid(), src.GetEcid(), crnti)
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	}()
 
 	return &nb.HandOverResponse{Success: true}, nil
 }
@@ -397,14 +427,27 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 		PlmnId: req.GetEcgi().GetPlmnid(),
 	}
 
-	session, ok := manager.GetManager().SbSessions[ecgi]
-	if !ok {
-		return nil, fmt.Errorf("session not found for Power Request %v", ecgi)
+	deviceID := device.ID(ecgi)
+
+	var p []sb.XICICPA
+	p = append(p, pa)
+	rrmConfigReq := &e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_RRM_CONFIG,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_RRMConfig{
+				RRMConfig: &sb.RRMConfig{
+					Ecgi: &ecgi,
+					PA:   p,
+				},
+			},
+		},
 	}
-	err := session.RRMConfig(pa)
+
+	err := manager.GetManager().StoreRicControlRequest(deviceID, rrmConfigReq)
 	if err != nil {
 		return nil, err
 	}
-
 	return &nb.RadioPowerResponse{Success: true}, nil
 }

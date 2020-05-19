@@ -16,23 +16,17 @@
 package manager
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/pkg/config"
-	"github.com/onosproject/onos-ric/pkg/southbound"
-	"github.com/onosproject/onos-ric/pkg/southbound/monitor"
+	"github.com/onosproject/onos-ric/pkg/southbound/e2"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/indications"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
-	topodevice "github.com/onosproject/onos-topo/api/device"
+	"github.com/onosproject/onos-ric/pkg/store/requests"
 	"google.golang.org/grpc"
 )
-
-const e2NodeType = topodevice.Type("E2Node")
 
 var log = logging.GetLogger("manager")
 var mgr Manager
@@ -47,16 +41,26 @@ var IndicationsStoreFactory = func(configuration config.Config) (indications.Sto
 	return indications.NewDistributedStore(configuration)
 }
 
+// RequestsStoreFactory creates the requests store
+var RequestsStoreFactory = func(configuration config.Config) (requests.Store, error) {
+	return requests.NewDistributedStore(configuration)
+}
+
 // DeviceStoreFactory creates the device store
 var DeviceStoreFactory = func(topoEndPoint string, opts ...grpc.DialOption) (device.Store, error) {
 	return device.NewTopoStore(topoEndPoint, opts...)
 }
 
 // NewManager initializes the RAN subsystem.
-func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption) (*Manager, error) {
+func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 	log.Info("Creating Manager")
 
 	configuration, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	mastershipStore, err := MastershipStoreFactory(configuration)
 	if err != nil {
 		return nil, err
 	}
@@ -66,38 +70,46 @@ func NewManager(topoEndPoint string, enableMetrics bool, opts []grpc.DialOption)
 		return nil, err
 	}
 
-	deviceChangeStore, err := DeviceStoreFactory(topoEndPoint, opts...)
+	requestsStore, err := RequestsStoreFactory(configuration)
+	if err != nil {
+		return nil, err
+	}
+
+	deviceStore, err := DeviceStoreFactory(topoEndPoint, opts...)
 	if err != nil {
 		log.Info("Error in device change store")
 		return nil, err
 	}
 
-	return InitializeManager(indicationsStore, deviceChangeStore, enableMetrics), nil
+	sessionMgr, err := e2.NewSessionManager(deviceStore, mastershipStore, requestsStore, indicationsStore)
+	if err != nil {
+		return nil, err
+	}
+
+	return InitializeManager(indicationsStore, requestsStore, sessionMgr), nil
 }
 
 // InitializeManager initializes the manager structure with the given data
-func InitializeManager(indicationsStore indications.Store, deviceChangesStore device.Store, enableMetrics bool) *Manager {
+func InitializeManager(indicationsStore indications.Store, requestsStore requests.Store, sessionMgr *e2.SessionManager) *Manager {
 	mgr = Manager{
-		indicationsStore:   indicationsStore,
-		deviceChangesStore: deviceChangesStore,
-		SbSessions:         make(map[sb.ECGI]southbound.E2),
-		enableMetrics:      enableMetrics,
-		topoMonitor: monitor.NewTopoMonitorBuilder().
-			SetTopoChannel(make(chan *topodevice.ListResponse)).
-			Build(),
-		e2Chan: make(chan southbound.E2),
+		indicationsStore: indicationsStore,
+		requestsStore:    requestsStore,
+		sessions:         sessionMgr,
 	}
 	return &mgr
 }
 
 // Manager single point of entry for the RAN system.
 type Manager struct {
-	indicationsStore   indications.Store
-	deviceChangesStore device.Store
-	SbSessions         map[sb.ECGI]southbound.E2
-	topoMonitor        monitor.TopoMonitor
-	enableMetrics      bool
-	e2Chan             chan southbound.E2 // TBD - Make this into a dispatcher
+	indicationsStore indications.Store
+	requestsStore    requests.Store
+	sessions         *e2.SessionManager
+}
+
+// StoreRicControlRequest stores a RicControlRequest to the store
+func (m *Manager) StoreRicControlRequest(deviceID device.ID, request *e2ap.RicControlRequest) error {
+	log.Debugf("Handling request %+v", request)
+	return m.requestsStore.Append(requests.New(deviceID, request))
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store
@@ -105,9 +117,12 @@ func (m *Manager) StoreRicControlResponse(update e2ap.RicIndication) {
 	msgType := update.GetHdr().GetMessageType()
 	switch msgType {
 	case sb.MessageType_CELL_CONFIG_REPORT:
-		_ = m.indicationsStore.Put(indications.GetID(&update), &update)
+		err := m.indicationsStore.Record(indications.New(&update))
+		if err != nil {
+			log.Errorf("%s", err)
+		}
 	default:
-		log.Fatalf("RicControlResponse has unexpected type %d", msgType)
+		log.Errorf("RicControlResponse has unexpected type %d", msgType)
 	}
 }
 
@@ -118,21 +133,28 @@ func (m *Manager) StoreControlUpdate(update e2ap.RicIndication) {
 	case sb.MessageType_UE_ADMISSION_REQUEST:
 		msg := update.GetMsg().GetUEAdmissionRequest()
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti(), msg.GetImsi())
-		_ = m.indicationsStore.Put(indications.GetID(&update), &update)
+		err := m.indicationsStore.Record(indications.New(&update))
+		if err != nil {
+			log.Errorf("%v", err)
+		}
 	case sb.MessageType_UE_RELEASE_IND:
 		msg := update.GetMsg().GetUEReleaseInd()
 		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
 
-		err := m.DeleteTelemetry(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-		if err != nil {
-			log.Errorf("%s", err)
-		}
-		err = m.DeleteUEAdmissionRequest(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-		if err != nil {
-			log.Errorf("%s", err)
-		}
+		go func() {
+			err := m.DeleteTelemetry(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
+			if err != nil {
+				log.Errorf("%s", err)
+			}
+		}()
+		go func() {
+			err := m.DeleteUEAdmissionRequest(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
+			if err != nil {
+				log.Errorf("%s", err)
+			}
+		}()
 	default:
-		log.Fatalf("ControlReport has unexpected type %T", update.GetHdr().GetMessageType())
+		log.Errorf("ControlReport has unexpected type %T", update.GetHdr().GetMessageType())
 	}
 }
 
@@ -151,104 +173,55 @@ func (m *Manager) GetIndications() ([]e2ap.RicIndication, error) {
 
 // GetUEAdmissionByID retrieve a single value from the updates store
 func (m *Manager) GetUEAdmissionByID(ecgi *sb.ECGI, crnti string) (*e2ap.RicIndication, error) {
-	return m.indicationsStore.Get(indications.NewID(sb.MessageType_UE_ADMISSION_REQUEST, ecgi.PlmnId, ecgi.Ecid, crnti))
+	indication, err := m.indicationsStore.Lookup(indications.NewID(sb.MessageType_UE_ADMISSION_REQUEST, ecgi.PlmnId, ecgi.Ecid, crnti))
+	if err != nil {
+		return nil, err
+	} else if indication == nil {
+		return nil, nil
+	}
+	return indication.RicIndication, nil
 }
 
 // ListIndications lists control updates
 func (m *Manager) ListIndications(ch chan<- e2ap.RicIndication) error {
-	return m.indicationsStore.List(ch)
+	indicationCh := make(chan indications.Indication)
+	err := m.indicationsStore.List(indicationCh)
+	if err != nil {
+		return err
+	}
+	go func() {
+		defer close(ch)
+		for indication := range indicationCh {
+			ch <- *indication.RicIndication
+		}
+	}()
+	return nil
 }
 
 // SubscribeIndications subscribes the given channel to control updates
 func (m *Manager) SubscribeIndications(ch chan<- indications.Event, opts ...indications.WatchOption) error {
-	return m.indicationsStore.Watch(ch, opts...)
+	indicationCh := make(chan indications.Event)
+	err := m.indicationsStore.Watch(indicationCh, opts...)
+	if err != nil {
+		return err
+	}
+	go func() {
+		for indication := range indicationCh {
+			log.Debugf("Handling response %+v", indication.Indication.RicIndication)
+			ch <- indication
+		}
+	}()
+	return nil
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
 func (m *Manager) Run() {
 	log.Info("Starting Manager")
-
-	config.NewE2Config().Run(m.e2Chan)
-
-	m.topoMonitor.TopoEventHandler(m.topoEventHandler)
-
-	err := mgr.deviceChangesStore.Watch(m.topoMonitor.TopoChannel())
-	if err != nil {
-		log.Errorf("Error listening to topo service: %s", err.Error())
-	}
-}
-
-func (m *Manager) topoEventHandler(topoChannel chan *topodevice.ListResponse) {
-	log.Infof("Watching topo channel")
-	for device := range topoChannel { // Block here waiting for topo events
-		if device.GetDevice().GetType() != e2NodeType {
-			continue
-		}
-		if device.Type == topodevice.ListResponse_NONE || device.Type == topodevice.ListResponse_ADDED {
-			ecgi, err := ecgiFromTopoID(device.GetDevice().GetID())
-			if err != nil {
-				log.Warnf("Topo device event rejected %s", err)
-				continue
-			}
-			log.Infof("Topo Device added %s", ecgi.String())
-			deviceEndpoint := sb.Endpoint(device.GetDevice().GetAddress())
-			session, err := southbound.NewSession()
-			if err != nil {
-				log.Errorf("Unable to create new session %s", err.Error())
-				continue
-			}
-			if session != nil {
-				m.SbSessions[ecgi] = session
-				session.Run(ecgi, deviceEndpoint, device.GetDevice().GetTLS(),
-					device.GetDevice().GetCredentials(), m.StoreRicControlResponse,
-					m.StoreControlUpdate, m.StoreTelemetry, m.UpdateTopoProtocolState,
-					m.enableMetrics, m.e2Chan)
-			} else {
-				log.Errorf("Error creating new session for %v", ecgi)
-				continue
-			}
-		} else if device.Type == topodevice.ListResponse_REMOVED {
-			ecgi, err := ecgiFromTopoID(device.GetDevice().GetID())
-			if err != nil {
-				log.Warnf("Topo device event rejected %s", err)
-				continue
-			}
-			log.Infof("Topo Device removing %s", ecgi.String())
-			session, ok := m.SbSessions[ecgi]
-			if !ok {
-				log.Warnf("Unable to find session for %s", ecgi.String())
-				continue
-			}
-			session.Close()
-			delete(m.SbSessions, ecgi)
-			// Delete all entries in the indicationStore for this cell
-			ricIndications := make(chan e2ap.RicIndication)
-			if err := m.ListIndications(ricIndications); err != nil {
-				log.Warnf("Unable to list indications %s", err)
-				continue
-			}
-			for ricIndication := range ricIndications {
-				switch ricIndication.GetHdr().GetMessageType() {
-				case sb.MessageType_CELL_CONFIG_REPORT:
-					cellConfigReport := ricIndication.GetMsg().GetCellConfigReport()
-					if cellConfigReport.GetEcgi().String() == ecgi.String() {
-						ricIndication := ricIndication // pin
-						if err := m.indicationsStore.Delete(indications.GetID(&ricIndication)); err != nil {
-							log.Warnf("Unable to delete CELL_CONFIG_REPORT indication %s", err)
-							continue
-						}
-					}
-				}
-			}
-		} else {
-			log.Warnf("Topo device event not yet handled %s %v", device.String())
-		}
-	}
 }
 
 //Close kills the channels and manager related objects
 func (m *Manager) Close() {
-	m.topoMonitor.Close()
+	_ = m.sessions.Close()
 	log.Info("Closing Manager")
 }
 
@@ -261,9 +234,9 @@ func GetManager() *Manager {
 // StoreTelemetry - put the telemetry update in the atomix store
 // Only handles MessageType_RADIO_MEAS_REPORT_PER_UE at the moment
 func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
-	err := m.indicationsStore.Put(indications.GetID(&update), &update)
+	err := m.indicationsStore.Record(indications.New(&update))
 	if err != nil {
-		log.Fatalf("Could not put message %v in telemetry store %s", update, err.Error())
+		log.Errorf("Could not put message %v in telemetry store %s", update, err.Error())
 	}
 
 	switch update.GetHdr().MessageType {
@@ -283,14 +256,14 @@ func (m *Manager) StoreTelemetry(update e2ap.RicIndication) {
 			msg.GetRadioMeasReportPerUE().RadioReportServCells[3].GetEcgi().GetEcid(),
 		)
 	default:
-		log.Fatalf("Telemetry update has unexpected type %T", update.GetHdr().GetMessageType())
+		log.Errorf("Telemetry update has unexpected type %T", update.GetHdr().GetMessageType())
 	}
 }
 
 // DeleteTelemetry deletes telemetry when a handover happens
 func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) error {
 	id := indications.NewID(sb.MessageType_RADIO_MEAS_REPORT_PER_UE, plmnid, ecid, crnti)
-	if err := m.indicationsStore.Delete(id); err != nil {
+	if err := m.indicationsStore.Discard(id); err != nil {
 		log.Infof("Error deleting Telemetry, key=%s", id)
 		return err
 	}
@@ -300,52 +273,9 @@ func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) erro
 // DeleteUEAdmissionRequest deletes UpdateControls
 func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti string) error {
 	id := indications.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
-	if err := m.indicationsStore.Delete(id); err != nil {
+	if err := m.indicationsStore.Discard(id); err != nil {
 		log.Infof("Error deleting UEAdmissionRequest, key=%s", id)
 		return err
 	}
 	return nil
-}
-
-// UpdateTopoProtocolState - update topo with details of connectedness
-func (m *Manager) UpdateTopoProtocolState(ecgi *sb.ECGI, state *topodevice.ProtocolState) {
-	topoID := topoIDFromEcgi(ecgi)
-	topoDev, err := m.deviceChangesStore.Get(topoID)
-	if err != nil {
-		log.Warnf("unable to get topoDevice")
-		return
-	}
-	for i, p := range topoDev.Protocols {
-		if p.Protocol == state.Protocol {
-			topoDev.Protocols[i] = state
-			_, err = m.deviceChangesStore.Update(topoDev)
-			if err != nil {
-				log.Warnf("unable to update topoDevice")
-			}
-			return
-		}
-	}
-	// Not found? add it
-	topoDev.Protocols = append(topoDev.Protocols, state)
-	_, err = m.deviceChangesStore.Update(topoDev)
-	if err != nil {
-		log.Warnf("unable to update topoDevice")
-	}
-}
-
-// ecgiFromTopoID topo device is formatted like "315010-0001786" PlmnId-Ecid
-func ecgiFromTopoID(id topodevice.ID) (sb.ECGI, error) {
-	if !strings.Contains(string(id), "-") {
-		return sb.ECGI{}, fmt.Errorf("unexpected format for E2Node ID %s", id)
-	}
-	parts := strings.Split(string(id), "-")
-	if len(parts) != 2 {
-		return sb.ECGI{}, fmt.Errorf("unexpected format for E2Node ID %s", id)
-	}
-	return sb.ECGI{Ecid: parts[1], PlmnId: parts[0]}, nil
-}
-
-// topoIDFromEcgi topo device is formatted like "315010-0001786" PlmnId-Ecid
-func topoIDFromEcgi(ecgi *sb.ECGI) topodevice.ID {
-	return topodevice.ID(fmt.Sprintf("%s-%s", ecgi.GetPlmnId(), ecgi.GetEcid()))
 }

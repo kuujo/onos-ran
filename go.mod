@@ -4,22 +4,25 @@ go 1.14
 
 require (
 	github.com/DataDog/mmh3 v0.0.0-20200316233529-f5b682d8c981
-	github.com/atomix/go-client v0.1.0
-	github.com/go-playground/overalls v0.0.0-20191218162659-7df9f728c018 // indirect
+	github.com/atomix/go-client v0.1.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
+	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733
-	github.com/mattn/goveralls v0.0.5 // indirect
 	github.com/onosproject/helmit v0.6.0
 	github.com/onosproject/onos-lib-go v0.6.2-0.20200423170352-3f5043096615
 	github.com/onosproject/onos-topo v0.6.0
-	github.com/onosproject/ran-simulator v0.6.3 // indirect
+	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/prometheus/client_golang v1.4.1
 	github.com/spf13/cobra v0.0.6
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/stretchr/testify v1.5.1
-	github.com/yookoala/realpath v1.0.0 // indirect
+	go.uber.org/multierr v1.4.0 // indirect
+	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	golang.org/x/tools v0.0.0-20200313205530-4303120df7d8 // indirect
+	google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce // indirect
 	google.golang.org/grpc v1.27.1
 	gopkg.in/yaml.v2 v2.2.8
 	gotest.tools v2.2.0+incompatible

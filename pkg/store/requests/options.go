@@ -12,38 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package indications
+package requests
 
-// LookupOption is an indication store lookup option
-type LookupOption interface {
-	applyLookup(options *lookupOptions)
+// AppendOption is a control store get option
+type AppendOption interface {
+	applyAppend(options *appendOptions)
 }
 
-// lookupOptions is a struct of indication lookup options
-type lookupOptions struct{}
+// appendOptions is a struct of control request append options
+type appendOptions struct{}
 
-// RecordOption is an indication store record option
-type RecordOption interface {
-	applyRecord(options *recordOptions)
-}
-
-// recordOptions is a struct of indication record options
-type recordOptions struct{}
-
-// DiscardOption is an indication store discard option
-type DiscardOption interface {
-	applyDiscard(options *discardOptions)
-}
-
-// discardOptions is a struct of indication discard options
-type discardOptions struct{}
-
-// WatchOption is a message store watch option
+// WatchOption is a control request store watch option
 type WatchOption interface {
 	applyWatch(options *watchOptions)
 }
 
-// watchOptions is a struct of message store watch options
+// watchOptions is a struct of control request store watch options
 type watchOptions struct {
 	replay bool
 }

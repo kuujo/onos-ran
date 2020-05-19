@@ -25,12 +25,13 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/indications"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
+	"github.com/onosproject/onos-ric/pkg/store/requests"
 	"github.com/onosproject/onos-ric/test/mocks/store/device"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"sync"
 	"testing"
-	time2 "time"
+	"time"
 )
 
 func makeNewManager(t *testing.T) *Manager {
@@ -40,7 +41,8 @@ func makeNewManager(t *testing.T) *Manager {
 		Mastership: config.MastershipConfig{},
 		Atomix:     atomix.Config{},
 	}
-	mockTopoStore := store.NewMockStore(gomock.NewController(t))
+	mockTopoStore := mock_device_store.NewMockStore(gomock.NewController(t))
+	mockTopoStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockConfig.Atomix.Controller = string(address)
 	config.WithConfig(mockConfig)
 	MastershipStoreFactory = func(configuration config.Config) (mastership.Store, error) {
@@ -49,11 +51,14 @@ func makeNewManager(t *testing.T) *Manager {
 	IndicationsStoreFactory = func(configuration config.Config) (indications.Store, error) {
 		return indications.NewLocalStore()
 	}
+	RequestsStoreFactory = func(configuration config.Config) (requests.Store, error) {
+		return requests.NewLocalStore()
+	}
 	DeviceStoreFactory = func(topoEndPoint string, opts ...grpc.DialOption) (store device.Store, err error) {
 		return mockTopoStore, nil
 	}
 
-	newManager, err := NewManager("", false, nil)
+	newManager, err := NewManager("", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, newManager)
 	return newManager
@@ -138,7 +143,7 @@ func generateRicIndicationsUEReleaseRequest(ID uint32) e2ap.RicIndication {
 
 func checkEvent(t *testing.T, expected e2ap.RicIndication, actual indications.Event, eventType indications.EventType) {
 	assert.Equal(t, eventType, actual.Type)
-	actualReport := actual.Message.Msg.GetRadioMeasReportPerUE()
+	actualReport := actual.Indication.Msg.GetRadioMeasReportPerUE()
 	expectedReport := expected.Msg.GetRadioMeasReportPerUE()
 	assert.Equal(t, expectedReport, actualReport)
 }
@@ -165,9 +170,6 @@ func Test_TelemetrySubscribe(t *testing.T) {
 	}()
 
 	newManager.StoreTelemetry(telemetryMessage)
-	// This sleep is to work around a bug in the store that causes List() to miss new
-	// Indications if called too soon after Put()
-	time2.Sleep(time2.Second * 2)
 	err = newManager.DeleteTelemetry(IDToPlmnid(1), IDToEcid(1), IDToCrnti(1))
 	assert.NoError(t, err, "error deleting telemetry %v", err)
 
@@ -185,10 +187,6 @@ func Test_ListIndications(t *testing.T) {
 
 	telemetryMessage := generateRicIndicationRadioMeasReportPerUE(1)
 	newManager.StoreTelemetry(telemetryMessage)
-
-	// This sleep is to work around a bug in the store that causes List() to miss new
-	// Indications if called too soon after Put()
-	time2.Sleep(time2.Second * 2)
 
 	ch := make(chan e2ap.RicIndication)
 
@@ -215,10 +213,6 @@ func Test_GetIndications(t *testing.T) {
 	telemetryMessage := generateRicIndicationRadioMeasReportPerUE(1)
 	newManager.StoreTelemetry(telemetryMessage)
 
-	// This sleep is to work around a bug in the store that causes Get() to miss new
-	// Indications if called too soon after Put()
-	time2.Sleep(time2.Second * 2)
-
 	inds, err := newManager.GetIndications()
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(inds))
@@ -230,10 +224,6 @@ func Test_StoreControlUpdateUEAdmission(t *testing.T) {
 
 	UEAdmissionMessage := generateRicIndicationsUEAdmissionRequest(55)
 	newManager.StoreControlUpdate(UEAdmissionMessage)
-
-	// This sleep is to work around a bug in the store that causes List() to miss new
-	// Indications if called too soon after Put()
-	time2.Sleep(time2.Second * 2)
 
 	inds, err := newManager.GetIndications()
 	assert.NoError(t, err)
@@ -249,10 +239,6 @@ func Test_StoreControlUpdateUERelease(t *testing.T) {
 	UEAdmissionMessage := generateRicIndicationsUEAdmissionRequest(55)
 	newManager.StoreControlUpdate(UEAdmissionMessage)
 
-	// This sleep is to work around a bug in the store that causes List() to miss new
-	// Indications if called too soon after Put()
-	time2.Sleep(time2.Second * 2)
-
 	// Check that the UE made it into the store
 	indsBefore, err := newManager.GetIndications()
 	assert.NoError(t, err)
@@ -263,7 +249,8 @@ func Test_StoreControlUpdateUERelease(t *testing.T) {
 	// Now release the UE
 	UEReleaseMessage := generateRicIndicationsUEReleaseRequest(55)
 	newManager.StoreControlUpdate(UEReleaseMessage)
-	time2.Sleep(time2.Second * 2)
+
+	time.Sleep(2 * time.Second)
 
 	indsAfter, err := newManager.GetIndications()
 	assert.NoError(t, err)
@@ -279,10 +266,6 @@ func Test_GetUEAdmissionByID(t *testing.T) {
 	// Add a UE
 	UEAdmissionMessage := generateRicIndicationsUEAdmissionRequest(ID)
 	newManager.StoreControlUpdate(UEAdmissionMessage)
-
-	// This sleep is to work around a bug in the store that causes List() to miss new
-	// Indications if called too soon after Put()
-	time2.Sleep(time2.Second * 2)
 
 	// Check that the UE made it into the store
 	crnti := IDToCrnti(ID)
