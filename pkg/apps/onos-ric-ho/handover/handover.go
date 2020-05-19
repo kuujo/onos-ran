@@ -78,15 +78,12 @@ func HODecisionMaker(ueInfo *nb.UELinkInfo) *nb.HandOverRequest {
 
 // HODecisionMakerWithHOParams makes a handover decision according to CQI and basic handover parameters
 func HODecisionMakerWithHOParams(ueInfo *nb.UELinkInfo, hoReqChan chan *nb.HandOverRequest, hystCQI int, a3OffsetCQI int, TTTMs int) {
-	targetCellID, _, targetCQIDelta := getTargetCellInfo(ueInfo, true, hystCQI, a3OffsetCQI)
+	targetCellID, _, _ := getTargetCellInfo(ueInfo, true, hystCQI, a3OffsetCQI)
 	tStart := time.Now()
 
 	// HO is unnecessary
 	if targetCellID.String() == ueInfo.Ecgi.String() {
 		// HO is unnecessary since sCell is the best cell
-		return
-	} else if targetCQIDelta <= 0 {
-		// HO is unnecessary since CQIDelta value is less than or equal to 0
 		return
 	}
 
@@ -113,13 +110,13 @@ func HODecisionMakerWithHOParams(ueInfo *nb.UELinkInfo, hoReqChan chan *nb.HandO
 	} else {
 		// A3Event was started and new UELinkInfo message arrives for the UE
 		A3EventMapMutex.RLock()
+		defer A3EventMapMutex.RUnlock()
 		if a3, ok := A3EventMap[getUEID(ueInfo.Crnti, ueInfo.Ecgi)]; ok {
 			select {
 			case a3.chanUELinkInfo <- ueInfo: // if channel is ready
 			default: // the case if channel has a problem (e.g., closed channel)
 			}
 		}
-		A3EventMapMutex.RUnlock()
 	}
 }
 
@@ -139,17 +136,17 @@ func startA3Event(event *a3Event, hoReqChan chan *nb.HandOverRequest) {
 		case ueInfo, ok := <-event.chanUELinkInfo:
 			if !ok {
 				log.Error("UELinkInfo channel is broken in A3Event due to an unexpected error")
+				A3EventMapMutex.Lock()
+				event.chanUELinkInfo = make(chan *nb.UELinkInfo)
+				A3EventMapMutex.Unlock()
 				return
 			}
 
-			targetCellID, _, targetCQIDelta := getTargetCellInfo(ueInfo, false, event.hystCQI, event.a3OffsetCQI)
+			targetCellID, _, _ := getTargetCellInfo(ueInfo, false, event.hystCQI, event.a3OffsetCQI)
 
 			// Discard HO event: HO is unnecessary since sCell becomes the best cell or CQIDelta becomes negative
 			if targetCellID.String() == event.lastUELinkInfoMsg.Ecgi.String() {
 				// In the A3Event, HO is unnecessary because sCell becomes the best cell
-				return
-			} else if targetCQIDelta <= 0 {
-				// In the A3Event, HO is unnecessary because CQIDelta value is less than or equal to 0
 				return
 			}
 

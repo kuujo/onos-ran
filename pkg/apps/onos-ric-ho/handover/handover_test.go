@@ -485,6 +485,13 @@ func TestGetScellCQI(t *testing.T) {
 	assert.Equal(t, cqi4, uint32(10))
 }
 
+func TestGetScellCQI_WrongInfo(t *testing.T) {
+	GenSampleUELinkInfoMsgs()
+	sampleMsg1.ChannelQualities = nil
+	cqi := getSCellCQI(sampleMsg1)
+	assert.Equal(t, uint32(0), cqi)
+}
+
 func TestGetUEID(t *testing.T) {
 	GenSampleUELinkInfoMsgs()
 	// for Sample1Msg
@@ -502,6 +509,24 @@ func TestGetUEID(t *testing.T) {
 }
 
 func TestInitA3EventMap(t *testing.T) {
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	assert.NotNil(t, A3EventMap)
+	assert.Equal(t, 0, len(A3EventMap))
+	a3 := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg1,
+		startTime:         time.Now(),
+		targetCell:        sampleMsg1.Ecgi,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     0,
+	}
+	A3EventMapMutex.Lock()
+	A3EventMap[getUEID(sampleMsg1.Crnti, sampleMsg1.Ecgi)] = a3
+	A3EventMapMutex.Unlock()
+	assert.NotNil(t, A3EventMap)
+	assert.Equal(t, 1, len(A3EventMap))
 	InitA3EventMap()
 	assert.NotNil(t, A3EventMap)
 	assert.Equal(t, 0, len(A3EventMap))
@@ -1129,4 +1154,296 @@ func TestHODecisionMakerWithHOParams3_H3A3T0(t *testing.T) {
 	mu.Lock()
 	assert.Equal(t, expectedNumHOs, numHOs)
 	mu.Unlock()
+}
+
+func TestHODecisionMakerWithHOParams3_to_3_H0A0T1000(t *testing.T) {
+	var mu sync.RWMutex
+	hyst := 0
+	a3offset := 0
+	ttt := 1000
+	tmpHOChan := make(chan *nb.HandOverRequest)
+	numHOs := 0
+	expectedNumHOs := 1
+
+	go func() {
+		for ho := range tmpHOChan {
+			mu.Lock()
+			numHOs++
+			mu.Unlock()
+			tmpHOChan <- ho
+
+		}
+	}()
+
+	InitA3EventMap()
+	GenSampleUELinkInfoMsgs()
+	mu.Lock()
+	HODecisionMakerWithHOParams(sampleMsg3, tmpHOChan, hyst, a3offset, ttt)
+	time.Sleep(100 * time.Millisecond)
+	HODecisionMakerWithHOParams(sampleMsg2, tmpHOChan, hyst, a3offset, ttt)
+	mu.Unlock()
+	time.Sleep(time.Duration(ttt)*time.Millisecond*10 + 1*time.Second)
+	mu.Lock()
+	assert.Equal(t, expectedNumHOs, numHOs)
+	assert.Equal(t, "0002", (<-tmpHOChan).DstStation.Ecid)
+	mu.Unlock()
+}
+
+func TestHODecisionMakerWithHOParams3_to_3_H0A0T1000_Scalable_500Events(t *testing.T) {
+	var mu sync.RWMutex
+	numEvents := 500
+	hyst := 0
+	a3offset := 0
+	ttt := 1000
+	tmpHOChan := make(chan *nb.HandOverRequest)
+	numHOs := 0
+
+	go func() {
+		for ho := range tmpHOChan {
+			mu.Lock()
+			numHOs++
+			mu.Unlock()
+			tmpHOChan <- ho
+
+		}
+	}()
+
+	defer func() {
+		// Panic handler
+		time.Sleep(time.Duration(ttt)*time.Millisecond*10 + 1*time.Second)
+		if r := recover(); r != nil {
+			t.Errorf("The have a panic - please check detailed log")
+		}
+	}()
+
+	InitA3EventMap()
+	GenSampleUELinkInfoMsgs()
+	mu.Lock()
+	for i := 0; i < numEvents; i++ {
+		HODecisionMakerWithHOParams(sampleMsg1, tmpHOChan, hyst, a3offset, ttt)
+		HODecisionMakerWithHOParams(sampleMsg2, tmpHOChan, hyst, a3offset, ttt)
+		HODecisionMakerWithHOParams(sampleMsg3, tmpHOChan, hyst, a3offset, ttt)
+		HODecisionMakerWithHOParams(sampleMsg4, tmpHOChan, hyst, a3offset, ttt)
+	}
+	mu.Unlock()
+}
+
+func TestStartA3Event_S1_TTT0(t *testing.T) {
+	timeToTrigger := 0
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg1,
+		targetCell:        sampleMsg1.Ecgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+	go startA3Event(sampleA3Event, hoChan)
+	ho := <-hoChan
+	eTime := time.Since(tStart)
+
+	if eTime.Milliseconds() < int64(timeToTrigger) {
+		t.Errorf("TimeToTrigger is not working - elapsed time: %dms, TTT: %dms", eTime.Milliseconds(), timeToTrigger)
+	}
+	assert.Equal(t, ho.DstStation, sampleA3Event.targetCell)
+}
+
+func TestStartA3Event_S1_TTT1000(t *testing.T) {
+	timeToTrigger := 1000
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg1,
+		targetCell:        sampleMsg1.Ecgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+	go startA3Event(sampleA3Event, hoChan)
+	ho := <-hoChan
+	eTime := time.Since(tStart)
+	if eTime.Milliseconds() < int64(timeToTrigger) {
+		t.Errorf("TimeToTrigger is not working - elapsed time: %dms, TTT: %dms", eTime.Milliseconds(), timeToTrigger)
+	}
+	assert.Equal(t, ho.DstStation, sampleA3Event.targetCell)
+}
+
+func TestStartA3Event_S2_TTT0(t *testing.T) {
+	timeToTrigger := 0
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg2,
+		targetCell:        sampleMsg2.ChannelQualities[1].TargetEcgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+	go startA3Event(sampleA3Event, hoChan)
+	ho := <-hoChan
+	eTime := time.Since(tStart)
+
+	if eTime.Milliseconds() < int64(timeToTrigger) {
+		t.Errorf("TimeToTrigger is not working - elapsed time: %dms, TTT: %dms", eTime.Milliseconds(), timeToTrigger)
+	}
+	assert.Equal(t, ho.DstStation, sampleA3Event.targetCell)
+}
+
+func TestStartA3Event_S2_TTT1000(t *testing.T) {
+	timeToTrigger := 1000
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg2,
+		targetCell:        sampleMsg2.ChannelQualities[1].TargetEcgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+	go startA3Event(sampleA3Event, hoChan)
+	ho := <-hoChan
+	eTime := time.Since(tStart)
+
+	if eTime.Milliseconds() < int64(timeToTrigger) {
+		t.Errorf("TimeToTrigger is not working - elapsed time: %dms, TTT: %dms", eTime.Milliseconds(), timeToTrigger)
+	}
+	assert.Equal(t, ho.DstStation, sampleA3Event.targetCell)
+}
+
+func TestStartA3Event_S2_3_TTT1000(t *testing.T) {
+	timeToTrigger := 1000
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg2,
+		targetCell:        sampleMsg2.ChannelQualities[1].TargetEcgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+	go startA3Event(sampleA3Event, hoChan)
+	time.Sleep(100 * time.Millisecond)
+	sampleA3Event.chanUELinkInfo <- sampleMsg3
+
+	time.Sleep(time.Duration(timeToTrigger)*time.Millisecond*10 + 1*time.Second)
+	select {
+	case ho := <-hoChan:
+		assert.Equal(t, "0003", ho.DstStation.Ecid)
+	case <-time.After(10 * time.Second):
+		t.Error("Timeout: HO should be happened but not happened for 20 second")
+	}
+}
+
+func TestStartA3Event_S2_2_TTT1000(t *testing.T) {
+	timeToTrigger := 1000
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg2,
+		targetCell:        sampleMsg2.ChannelQualities[1].TargetEcgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+	go startA3Event(sampleA3Event, hoChan)
+	time.Sleep(100 * time.Millisecond)
+	sampleA3Event.chanUELinkInfo <- sampleMsg2
+
+	time.Sleep(time.Duration(timeToTrigger)*time.Millisecond*10 + 1*time.Second)
+	select {
+	case ho := <-hoChan:
+		assert.Equal(t, "0002", ho.DstStation.Ecid)
+	case <-time.After(10 * time.Second):
+		t.Error("Timeout: HO should be happened but not happened for 20 second")
+	}
+}
+
+func TestStartA3Event_S2_1_TTT1000(t *testing.T) {
+	timeToTrigger := 1000
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg2,
+		targetCell:        sampleMsg2.ChannelQualities[1].TargetEcgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+	go startA3Event(sampleA3Event, hoChan)
+	time.Sleep(100 * time.Millisecond)
+	sampleA3Event.chanUELinkInfo <- sampleMsg1
+
+	time.Sleep(time.Duration(timeToTrigger)*time.Millisecond*10 + 1*time.Second)
+	select {
+	case ho := <-hoChan:
+		t.Errorf("HO should not be happened, but happened %s to %s", ho.SrcStation.Ecid, ho.DstStation.Ecid)
+	case <-time.After(10 * time.Second):
+		assert.Equal(t, 0, len(hoChan))
+	}
+}
+
+func TestStartA3Event_S2_3_TTT1000_ChanForceClose(t *testing.T) {
+	timeToTrigger := 1000
+	GenSampleUELinkInfoMsgs()
+	InitA3EventMap()
+	hoChan := make(chan *nb.HandOverRequest)
+	tStart := time.Now()
+	sampleA3Event := &a3Event{
+		chanUELinkInfo:    make(chan *nb.UELinkInfo),
+		lastUELinkInfoMsg: sampleMsg2,
+		targetCell:        sampleMsg2.ChannelQualities[1].TargetEcgi,
+		startTime:         tStart,
+		hystCQI:           0,
+		a3OffsetCQI:       0,
+		timeToTrigger:     timeToTrigger,
+	}
+
+	defer func() {
+		// Panic handler
+		time.Sleep(time.Duration(timeToTrigger)*time.Millisecond*10 + 1*time.Second)
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		} else {
+			return
+		}
+	}()
+
+	go startA3Event(sampleA3Event, hoChan)
+	time.Sleep(100 * time.Millisecond)
+	A3EventMapMutex.Lock()
+	close(sampleA3Event.chanUELinkInfo)
+	A3EventMapMutex.Unlock()
+	time.Sleep(100 * time.Millisecond)
+	A3EventMapMutex.Lock()
+	sampleA3Event.chanUELinkInfo <- sampleMsg3
+	A3EventMapMutex.Unlock()
 }
