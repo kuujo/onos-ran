@@ -6,8 +6,8 @@ export GO111MODULE=on
 ONOS_RIC_VERSION := latest
 ONOS_RIC_HO_VERSION := latest
 ONOS_RIC_MLB_VERSION := latest
-ONOS_BUILD_VERSION := v0.6.0
-ONOS_PROTOC_VERSION := v0.6.0
+ONOS_BUILD_VERSION := v0.6.3
+ONOS_PROTOC_VERSION := v0.6.3
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
