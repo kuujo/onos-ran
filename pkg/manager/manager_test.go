@@ -34,7 +34,27 @@ import (
 	"time"
 )
 
+var oldMastershipStoreFactory func(configuration config.Config) (mastership.Store, error)
+var oldIndicationsStoreFactory func(configuration config.Config) (indications.Store, error)
+var oldRequestsStoreFactory func(configuration config.Config) (requests.Store, error)
+var oldDeviceStoreFactory func(topoEndPoint string, opts ...grpc.DialOption) (store device.Store, err error)
+
+func saveFactories() {
+	oldMastershipStoreFactory = MastershipStoreFactory
+	oldIndicationsStoreFactory = IndicationsStoreFactory
+	oldRequestsStoreFactory = RequestsStoreFactory
+	oldDeviceStoreFactory = DeviceStoreFactory
+}
+
+func restoreFactories() {
+	MastershipStoreFactory = oldMastershipStoreFactory
+	IndicationsStoreFactory = oldIndicationsStoreFactory
+	RequestsStoreFactory = oldRequestsStoreFactory
+	DeviceStoreFactory = oldDeviceStoreFactory
+}
+
 func makeNewManager(t *testing.T) *Manager {
+	saveFactories()
 	_, address := atomix.StartLocalNode()
 	assert.NotNil(t, address)
 	mockConfig := &config.Config{
@@ -61,15 +81,12 @@ func makeNewManager(t *testing.T) *Manager {
 	newManager, err := NewManager("", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, newManager)
+	newManager.Run()
 	return newManager
 }
 
-func Test_Create(t *testing.T) {
-	newManager := makeNewManager(t)
-
-	testManager := GetManager()
-	assert.Equal(t, newManager, testManager)
-	newManager.Close()
+func removeNewManager() {
+	restoreFactories()
 }
 
 func IDToEcid(ID uint32) string {
@@ -141,11 +158,40 @@ func generateRicIndicationsUEReleaseRequest(ID uint32) e2ap.RicIndication {
 	}
 }
 
+func generateRicControlRequest(ID uint32) e2ap.RicControlRequest {
+	return e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_CELL_CONFIG_REQUEST,
+			Crnti:       []string{IDToCrnti(ID)},
+			Ecgi:        IDToECGI(ID),
+		},
+		Msg: &e2sm.RicControlMessage{S: &e2sm.RicControlMessage_CellConfigRequest{}},
+	}
+}
+
+func generateRicIndicationsRicControlResponse(ID uint32) e2ap.RicIndication {
+	return e2ap.RicIndication{
+		Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_CELL_CONFIG_REPORT},
+		Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_CellConfigReport{CellConfigReport: &sb.CellConfigReport{
+			Ecgi: IDToECGI(ID),
+		}}},
+	}
+}
+
 func checkEvent(t *testing.T, expected e2ap.RicIndication, actual indications.Event, eventType indications.EventType) {
 	assert.Equal(t, eventType, actual.Type)
 	actualReport := actual.Indication.Msg.GetRadioMeasReportPerUE()
 	expectedReport := expected.Msg.GetRadioMeasReportPerUE()
 	assert.Equal(t, expectedReport, actualReport)
+}
+
+func Test_Create(t *testing.T) {
+	newManager := makeNewManager(t)
+
+	testManager := GetManager()
+	assert.Equal(t, newManager, testManager)
+	newManager.Close()
+	removeNewManager()
 }
 
 func Test_TelemetrySubscribe(t *testing.T) {
@@ -181,6 +227,7 @@ func Test_TelemetrySubscribe(t *testing.T) {
 
 	// Second event should be delete
 	assert.Equal(t, indications.EventDelete, e2.Type)
+	removeNewManager()
 }
 
 func Test_ListIndications(t *testing.T) {
@@ -207,6 +254,7 @@ func Test_ListIndications(t *testing.T) {
 	wg.Wait()
 
 	assert.Equal(t, telemetryMessage.Msg.GetRadioMeasReportPerUE(), ri.Msg.GetRadioMeasReportPerUE())
+	removeNewManager()
 }
 
 func Test_GetIndications(t *testing.T) {
@@ -220,6 +268,7 @@ func Test_GetIndications(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(inds))
 	assert.Equal(t, telemetryMessage.Msg.GetRadioMeasReportPerUE(), inds[0].Msg.GetRadioMeasReportPerUE())
+	removeNewManager()
 }
 
 func Test_StoreControlUpdateUEAdmission(t *testing.T) {
@@ -234,6 +283,7 @@ func Test_StoreControlUpdateUEAdmission(t *testing.T) {
 	assert.NotNil(t, inds)
 	assert.Equal(t, 1, len(inds))
 	assert.Equal(t, UEAdmissionMessage.Msg.GetUEAdmissionRequest(), inds[0].Msg.GetUEAdmissionRequest())
+	removeNewManager()
 }
 
 func Test_StoreControlUpdateUERelease(t *testing.T) {
@@ -262,9 +312,9 @@ func Test_StoreControlUpdateUERelease(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, indsAfter)
 	assert.Empty(t, indsAfter)
+	removeNewManager()
 }
 
-// GetUEAdmissionByID(ecgi *sb.ECGI, crnti string)
 func Test_GetUEAdmissionByID(t *testing.T) {
 	newManager := makeNewManager(t)
 	ID := uint32(778899)
@@ -280,4 +330,56 @@ func Test_GetUEAdmissionByID(t *testing.T) {
 	ue, err := newManager.GetUEAdmissionByID(ecgi, crnti)
 	assert.NoError(t, err)
 	assert.Equal(t, UEAdmissionMessage.Msg.GetUEAdmissionRequest(), ue.Msg.GetUEAdmissionRequest())
+	removeNewManager()
+}
+
+func Test_RicControlMessages(t *testing.T) {
+	newManager := makeNewManager(t)
+	ID := uint32(556677)
+	deviceID := device.ID{PlmnId: IDToPlmnid(ID), Ecid: IDToEcid(ID)}
+
+	requestMessage := generateRicControlRequest(ID)
+	err := newManager.StoreRicControlRequest(deviceID, &requestMessage)
+	assert.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	indsAfterControlRequest, err := newManager.GetIndications()
+	assert.NoError(t, err)
+	assert.NotNil(t, indsAfterControlRequest)
+	assert.Empty(t, indsAfterControlRequest)
+
+	response := generateRicIndicationsRicControlResponse(ID)
+	err = newManager.StoreRicControlResponse(response)
+	assert.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	indsAfterControlResponse, err := newManager.GetIndications()
+	assert.NoError(t, err)
+	assert.NotNil(t, indsAfterControlResponse)
+	assert.Equal(t, 1, len(indsAfterControlResponse))
+	assert.Equal(t, IDToEcid(ID), indsAfterControlResponse[0].Msg.GetCellConfigReport().Ecgi.Ecid)
+	removeNewManager()
+}
+
+// Test_StoresBadConfig : Tests default store implementations with bad configurations
+func Test_StoresBadConfig(t *testing.T) {
+	var cfg config.Config
+
+	mship, err := MastershipStoreFactory(cfg)
+	assert.Error(t, err)
+	assert.Nil(t, mship)
+
+	inds, err := IndicationsStoreFactory(cfg)
+	assert.Error(t, err)
+	assert.Nil(t, inds)
+
+	reqs, err := RequestsStoreFactory(cfg)
+	assert.Error(t, err)
+	assert.Nil(t, reqs)
+
+	devs, err := DeviceStoreFactory("abc")
+	assert.Error(t, err)
+	assert.Nil(t, devs)
 }
