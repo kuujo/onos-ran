@@ -81,9 +81,16 @@ func HODecisionMakerWithHOParams(ueInfo *nb.UELinkInfo, hoReqChan chan *nb.HandO
 	targetCellID, _, _ := getTargetCellInfo(ueInfo, true, hystCQI, a3OffsetCQI)
 	tStart := time.Now()
 
-	// HO is unnecessary
+	// HO is unnecessary since sCell is the best cell
 	if targetCellID.String() == ueInfo.Ecgi.String() {
-		// HO is unnecessary since sCell is the best cell
+		A3EventMapMutex.RLock()
+		defer A3EventMapMutex.RUnlock()
+		if a3, ok := A3EventMap[getUEID(ueInfo.Crnti, ueInfo.Ecgi)]; ok {
+			select {
+			case a3.chanUELinkInfo <- ueInfo: // if channel is ready
+			default: // the case if channel has a problem (e.g., closed channel)
+			}
+		}
 		return
 	}
 

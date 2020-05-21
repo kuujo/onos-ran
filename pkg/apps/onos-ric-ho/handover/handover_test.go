@@ -1156,7 +1156,7 @@ func TestHODecisionMakerWithHOParams3_H3A3T0(t *testing.T) {
 	mu.Unlock()
 }
 
-func TestHODecisionMakerWithHOParams3_to_3_H0A0T1000(t *testing.T) {
+func TestHODecisionMakerWithHOParams3_to_2_H0A0T1000(t *testing.T) {
 	var mu sync.RWMutex
 	hyst := 0
 	a3offset := 0
@@ -1189,7 +1189,37 @@ func TestHODecisionMakerWithHOParams3_to_3_H0A0T1000(t *testing.T) {
 	mu.Unlock()
 }
 
-func TestHODecisionMakerWithHOParams3_to_3_H0A0T1000_Scalable_500Events(t *testing.T) {
+func TestHODecisionMakerWithHOParams3_to_1_H0A0T1000(t *testing.T) {
+	var mu sync.RWMutex
+	hyst := 0
+	a3offset := 0
+	ttt := 1000
+	tmpHOChan := make(chan *nb.HandOverRequest)
+	numHOs := 0
+	expectedNumHOs := 0
+
+	go func() {
+		for range tmpHOChan {
+			mu.Lock()
+			numHOs++
+			mu.Unlock()
+		}
+	}()
+
+	InitA3EventMap()
+	GenSampleUELinkInfoMsgs()
+	mu.Lock()
+	HODecisionMakerWithHOParams(sampleMsg3, tmpHOChan, hyst, a3offset, ttt)
+	time.Sleep(100 * time.Millisecond)
+	HODecisionMakerWithHOParams(sampleMsg1, tmpHOChan, hyst, a3offset, ttt)
+	mu.Unlock()
+	time.Sleep(time.Duration(ttt)*time.Millisecond*10 + 1*time.Second)
+	mu.Lock()
+	assert.Equal(t, expectedNumHOs, numHOs)
+	mu.Unlock()
+}
+
+func TestHODecisionMakerWithHOParamsAll_H0A0T1000_Scalable_500Events(t *testing.T) {
 	var mu sync.RWMutex
 	numEvents := 500
 	hyst := 0
