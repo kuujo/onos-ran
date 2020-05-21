@@ -29,7 +29,7 @@ import (
 )
 
 const defaultPlmnid = "315010"
-const cellNamePattern = "000[0-9AB]{4}"
+const cellNamePattern = "000[0-9ab]{4}"
 const (
 	cell0Name  = "0001420"
 	cell1Name  = "0001421"
@@ -41,8 +41,8 @@ const (
 	cell7Name  = "0001427"
 	cell8Name  = "0001428"
 	cell9Name  = "0001429"
-	cell10Name = "000142A"
-	cell11Name = "000142B"
+	cell10Name = "000142a"
+	cell11Name = "000142b"
 )
 
 const clientCert = `
