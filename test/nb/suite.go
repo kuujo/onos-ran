@@ -50,29 +50,12 @@ func (s *TestSuite) SetupTestSuite() error {
 		return err
 	}
 
-	controller := "onos-ric-atomix-kubernetes-controller:5679"
-
-	err = helm.Chart("onos-topo").
-		Release("onos-topo").
-		Set("store.controller", controller).
-		Install(false)
-	if err != nil {
-		return err
-	}
-
-	err = helm.Chart("onos-ric").
-		Release("onos-ric").
-		Set("store.controller", controller).
-		Install(true)
-	if err != nil {
-		return err
-	}
-
-	err = helm.Chart("ran-simulator").
-		Release("ran-simulator").
-		Install(true)
-	if err != nil {
-		return err
-	}
-	return nil
+	sdran := helm.Chart("sd-ran").
+		Release("sd-ran").
+		Set("global.store.controller", "onos-ric-atomix-kubernetes-controller:5679").
+		Set("import.onos-gui.enabled", false).
+		Set("onos-ric.service.external.nodePort", 0).
+		Set("onos-ric-ho.service.external.nodePort", 0).
+		Set("onos-ric-mlb.service.external.nodePort", 0)
+	return sdran.Install(true)
 }
