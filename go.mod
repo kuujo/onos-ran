@@ -4,14 +4,14 @@ go 1.14
 
 require (
 	github.com/DataDog/mmh3 v0.0.0-20200316233529-f5b682d8c981
-	github.com/atomix/go-client v0.1.1
+	github.com/atomix/go-client v0.2.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733
 	github.com/onosproject/helmit v0.6.3
-	github.com/onosproject/onos-lib-go v0.6.3
+	github.com/onosproject/onos-lib-go v0.6.4
 	github.com/onosproject/onos-topo v0.6.3
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/prometheus/client_golang v1.4.1
