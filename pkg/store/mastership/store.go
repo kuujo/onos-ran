@@ -19,8 +19,8 @@ import (
 	"github.com/DataDog/mmh3"
 	"github.com/atomix/go-client/pkg/client/util/net"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/pkg/config"
-	"github.com/onosproject/onos-ric/pkg/store/cluster"
 	"io"
 	"sync"
 )
@@ -55,24 +55,20 @@ type PartitionID uint32
 type Store interface {
 	io.Closer
 
-	// NodeID returns the local node identifier used in mastership elections
-	NodeID() cluster.NodeID
-
 	// GetElection gets the mastership election for the given key
 	GetElection(key Key) (Election, error)
 }
 
 // NewDistributedStore returns a new distributed Store
-func NewDistributedStore(config config.Config) (Store, error) {
+func NewDistributedStore(cluster cluster.Cluster, config config.Config) (Store, error) {
 	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(atomix.DatabaseTypeConsensus))
 	if err != nil {
 		return nil, err
 	}
 	return &distributedStore{
-		nodeID:     cluster.GetNodeID(),
 		partitions: config.Mastership.GetPartitions(),
 		newElection: func(id PartitionID) (Election, error) {
-			return newDistributedElection(id, database)
+			return newDistributedElection(id, database, cluster)
 		},
 		elections: make(map[PartitionID]Election),
 	}, nil
@@ -93,7 +89,6 @@ func NewLocalStore(clusterID string, nodeID cluster.NodeID) (Store, error) {
 // newLocalStore returns a new local mastership store
 func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 	return &distributedStore{
-		nodeID:     nodeID,
 		partitions: 16,
 		newElection: func(id PartitionID) (Election, error) {
 			return newLocalElection(id, nodeID, address)
@@ -104,7 +99,6 @@ func newLocalStore(nodeID cluster.NodeID, address net.Address) (Store, error) {
 
 // distributedStore is the default implementation of the NetworkConfig store
 type distributedStore struct {
-	nodeID      cluster.NodeID
 	partitions  int
 	newElection func(PartitionID) (Election, error)
 	elections   map[PartitionID]Election
@@ -137,10 +131,6 @@ func (s *distributedStore) GetElection(key Key) (Election, error) {
 		s.mu.Unlock()
 	}
 	return election, nil
-}
-
-func (s *distributedStore) NodeID() cluster.NodeID {
-	return s.nodeID
 }
 
 func (s *distributedStore) Close() error {

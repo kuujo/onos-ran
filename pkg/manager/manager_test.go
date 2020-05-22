@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
@@ -34,7 +35,7 @@ import (
 	"time"
 )
 
-var oldMastershipStoreFactory func(configuration config.Config) (mastership.Store, error)
+var oldMastershipStoreFactory func(cluster cluster.Cluster, configuration config.Config) (mastership.Store, error)
 var oldIndicationsStoreFactory func(configuration config.Config) (indications.Store, error)
 var oldRequestsStoreFactory func(configuration config.Config) (requests.Store, error)
 var oldDeviceStoreFactory func(topoEndPoint string, opts ...grpc.DialOption) (store device.Store, err error)
@@ -65,7 +66,7 @@ func makeNewManager(t *testing.T) *Manager {
 	mockTopoStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockConfig.Atomix.Controller = string(address)
 	config.WithConfig(mockConfig)
-	MastershipStoreFactory = func(configuration config.Config) (mastership.Store, error) {
+	MastershipStoreFactory = func(cluster cluster.Cluster, configuration config.Config) (mastership.Store, error) {
 		return mastership.NewLocalStore("cluster1", "node1")
 	}
 	IndicationsStoreFactory = func(configuration config.Config) (indications.Store, error) {
@@ -367,7 +368,11 @@ func Test_RicControlMessages(t *testing.T) {
 func Test_StoresBadConfig(t *testing.T) {
 	var cfg config.Config
 
-	mship, err := MastershipStoreFactory(cfg)
+	cluster, err := ClusterFactory(cfg)
+	assert.Error(t, err)
+	assert.Nil(t, cluster)
+
+	mship, err := MastershipStoreFactory(cluster, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, mship)
 

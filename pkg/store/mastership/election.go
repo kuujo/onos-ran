@@ -22,16 +22,16 @@ import (
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/onosproject/onos-ric/pkg/store/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"io"
 	"sync"
 	"time"
 )
 
 // newDistributedElection returns a new distributed mastership election
-func newDistributedElection(partitionID PartitionID, database *client.Database) (Election, error) {
+func newDistributedElection(partitionID PartitionID, database *client.Database, cluster cluster.Cluster) (Election, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%d", partitionID), election.WithID(string(cluster.GetNodeID())))
+	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%d", partitionID), election.WithID(string(cluster.Node().ID)))
 	cancel()
 	if err != nil {
 		return nil, err
