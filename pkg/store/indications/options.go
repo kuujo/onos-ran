@@ -14,52 +14,28 @@
 
 package indications
 
-// LookupOption is an indication store lookup option
-type LookupOption interface {
-	applyLookup(options *lookupOptions)
+// SubscribeOption is a message store subscribe option
+type SubscribeOption interface {
+	applySubscribe(options *subscribeOptions)
 }
 
-// lookupOptions is a struct of indication lookup options
-type lookupOptions struct{}
-
-// RecordOption is an indication store record option
-type RecordOption interface {
-	applyRecord(options *recordOptions)
-}
-
-// recordOptions is a struct of indication record options
-type recordOptions struct{}
-
-// DiscardOption is an indication store discard option
-type DiscardOption interface {
-	applyDiscard(options *discardOptions)
-}
-
-// discardOptions is a struct of indication discard options
-type discardOptions struct{}
-
-// WatchOption is a message store watch option
-type WatchOption interface {
-	applyWatch(options *watchOptions)
-}
-
-// watchOptions is a struct of message store watch options
-type watchOptions struct {
+// subscribeOptions is a struct of message store subscribe options
+type subscribeOptions struct {
 	replay bool
 }
 
-// WithReplay returns a watch option that replays existing messages
-func WithReplay() WatchOption {
-	return &watchReplayOption{
+// WithReplay returns a subscribe option that replays existing messages
+func WithReplay() SubscribeOption {
+	return &subscribeReplayOption{
 		replay: true,
 	}
 }
 
-// watchReplayOption is an option for configuring whether to replay message on watch calls
-type watchReplayOption struct {
+// subscribeReplayOption is an option for configuring whether to replay message on subscribe calls
+type subscribeReplayOption struct {
 	replay bool
 }
 
-func (o *watchReplayOption) applyWatch(options *watchOptions) {
+func (o *subscribeReplayOption) applySubscribe(options *subscribeOptions) {
 	options.replay = o.replay
 }

@@ -15,18 +15,17 @@
 package indications
 
 import (
-	"context"
-	"fmt"
-	"github.com/atomix/go-client/pkg/client/map"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/store/indications"
 	"github.com/onosproject/onos-ric/pkg/config"
+	"github.com/onosproject/onos-ric/pkg/store/device"
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"io"
+	"sync"
 	"time"
 )
 
@@ -37,16 +36,9 @@ const requestTimeout = 15 * time.Second
 const primitiveName = "indications"
 const databaseType = atomix.DatabaseTypeCache
 
-// Revision is a message revision number
-type Revision uint64
-
-// ID is a message identifier
-type ID string
-
 // New creates a new indication
 func New(indication *e2ap.RicIndication) *Indication {
 	return &Indication{
-		ID:            GetID(indication),
 		RicIndication: indication,
 	}
 }
@@ -54,35 +46,6 @@ func New(indication *e2ap.RicIndication) *Indication {
 // Indication is an indication message
 type Indication struct {
 	*e2ap.RicIndication
-	// ID is the unique indication identifier
-	ID ID
-	// Revision is the indication revision number
-	Revision Revision
-}
-
-// NewID creates a new telemetry store ID
-func NewID(messageType sb.MessageType, plmnidn, ecid, crnti string) ID {
-	return ID(fmt.Sprintf("%s:%s:%s:%s", messageType, plmnidn, ecid, crnti))
-}
-
-// GetID gets the telemetry store ID for the given message
-func GetID(message *e2ap.RicIndication) ID {
-	var ecgi sb.ECGI
-	var crnti string
-	msgType := message.GetHdr().GetMessageType()
-	switch msgType {
-	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
-		ecgi = *message.GetMsg().GetRadioMeasReportPerUE().GetEcgi()
-		crnti = message.GetMsg().GetRadioMeasReportPerUE().GetCrnti()
-	case sb.MessageType_RADIO_MEAS_REPORT_PER_CELL:
-		ecgi = *message.GetMsg().GetRadioMeasReportPerCell().GetEcgi()
-	case sb.MessageType_CELL_CONFIG_REPORT:
-		ecgi = *message.GetMsg().GetCellConfigReport().GetEcgi()
-	case sb.MessageType_UE_ADMISSION_REQUEST:
-		ecgi = *message.GetMsg().GetUEAdmissionRequest().GetEcgi()
-		crnti = message.GetMsg().GetUEAdmissionRequest().GetCrnti()
-	}
-	return NewID(msgType, ecgi.PlmnId, ecgi.Ecid, crnti)
 }
 
 // Event is a store event
@@ -100,214 +63,176 @@ type EventType string
 const (
 	// EventNone indicates an event that was not triggered but replayed
 	EventNone EventType = ""
-	// EventInsert indicates the message was inserted into the store
-	EventInsert EventType = "insert"
-	// EventUpdate indicates the message was updated in the store
-	EventUpdate EventType = "update"
-	// EventDelete indicates the message was deleted from the store
-	EventDelete EventType = "remove"
+	// EventReceived indicates the message was received in the store
+	EventReceived EventType = "received"
 )
 
 // Store is interface for store
 type Store interface {
 	io.Closer
 
-	// Lookup looks up an indication by ID
-	Lookup(ID, ...LookupOption) (*Indication, error)
-
 	// Record records an indication in the store
-	Record(*Indication, ...RecordOption) error
-
-	// Discard discards an indication from the store
-	Discard(ID, ...DiscardOption) error
+	Record(*Indication) error
 
 	// List all of the last up to date messages
 	List(ch chan<- Indication) error
 
-	// Watch watches the store for changes
-	Watch(ch chan<- Event, opts ...WatchOption) error
-
-	// Clear deletes all messages from the store
-	Clear() error
+	// Subscribe subscribes to indications
+	Subscribe(ch chan<- Event, opts ...SubscribeOption) error
 }
 
 // NewDistributedStore creates a new distributed indications store
-func NewDistributedStore(config config.Config) (Store, error) {
-	log.Info("Creating distributed message store")
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(databaseType))
-	if err != nil {
+func NewDistributedStore(cluster cluster.Cluster, devices device.Store, masterships mastership.Store, config config.Config) (Store, error) {
+	log.Info("Creating distributed indications store")
+	store := &store{
+		cluster:           cluster,
+		devices:           devices,
+		masterships:       masterships,
+		deviceIndications: make(map[device.Key]*deviceIndicationsStore),
+	}
+	if err := store.open(); err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-	messages, err := database.GetMap(ctx, primitiveName)
-	if err != nil {
-		return nil, err
-	}
-	return &store{
-		dist: messages,
-	}, nil
-}
-
-// NewLocalStore returns a new local indications store
-func NewLocalStore() (Store, error) {
-	_, address := atomix.StartLocalNode()
-	return newLocalStore(address)
-}
-
-// newLocalStore creates a new local indications store
-func newLocalStore(address net.Address) (Store, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
-	if err != nil {
-		return nil, err
-	}
-	primitiveName := primitive.Name{
-		Namespace: "local",
-		Name:      primitiveName,
-	}
-	messages, err := _map.New(context.Background(), primitiveName, []*primitive.Session{session})
-	if err != nil {
-		return nil, err
-	}
-	return &store{
-		dist: messages,
-	}, nil
+	return store, nil
 }
 
 var _ Store = &store{}
 
 type store struct {
-	dist _map.Map
+	cluster           cluster.Cluster
+	devices           device.Store
+	masterships       mastership.Store
+	deviceIndications map[device.Key]*deviceIndicationsStore
+	mu                sync.RWMutex
 }
 
-func (s *store) Lookup(id ID, opts ...LookupOption) (*Indication, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-	entry, err := s.dist.Get(ctx, string(id))
-	if err != nil {
-		return nil, err
-	} else if entry == nil {
-		return nil, nil
-	}
-	indication, err := decode(entry.Value)
-	if err != nil {
-		return nil, err
-	}
-	return &Indication{
-		ID:            id,
-		Revision:      Revision(entry.Version),
-		RicIndication: indication,
-	}, nil
-}
-
-func (s *store) Record(indication *Indication, opts ...RecordOption) error {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-	bytes, err := encode(indication.RicIndication)
+func (s *store) open() error {
+	getServer().registerHandler(s)
+	ch := make(chan device.Event)
+	err := s.devices.Watch(ch)
 	if err != nil {
 		return err
 	}
-	entry, err := s.dist.Put(ctx, string(indication.ID), bytes)
+	go func() {
+		for event := range ch {
+			if event.Type != device.EventUpdated {
+				_, err := s.getDeviceStore(event.Device.ID.Key())
+				if err != nil {
+					log.Errorf("Failed to initialize indications store for device %s: %s", event.Device.ID.Key(), err)
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+func (s *store) getDeviceStore(deviceKey device.Key) (*deviceIndicationsStore, error) {
+	s.mu.RLock()
+	store, ok := s.deviceIndications[deviceKey]
+	s.mu.RUnlock()
+	if !ok {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		store, ok = s.deviceIndications[deviceKey]
+		if !ok {
+			election, err := s.masterships.GetElection(mastership.Key(deviceKey))
+			if err != nil {
+				return nil, err
+			}
+			store, err := newDeviceIndicationsStore(deviceKey, s.cluster, election)
+			if err != nil {
+				return nil, err
+			}
+			s.deviceIndications[deviceKey] = store
+		}
+	}
+	return store, nil
+}
+
+func getDeviceID(indication *Indication) device.ID {
+	switch indication.GetHdr().GetMessageType() {
+	case sb.MessageType_RADIO_MEAS_REPORT_PER_CELL:
+		return device.ID(*indication.GetMsg().GetRadioMeasReportPerCell().Ecgi)
+	case sb.MessageType_RADIO_MEAS_REPORT_PER_UE:
+		return device.ID(*indication.GetMsg().GetRadioMeasReportPerUE().Ecgi)
+	case sb.MessageType_CELL_CONFIG_REPORT:
+		return device.ID(*indication.GetMsg().GetCellConfigReport().Ecgi)
+	case sb.MessageType_UE_ADMISSION_REQUEST:
+		return device.ID(*indication.GetMsg().GetUEAdmissionRequest().Ecgi)
+	case sb.MessageType_UE_RELEASE_IND:
+		return device.ID(*indication.GetMsg().GetUEReleaseInd().Ecgi)
+	}
+	return device.ID{}
+}
+
+func (s *store) Record(indication *Indication) error {
+	store, err := s.getDeviceStore(getDeviceID(indication).Key())
 	if err != nil {
 		return err
 	}
-	indication.Revision = Revision(entry.Version)
-	return err
-}
-
-func (s *store) Discard(id ID, opts ...DiscardOption) error {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-	_, err := s.dist.Remove(ctx, string(id))
-	return err
+	return store.Record(indication)
 }
 
 func (s *store) List(ch chan<- Indication) error {
-	entryCh := make(chan *_map.Entry)
-	if err := s.dist.Entries(context.Background(), entryCh); err != nil {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	wg := &sync.WaitGroup{}
+	errCh := make(chan error)
+	for _, store := range s.deviceIndications {
+		wg.Add(1)
+		go func(store Store) {
+			err := store.List(ch)
+			if err != nil {
+				errCh <- err
+			}
+			wg.Done()
+		}(store)
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
 		return err
 	}
-	go func() {
-		defer close(ch)
-		for entry := range entryCh {
-			indication, err := decode(entry.Value)
-			if err == nil {
-				ch <- Indication{
-					ID:            ID(entry.Key),
-					Revision:      Revision(entry.Version),
-					RicIndication: indication,
-				}
-			}
-		}
-	}()
 	return nil
 }
 
-func (s *store) Watch(ch chan<- Event, opts ...WatchOption) error {
-	watchOpts := &watchOptions{}
-	for _, opt := range opts {
-		opt.applyWatch(watchOpts)
+func (s *store) Subscribe(ch chan<- Event, opts ...SubscribeOption) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	wg := &sync.WaitGroup{}
+	errCh := make(chan error)
+	for _, store := range s.deviceIndications {
+		wg.Add(1)
+		go func(store Store) {
+			err := store.Subscribe(ch, opts...)
+			if err != nil {
+				errCh <- err
+			}
+			wg.Done()
+		}(store)
 	}
 
-	options := []_map.WatchOption{}
-	if watchOpts.replay {
-		options = append(options, _map.WithReplay())
-	}
+	wg.Wait()
+	close(errCh)
 
-	eventCh := make(chan *_map.Event)
-	err := s.dist.Watch(context.Background(), eventCh, options...)
+	for err := range errCh {
+		return err
+	}
+	return nil
+}
+
+func (s *store) subscribe(request *indications.SubscribeRequest, stream indications.IndicationsService_SubscribeServer) error {
+	store, err := s.getDeviceStore(device.Key(request.Device))
 	if err != nil {
 		return err
 	}
-	go func() {
-		for event := range eventCh {
-			indication, err := decode(event.Entry.Value)
-			if err == nil {
-				var eventType EventType
-				switch event.Type {
-				case _map.EventNone:
-					eventType = EventNone
-				case _map.EventInserted:
-					eventType = EventInsert
-				case _map.EventUpdated:
-					eventType = EventUpdate
-				case _map.EventRemoved:
-					eventType = EventDelete
-				}
-				ch <- Event{
-					Type: eventType,
-					Indication: Indication{
-						ID:            ID(event.Entry.Key),
-						Revision:      Revision(event.Entry.Version),
-						RicIndication: indication,
-					},
-				}
-			}
-		}
-	}()
-	return nil
-}
-
-func (s *store) Clear() error {
-	return s.dist.Clear(context.Background())
+	return store.subscribe(request, stream)
 }
 
 func (s *store) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-	return s.dist.Close(ctx)
-}
-
-func decode(bytes []byte) (*e2ap.RicIndication, error) {
-	m := &e2ap.RicIndication{}
-	if err := proto.Unmarshal(bytes, m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func encode(m *e2ap.RicIndication) ([]byte, error) {
-	return proto.Marshal(m)
+	return nil
 }

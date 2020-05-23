@@ -105,7 +105,7 @@ limitations under the License.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| RicSubscribe | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) | [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse) |  |
+| RicSubscribe | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) | [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse) | RicSubscribe is a unary service for the RIC to subscribe to events/reports from E2 Node |
 | RicChan | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | RicChan is a bi-directonal stream for all E2AP Control and E2AP Indication messaging between RIC and E2-Node |
 
  

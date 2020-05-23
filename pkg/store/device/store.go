@@ -35,6 +35,14 @@ const e2NodeType = topodevice.Type("E2Node")
 // ID is a topology service device identifier
 type ID sb.ECGI
 
+// Key returns the device ID as a key
+func (i ID) Key() Key {
+	return Key(fmt.Sprintf("%s-%s", i.PlmnId, i.Ecid))
+}
+
+// Key is a device key
+type Key string
+
 // newID creates a new device identifier
 func newID(id topodevice.ID) (ID, error) {
 	if !strings.Contains(string(id), "-") {

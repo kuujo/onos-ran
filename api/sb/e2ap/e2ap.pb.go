@@ -267,6 +267,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type E2APClient interface {
+	// RicSubscribe is a unary service for the RIC to subscribe to events/reports from E2 Node
 	RicSubscribe(ctx context.Context, in *RicSubscriptionRequest, opts ...grpc.CallOption) (*RicSubscriptionResponse, error)
 	// RicChan is a bi-directonal stream for all E2AP Control
 	// and E2AP Indication messaging between RIC and E2-Node
@@ -323,6 +324,7 @@ func (x *e2APRicChanClient) Recv() (*RicIndication, error) {
 
 // E2APServer is the server API for E2AP service.
 type E2APServer interface {
+	// RicSubscribe is a unary service for the RIC to subscribe to events/reports from E2 Node
 	RicSubscribe(context.Context, *RicSubscriptionRequest) (*RicSubscriptionResponse, error)
 	// RicChan is a bi-directonal stream for all E2AP Control
 	// and E2AP Indication messaging between RIC and E2-Node
