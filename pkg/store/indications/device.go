@@ -65,7 +65,21 @@ func (s *deviceIndicationsStore) open() error {
 	if err := s.election.Watch(ch); err != nil {
 		return err
 	}
-	go s.watchMastership(ch)
+	state, err := s.election.GetState()
+	if err != nil {
+		return err
+	}
+	s.state = state
+	if state.Master != s.cluster.Node().ID {
+		ctx, cancel := context.WithCancel(context.Background())
+		err := s.subscribeMaster(ctx, *state)
+		if err != nil {
+			log.Errorf("Failed to subscribe to master node %s: %s", state.Master, err)
+		}
+		go s.watchMastership(ch, cancel)
+	} else {
+		go s.watchMastership(ch, nil)
+	}
 	go s.processRecords()
 	return nil
 }
@@ -102,21 +116,21 @@ func (s *deviceIndicationsStore) processRecords() {
 	}
 }
 
-func (s *deviceIndicationsStore) watchMastership(ch <-chan mastership.State) {
-	var cancelFunc context.CancelFunc
+func (s *deviceIndicationsStore) watchMastership(ch <-chan mastership.State, cancel context.CancelFunc) {
 	for state := range ch {
 		s.mu.Lock()
 		s.state = &state
 
 		if state.Master != s.cluster.Node().ID {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancelFunc := context.WithCancel(context.Background())
 			err := s.subscribeMaster(ctx, state)
-			cancelFunc = cancel
+			cancel = cancelFunc
 			if err != nil {
 				log.Errorf("Failed to subscribe to master node %s: %s", state.Master, err)
 			}
-		} else if cancelFunc != nil {
-			cancelFunc()
+		} else if cancel != nil {
+			cancel()
+			cancel = nil
 		}
 		s.mu.Unlock()
 	}

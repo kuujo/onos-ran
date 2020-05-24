@@ -132,7 +132,7 @@ func (s *store) getDeviceStore(deviceKey device.Key) (*deviceIndicationsStore, e
 			if err != nil {
 				return nil, err
 			}
-			store, err := newDeviceIndicationsStore(deviceKey, s.cluster, election)
+			store, err = newDeviceIndicationsStore(deviceKey, s.cluster, election)
 			if err != nil {
 				return nil, err
 			}
