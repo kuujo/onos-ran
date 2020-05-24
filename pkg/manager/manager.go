@@ -54,8 +54,8 @@ var IndicationsStoreFactory = func(cluster cluster.Cluster, deviceStore device.S
 }
 
 // RequestsStoreFactory creates the requests store
-var RequestsStoreFactory = func(configuration config.Config) (requests.Store, error) {
-	return requests.NewDistributedStore(configuration)
+var RequestsStoreFactory = func(cluster cluster.Cluster, deviceStore device.Store, mastershipStore mastership.Store, configuration config.Config) (requests.Store, error) {
+	return requests.NewDistributedStore(cluster, deviceStore, mastershipStore, configuration)
 }
 
 // DeviceStoreFactory creates the device store
@@ -93,7 +93,7 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		return nil, err
 	}
 
-	requestsStore, err := RequestsStoreFactory(configuration)
+	requestsStore, err := RequestsStoreFactory(cluster, deviceStore, mastershipStore, configuration)
 	if err != nil {
 		return nil, err
 	}

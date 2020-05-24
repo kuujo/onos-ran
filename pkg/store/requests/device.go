@@ -107,7 +107,7 @@ func (s *deviceRequestsStore) Ack(request *Request) error {
 	return handler.Ack(request)
 }
 
-func (s *deviceRequestsStore) Watch(ch chan<- Event, opts ...WatchOption) error {
+func (s *deviceRequestsStore) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) error {
 	options := &watchOptions{}
 	for _, opt := range opts {
 		opt.applyWatch(options)
@@ -149,3 +149,5 @@ func (s *deviceRequestsStore) backup(ctx context.Context, request *requests.Back
 func (s *deviceRequestsStore) Close() error {
 	return nil
 }
+
+var _ storeHandler = &deviceRequestsStore{}

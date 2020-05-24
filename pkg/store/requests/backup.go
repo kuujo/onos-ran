@@ -101,3 +101,5 @@ func (s *backupStore) Close() error {
 	}
 	return nil
 }
+
+var _ storeHandler = &backupStore{}

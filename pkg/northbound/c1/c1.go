@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/onosproject/onos-ric/api/sb/e2sm"
-	"github.com/onosproject/onos-ric/pkg/store/device"
 	"io"
 	"sync"
 
@@ -413,13 +412,12 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 		PlmnId: req.GetEcgi().GetPlmnid(),
 	}
 
-	deviceID := device.ID(ecgi)
-
 	var p []sb.XICICPA
 	p = append(p, pa)
 	rrmConfigReq := &e2ap.RicControlRequest{
 		Hdr: &e2sm.RicControlHeader{
 			MessageType: sb.MessageType_RRM_CONFIG,
+			Ecgi:        &ecgi,
 		},
 		Msg: &e2sm.RicControlMessage{
 			S: &e2sm.RicControlMessage_RRMConfig{
@@ -431,7 +429,7 @@ func (s Server) SetRadioPower(ctx context.Context, req *nb.RadioPowerRequest) (*
 		},
 	}
 
-	err := manager.GetManager().StoreRicControlRequest(deviceID, rrmConfigReq)
+	err := manager.GetManager().StoreRicControlRequest(rrmConfigReq)
 	if err != nil {
 		return nil, err
 	}

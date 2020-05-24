@@ -63,7 +63,7 @@ func (s *masterStore) open() error {
 					errCh <- err
 				} else {
 					client := requests.NewRequestsServiceClient(conn)
-					backup, err := newMasterBackup(s.deviceKey, replicaID, client, s.log.OpenReader(0))
+					backup, err := newMasterBackup(s.deviceKey, replicaID, s.mastership, client, s.log.OpenReader(0))
 					if err != nil {
 						errCh <- err
 					} else {
@@ -129,6 +129,8 @@ func (s *masterStore) Close() error {
 	}
 	return nil
 }
+
+var _ storeHandler = &masterStore{}
 
 func newMasterBackup(deviceKey device.Key, replicaID cluster.ReplicaID, mastership mastership.State, client requests.RequestsServiceClient, reader Reader) (*masterBackup, error) {
 	backup := &masterBackup{
