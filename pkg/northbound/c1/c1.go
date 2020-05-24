@@ -314,17 +314,32 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 		Ecid:   src.GetEcid(),
 		PlmnId: src.GetPlmnid(),
 	}
-	srcDeviceID := device.ID(srcEcgi)
 
 	dstEcgi := sb.ECGI{
 		Ecid:   dst.GetEcid(),
 		PlmnId: dst.GetPlmnid(),
 	}
-	dstDeviceID := device.ID(dstEcgi)
 
-	hoReq := &e2ap.RicControlRequest{
+	srcHoReq := &e2ap.RicControlRequest{
 		Hdr: &e2sm.RicControlHeader{
 			MessageType: sb.MessageType_HO_REQUEST,
+			Ecgi:        &srcEcgi,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_HORequest{
+				HORequest: &sb.HORequest{
+					Crntis: []string{crnti},
+					EcgiS:  &srcEcgi,
+					EcgiT:  &dstEcgi,
+				},
+			},
+		},
+	}
+
+	dstHoReq := &e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_HO_REQUEST,
+			Ecgi:        &dstEcgi,
 		},
 		Msg: &e2sm.RicControlMessage{
 			S: &e2sm.RicControlMessage_HORequest{
@@ -341,14 +356,14 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 	wg.Add(2)
 	errCh := make(chan error)
 	go func() {
-		err := manager.GetManager().StoreRicControlRequest(srcDeviceID, hoReq)
+		err := manager.GetManager().StoreRicControlRequest(srcHoReq)
 		if err != nil {
 			errCh <- err
 		}
 		wg.Done()
 	}()
 	go func() {
-		err := manager.GetManager().StoreRicControlRequest(dstDeviceID, hoReq)
+		err := manager.GetManager().StoreRicControlRequest(dstHoReq)
 		if err != nil {
 			errCh <- err
 		}

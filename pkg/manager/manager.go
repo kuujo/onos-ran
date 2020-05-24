@@ -124,9 +124,9 @@ type Manager struct {
 }
 
 // StoreRicControlRequest stores a RicControlRequest to the store
-func (m *Manager) StoreRicControlRequest(deviceID device.ID, request *e2ap.RicControlRequest) error {
+func (m *Manager) StoreRicControlRequest(request *e2ap.RicControlRequest) error {
 	log.Debugf("Handling request %+v", request)
-	return m.requestsStore.Append(requests.New(deviceID, request))
+	return m.requestsStore.Append(requests.New(request))
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store

@@ -15,7 +15,6 @@
 package indications
 
 import (
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
@@ -26,15 +25,9 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"io"
 	"sync"
-	"time"
 )
 
 var log = logging.GetLogger("store", "indications")
-
-const requestTimeout = 15 * time.Second
-
-const primitiveName = "indications"
-const databaseType = atomix.DatabaseTypeCache
 
 // New creates a new indication
 func New(indication *e2ap.RicIndication) *Indication {

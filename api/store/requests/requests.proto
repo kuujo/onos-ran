@@ -48,24 +48,14 @@ message BackupRequest {
     string device_id = 1 [(gogoproto.customname) = "DeviceID"];
     uint64 index = 2;
     uint64 term = 3;
-
-    oneof request {
-        AppendRequest append = 4;
-        AckRequest ack = 5;
-        CommitRequest commit = 6;
-    }
+    interface.e2ap.RicControlRequest request = 4;
+    uint64 commit = 5;
 }
 
 message BackupResponse {
     string device_id = 1 [(gogoproto.customname) = "DeviceID"];
     uint64 index = 2;
     uint64 term = 3;
-
-    oneof response {
-        AppendResponse append = 4;
-        AckResponse ack = 5;
-        CommitResponse commit = 6;
-    }
 }
 
 // RequestsService implements a primary-backup requests store
