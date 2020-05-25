@@ -17,6 +17,7 @@ package requests
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/store/device"
@@ -54,6 +55,24 @@ func (s *deviceRequestsStore) open() error {
 	if err := s.election.Watch(ch); err != nil {
 		return err
 	}
+	state, err := s.election.GetState()
+	if err != nil {
+		return err
+	}
+	s.state = state
+	if state.Master == s.cluster.Node().ID {
+		handler, err := newMasterStore(s.deviceKey, s.cluster, *state, s.log)
+		if err != nil {
+			return fmt.Errorf("Failed to initialize master store: %s", err)
+		}
+		s.handler = handler
+	} else {
+		handler, err := newBackupStore(s.deviceKey, s.cluster, *state, s.log)
+		if err != nil {
+			return fmt.Errorf("failed to initialize backup store: %s", err)
+		}
+		s.handler = handler
+	}
 	go s.processElectionChanges(ch)
 	return nil
 }
@@ -72,7 +91,7 @@ func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State)
 			} else {
 				s.handler = handler
 			}
-		} else if state.Master != s.cluster.Node().ID {
+		} else {
 			if s.handler != nil {
 				s.handler.Close()
 			}

@@ -14,7 +14,10 @@
 
 package requests
 
-import "io"
+import (
+	"io"
+	"sync"
+)
 
 // Index is a log index
 type Index uint64
@@ -47,43 +50,19 @@ type Log interface {
 type Writer interface {
 	io.Closer
 
-	// LastIndex returns the last index written to the log
-	LastIndex() Index
-
-	// LastEntry returns the last entry written to the log
-	LastEntry() *Entry
-
-	// Append appends the given entry to the log
-	Append(request *Request) *Entry
-
-	// Reset resets the log writer to the given index
-	Reset(index Index)
-
-	// Truncate truncates the tail of the log to the given index
-	Truncate(index Index)
+	// Write appends the given entry to the log
+	Write(value interface{}) *Entry
 }
 
 // Reader supports reading of entries from the Raft log
 type Reader interface {
 	io.Closer
 
-	// FirstIndex returns the first index in the log
-	FirstIndex() Index
+	// Index returns the reader index
+	Index() Index
 
-	// LastIndex returns the last index in the log
-	LastIndex() Index
-
-	// CurrentIndex returns the current index of the reader
-	CurrentIndex() Index
-
-	// CurrentEntry returns the current Entry
-	CurrentEntry() *Entry
-
-	// NextIndex returns the next index in the log
-	NextIndex() Index
-
-	// NextEntry advances the log index and returns the next entry in the log
-	NextEntry() *Entry
+	// Read reads the next entry in the log
+	Read() *Entry
 
 	// Reset resets the log reader to the given index
 	Reset(index Index)
@@ -91,8 +70,8 @@ type Reader interface {
 
 // Entry is an indexed Raft log entry
 type Entry struct {
-	Index   Index
-	Request *Request
+	Index Index
+	Value interface{}
 }
 
 type memoryLog struct {
@@ -100,6 +79,7 @@ type memoryLog struct {
 	firstIndex Index
 	writer     *memoryWriter
 	readers    []*memoryReader
+	mu         sync.RWMutex
 }
 
 func (l *memoryLog) Writer() Writer {
@@ -130,20 +110,6 @@ type memoryWriter struct {
 	log *memoryLog
 }
 
-func (w *memoryWriter) LastIndex() Index {
-	if entry := w.LastEntry(); entry != nil {
-		return entry.Index
-	}
-	return w.log.firstIndex - 1
-}
-
-func (w *memoryWriter) LastEntry() *Entry {
-	if len(w.log.entries) == 0 {
-		return nil
-	}
-	return w.log.entries[len(w.log.entries)-1]
-}
-
 func (w *memoryWriter) nextIndex() Index {
 	if len(w.log.entries) == 0 {
 		return w.log.firstIndex
@@ -151,96 +117,73 @@ func (w *memoryWriter) nextIndex() Index {
 	return w.log.entries[len(w.log.entries)-1].Index + 1
 }
 
-func (w *memoryWriter) Append(request *Request) *Entry {
-	indexed := &Entry{
-		Index:   w.nextIndex(),
-		Request: request,
+func (w *memoryWriter) Write(value interface{}) *Entry {
+	w.log.mu.Lock()
+	entry := &Entry{
+		Index: w.nextIndex(),
+		Value: value,
 	}
-	w.log.entries = append(w.log.entries, indexed)
-	return indexed
-}
-
-func (w *memoryWriter) Reset(index Index) {
-	w.log.entries = w.log.entries[:0]
-	w.log.firstIndex = index
-	for _, reader := range w.log.readers {
-		reader.maybeReset()
+	w.log.entries = append(w.log.entries, entry)
+	readers := w.log.readers
+	w.log.mu.Unlock()
+	for _, reader := range readers {
+		reader.next()
 	}
-}
-
-func (w *memoryWriter) Truncate(index Index) {
-	for i := 0; i < len(w.log.entries); i++ {
-		if w.log.entries[i].Index > index {
-			w.log.entries = w.log.entries[:i]
-			break
-		}
-	}
-	for _, reader := range w.log.readers {
-		reader.maybeReset()
-	}
+	return entry
 }
 
 func (w *memoryWriter) Close() error {
-	panic("implement me")
+	return nil
 }
 
 type memoryReader struct {
 	log   *memoryLog
 	index int
+	wg    *sync.WaitGroup
+	mu    sync.Mutex
 }
 
-func (r *memoryReader) FirstIndex() Index {
-	return r.log.firstIndex
+func (r *memoryReader) next() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.wg != nil {
+		r.wg.Done()
+		r.wg = nil
+	}
 }
 
-func (r *memoryReader) LastIndex() Index {
+func (r *memoryReader) Index() Index {
 	if len(r.log.entries) == 0 {
 		return r.log.firstIndex - 1
 	}
 	return r.log.entries[len(r.log.entries)-1].Index
 }
 
-func (r *memoryReader) CurrentIndex() Index {
-	if r.index == -1 || len(r.log.entries) == 0 {
-		return r.log.firstIndex - 1
-	}
-	return r.log.entries[r.index].Index
-}
-
-func (r *memoryReader) CurrentEntry() *Entry {
-	if r.index == -1 || len(r.log.entries) == 0 {
-		return nil
-	}
-	return r.log.entries[r.index]
-}
-
-func (r *memoryReader) NextIndex() Index {
-	if r.index == -1 || len(r.log.entries) == 0 {
-		return r.log.firstIndex
-	}
-	return r.log.entries[r.index].Index + 1
-}
-
-func (r *memoryReader) NextEntry() *Entry {
+func (r *memoryReader) Read() *Entry {
+	r.log.mu.RLock()
 	if len(r.log.entries) > r.index+1 {
 		r.index++
-		return r.log.entries[r.index]
+		entry := r.log.entries[r.index]
+		r.log.mu.RUnlock()
+		return entry
 	}
-	return nil
+	r.mu.Lock()
+	r.wg = &sync.WaitGroup{}
+	r.wg.Add(1)
+	r.mu.Unlock()
+	r.log.mu.RUnlock()
+	r.wg.Wait()
+	return r.Read()
 }
 
 func (r *memoryReader) Reset(index Index) {
+	r.log.mu.RLock()
+	defer r.log.mu.RUnlock()
 	for i := 0; i < len(r.log.entries); i++ {
 		if r.log.entries[i].Index >= index {
 			r.index = i - 1
 			break
 		}
-	}
-}
-
-func (r *memoryReader) maybeReset() {
-	if r.index >= 0 && len(r.log.entries) <= r.index {
-		r.index = len(r.log.entries) - 1
 	}
 }
 

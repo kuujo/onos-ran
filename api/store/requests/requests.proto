@@ -36,20 +36,13 @@ message AckResponse {
 
 }
 
-message CommitRequest {
-    uint64 index = 1;
-}
-
-message CommitResponse {
-
-}
-
 message BackupRequest {
     string device_id = 1 [(gogoproto.customname) = "DeviceID"];
     uint64 index = 2;
     uint64 term = 3;
     interface.e2ap.RicControlRequest request = 4;
     uint64 commit = 5;
+    uint64 ack = 6;
 }
 
 message BackupResponse {

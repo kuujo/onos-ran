@@ -32,6 +32,9 @@ var logger = logging.GetLogger("store", "requests")
 
 const requestTimeout = 30 * time.Second
 
+// TODO: Make backup count configurable
+const syncBackupCount = 1;
+
 // New creates a new indication
 func New(request *e2ap.RicControlRequest) *Request {
 	return &Request{
@@ -82,7 +85,7 @@ type Store interface {
 
 // NewDistributedStore creates a new distributed indications store
 func NewDistributedStore(cluster cluster.Cluster, devices device.Store, masterships mastership.Store, config config.Config) (Store, error) {
-	logger.Info("Creating distributed indications store")
+	logger.Info("Creating distributed requests store")
 	store := &store{
 		cluster:        cluster,
 		devices:        devices,
@@ -117,7 +120,7 @@ func (s *store) open() error {
 			if event.Type != device.EventUpdated {
 				_, err := s.getDeviceStore(event.Device.ID.Key())
 				if err != nil {
-					logger.Errorf("Failed to initialize indications store for device %s: %s", event.Device.ID.Key(), err)
+					logger.Errorf("Failed to initialize requests store for device %s: %s", event.Device.ID.Key(), err)
 				}
 			}
 		}

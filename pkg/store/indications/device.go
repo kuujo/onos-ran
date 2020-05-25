@@ -74,7 +74,7 @@ func (s *deviceIndicationsStore) open() error {
 		ctx, cancel := context.WithCancel(context.Background())
 		err := s.subscribeMaster(ctx, *state)
 		if err != nil {
-			log.Errorf("Failed to subscribe to master node %s: %s", state.Master, err)
+			return err
 		}
 		go s.watchMastership(ch, cancel)
 	} else {
