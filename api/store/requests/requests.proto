@@ -38,17 +38,22 @@ message AckResponse {
 
 message BackupRequest {
     string device_id = 1 [(gogoproto.customname) = "DeviceID"];
-    uint64 index = 2;
-    uint64 term = 3;
-    interface.e2ap.RicControlRequest request = 4;
-    uint64 commit = 5;
-    uint64 ack = 6;
+    uint64 term = 2;
+    repeated BackupEntry entries = 3;
+    uint64 prev_index = 4;
+    uint64 commit_index = 5;
+    uint64 ack_index = 6;
 }
 
 message BackupResponse {
     string device_id = 1 [(gogoproto.customname) = "DeviceID"];
     uint64 index = 2;
     uint64 term = 3;
+}
+
+message BackupEntry {
+    uint64 index = 1;
+    interface.e2ap.RicControlRequest request = 2;
 }
 
 // RequestsService implements a primary-backup requests store
@@ -60,5 +65,5 @@ service RequestsService {
     rpc Ack (AckRequest) returns (AckResponse);
 
     // Backs up changes to a replica
-    rpc Backup (stream BackupRequest) returns (stream BackupResponse);
+    rpc Backup (BackupRequest) returns (BackupResponse);
 }

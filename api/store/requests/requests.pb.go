@@ -213,12 +213,12 @@ func (m *AckResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_AckResponse proto.InternalMessageInfo
 
 type BackupRequest struct {
-	DeviceID string                  `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
-	Index    uint64                  `protobuf:"varint,2,opt,name=index,proto3" json:"index,omitempty"`
-	Term     uint64                  `protobuf:"varint,3,opt,name=term,proto3" json:"term,omitempty"`
-	Request  *e2ap.RicControlRequest `protobuf:"bytes,4,opt,name=request,proto3" json:"request,omitempty"`
-	Commit   uint64                  `protobuf:"varint,5,opt,name=commit,proto3" json:"commit,omitempty"`
-	Ack      uint64                  `protobuf:"varint,6,opt,name=ack,proto3" json:"ack,omitempty"`
+	DeviceID    string         `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	Term        uint64         `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Entries     []*BackupEntry `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
+	PrevIndex   uint64         `protobuf:"varint,4,opt,name=prev_index,json=prevIndex,proto3" json:"prev_index,omitempty"`
+	CommitIndex uint64         `protobuf:"varint,5,opt,name=commit_index,json=commitIndex,proto3" json:"commit_index,omitempty"`
+	AckIndex    uint64         `protobuf:"varint,6,opt,name=ack_index,json=ackIndex,proto3" json:"ack_index,omitempty"`
 }
 
 func (m *BackupRequest) Reset()         { *m = BackupRequest{} }
@@ -261,13 +261,6 @@ func (m *BackupRequest) GetDeviceID() string {
 	return ""
 }
 
-func (m *BackupRequest) GetIndex() uint64 {
-	if m != nil {
-		return m.Index
-	}
-	return 0
-}
-
 func (m *BackupRequest) GetTerm() uint64 {
 	if m != nil {
 		return m.Term
@@ -275,23 +268,30 @@ func (m *BackupRequest) GetTerm() uint64 {
 	return 0
 }
 
-func (m *BackupRequest) GetRequest() *e2ap.RicControlRequest {
+func (m *BackupRequest) GetEntries() []*BackupEntry {
 	if m != nil {
-		return m.Request
+		return m.Entries
 	}
 	return nil
 }
 
-func (m *BackupRequest) GetCommit() uint64 {
+func (m *BackupRequest) GetPrevIndex() uint64 {
 	if m != nil {
-		return m.Commit
+		return m.PrevIndex
 	}
 	return 0
 }
 
-func (m *BackupRequest) GetAck() uint64 {
+func (m *BackupRequest) GetCommitIndex() uint64 {
 	if m != nil {
-		return m.Ack
+		return m.CommitIndex
+	}
+	return 0
+}
+
+func (m *BackupRequest) GetAckIndex() uint64 {
+	if m != nil {
+		return m.AckIndex
 	}
 	return 0
 }
@@ -356,6 +356,58 @@ func (m *BackupResponse) GetTerm() uint64 {
 	return 0
 }
 
+type BackupEntry struct {
+	Index   uint64                  `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Request *e2ap.RicControlRequest `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`
+}
+
+func (m *BackupEntry) Reset()         { *m = BackupEntry{} }
+func (m *BackupEntry) String() string { return proto.CompactTextString(m) }
+func (*BackupEntry) ProtoMessage()    {}
+func (*BackupEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a7ed27880f464a5d, []int{6}
+}
+func (m *BackupEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BackupEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BackupEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *BackupEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BackupEntry.Merge(m, src)
+}
+func (m *BackupEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *BackupEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_BackupEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BackupEntry proto.InternalMessageInfo
+
+func (m *BackupEntry) GetIndex() uint64 {
+	if m != nil {
+		return m.Index
+	}
+	return 0
+}
+
+func (m *BackupEntry) GetRequest() *e2ap.RicControlRequest {
+	if m != nil {
+		return m.Request
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*AppendRequest)(nil), "onos.ric.store.requests.AppendRequest")
 	proto.RegisterType((*AppendResponse)(nil), "onos.ric.store.requests.AppendResponse")
@@ -363,39 +415,44 @@ func init() {
 	proto.RegisterType((*AckResponse)(nil), "onos.ric.store.requests.AckResponse")
 	proto.RegisterType((*BackupRequest)(nil), "onos.ric.store.requests.BackupRequest")
 	proto.RegisterType((*BackupResponse)(nil), "onos.ric.store.requests.BackupResponse")
+	proto.RegisterType((*BackupEntry)(nil), "onos.ric.store.requests.BackupEntry")
 }
 
 func init() { proto.RegisterFile("api/store/requests/requests.proto", fileDescriptor_a7ed27880f464a5d) }
 
 var fileDescriptor_a7ed27880f464a5d = []byte{
-	// 431 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x53, 0xb1, 0xae, 0xd3, 0x30,
-	0x14, 0xad, 0xdb, 0xbe, 0xf0, 0xde, 0x7d, 0xf4, 0x81, 0xac, 0x27, 0x88, 0x32, 0x84, 0x36, 0xa0,
-	0x52, 0x06, 0x1c, 0x54, 0x24, 0x16, 0xa6, 0x96, 0x2e, 0x1d, 0x90, 0x50, 0x98, 0x18, 0x10, 0x4a,
-	0x1d, 0x53, 0x4c, 0x48, 0x6c, 0x1c, 0x17, 0xf8, 0x0c, 0x7e, 0x80, 0xff, 0x41, 0x62, 0xe9, 0xc8,
-	0x84, 0x50, 0xfa, 0x23, 0x28, 0x76, 0x52, 0xb5, 0x43, 0x8b, 0x40, 0xb0, 0x54, 0xc7, 0xd7, 0xd7,
-	0xe7, 0x9c, 0x7b, 0x7a, 0x03, 0x83, 0x58, 0xf2, 0xb0, 0xd0, 0x42, 0xb1, 0x50, 0xb1, 0xf7, 0x2b,
-	0x56, 0xe8, 0x62, 0x0b, 0x88, 0x54, 0x42, 0x0b, 0x7c, 0x53, 0xe4, 0xa2, 0x20, 0x8a, 0x53, 0x62,
-	0xfa, 0x48, 0x73, 0xed, 0x3d, 0x5a, 0x72, 0xfd, 0x66, 0xb5, 0x20, 0x54, 0x64, 0x61, 0xd5, 0x23,
-	0x95, 0x78, 0xcb, 0xa8, 0x36, 0xf8, 0xbe, 0xe2, 0x34, 0x34, 0xdc, 0x8b, 0x90, 0x8d, 0x63, 0x69,
-	0x7e, 0x2c, 0xa1, 0x77, 0xb9, 0x14, 0x4b, 0x61, 0x60, 0x58, 0x21, 0x5b, 0x0d, 0x3e, 0x42, 0x6f,
-	0x22, 0x25, 0xcb, 0x93, 0xc8, 0xf2, 0xe3, 0x7b, 0x70, 0x96, 0xb0, 0x0f, 0x9c, 0xb2, 0x57, 0x3c,
-	0x71, 0x51, 0x1f, 0x8d, 0xce, 0xa6, 0x57, 0xcb, 0x1f, 0xb7, 0x4e, 0x67, 0xa6, 0x38, 0x9f, 0x45,
-	0xa7, 0xf6, 0x7a, 0x9e, 0xe0, 0xc7, 0x70, 0xa5, 0x76, 0xe5, 0xb6, 0xfb, 0x68, 0x74, 0x3e, 0x1e,
-	0x10, 0x9e, 0x6b, 0xa6, 0x5e, 0xc7, 0x94, 0x11, 0xa3, 0x1c, 0x71, 0xfa, 0x44, 0xe4, 0x5a, 0x89,
-	0x77, 0x35, 0x7d, 0xd4, 0xbc, 0x08, 0x86, 0x70, 0xd1, 0x08, 0x17, 0x52, 0xe4, 0x05, 0xc3, 0x97,
-	0x70, 0xc2, 0xf3, 0x84, 0x7d, 0x32, 0xaa, 0xdd, 0xc8, 0x1e, 0x82, 0xa7, 0x00, 0x13, 0x9a, 0xfe,
-	0x85, 0xbb, 0x2d, 0x5d, 0x7b, 0x97, 0xae, 0x07, 0xe7, 0x86, 0xce, 0x6a, 0x06, 0xdf, 0x10, 0xf4,
-	0xa6, 0x31, 0x4d, 0x57, 0xf2, 0x5f, 0x29, 0x60, 0x0c, 0x5d, 0xcd, 0x54, 0xe6, 0x76, 0x4c, 0xd1,
-	0xe0, 0xdd, 0xa4, 0xba, 0x7f, 0x9a, 0x14, 0xbe, 0x01, 0x0e, 0x15, 0x59, 0xc6, 0xb5, 0x7b, 0x62,
-	0x28, 0xeb, 0x13, 0xbe, 0x0e, 0x9d, 0x98, 0xa6, 0xae, 0x63, 0x8a, 0x15, 0x0c, 0x18, 0x5c, 0x34,
-	0xc3, 0xd4, 0x99, 0xfe, 0x8f, 0x69, 0xc6, 0x5f, 0xda, 0x70, 0xad, 0x76, 0x59, 0x3c, 0x67, 0xaa,
-	0x7a, 0x8f, 0x5f, 0x80, 0x63, 0xff, 0x4e, 0x3c, 0x24, 0x07, 0x36, 0x97, 0xec, 0x2d, 0x9a, 0x77,
-	0xf7, 0xb7, 0x7d, 0xf5, 0x0c, 0xcf, 0xa0, 0x33, 0xa1, 0x29, 0xbe, 0x7d, 0xb8, 0x7f, 0xbb, 0x1f,
-	0xde, 0x9d, 0xe3, 0x4d, 0x35, 0xe3, 0x4b, 0x70, 0x6c, 0x4e, 0x47, 0xcc, 0xee, 0x6d, 0xc5, 0x11,
-	0xb3, 0xfb, 0x81, 0x8f, 0xd0, 0x03, 0x34, 0x75, 0xbf, 0x96, 0x3e, 0x5a, 0x97, 0x3e, 0xfa, 0x59,
-	0xfa, 0xe8, 0xf3, 0xc6, 0x6f, 0xad, 0x37, 0x7e, 0xeb, 0xfb, 0xc6, 0x6f, 0x2d, 0x1c, 0xf3, 0xd1,
-	0x3d, 0xfc, 0x15, 0x00, 0x00, 0xff, 0xff, 0xa0, 0x9a, 0x8a, 0xf5, 0x00, 0x04, 0x00, 0x00,
+	// 486 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x41, 0x6f, 0x12, 0x41,
+	0x14, 0x66, 0x81, 0x52, 0x78, 0x5b, 0x6a, 0x32, 0x69, 0x22, 0xc1, 0xb8, 0xc2, 0xda, 0x54, 0x3c,
+	0xb8, 0x9b, 0x60, 0xe2, 0xc5, 0xc4, 0x04, 0xac, 0x07, 0x0e, 0x26, 0x66, 0x3d, 0xf5, 0x54, 0x97,
+	0xd9, 0x27, 0x8e, 0x2b, 0x3b, 0xe3, 0xec, 0x50, 0xf5, 0x5f, 0x78, 0xf5, 0x1f, 0x79, 0xec, 0xd1,
+	0x93, 0x31, 0x70, 0xf6, 0x3f, 0x98, 0x9d, 0x99, 0xc5, 0x92, 0x08, 0x26, 0xed, 0x85, 0x3c, 0xde,
+	0xfb, 0xe6, 0xfb, 0xbe, 0xf9, 0xe6, 0x2d, 0xf4, 0x63, 0xc1, 0xc2, 0x5c, 0x71, 0x89, 0xa1, 0xc4,
+	0x8f, 0x0b, 0xcc, 0x55, 0xbe, 0x2e, 0x02, 0x21, 0xb9, 0xe2, 0xe4, 0x36, 0xcf, 0x78, 0x1e, 0x48,
+	0x46, 0x03, 0x8d, 0x0b, 0xca, 0x71, 0xf7, 0xc9, 0x8c, 0xa9, 0x77, 0x8b, 0x69, 0x40, 0xf9, 0x3c,
+	0x2c, 0x30, 0x42, 0xf2, 0xf7, 0x48, 0x95, 0xae, 0x1f, 0x49, 0x46, 0x43, 0xcd, 0x3d, 0x0d, 0x71,
+	0x18, 0x0b, 0xfd, 0x63, 0x08, 0xbb, 0x47, 0x33, 0x3e, 0xe3, 0xba, 0x0c, 0x8b, 0xca, 0x74, 0xfd,
+	0x4f, 0xd0, 0x1e, 0x09, 0x81, 0x59, 0x12, 0x19, 0x7e, 0xf2, 0x10, 0x5a, 0x09, 0x5e, 0x30, 0x8a,
+	0xe7, 0x2c, 0xe9, 0x38, 0x3d, 0x67, 0xd0, 0x1a, 0x1f, 0x2c, 0x7f, 0xde, 0x6b, 0x9e, 0xea, 0xe6,
+	0xe4, 0x34, 0x6a, 0x9a, 0xf1, 0x24, 0x21, 0x4f, 0x61, 0xdf, 0xba, 0xea, 0x54, 0x7b, 0xce, 0xc0,
+	0x1d, 0xf6, 0x03, 0x96, 0x29, 0x94, 0x6f, 0x63, 0x8a, 0x81, 0x56, 0x8e, 0x18, 0x7d, 0xce, 0x33,
+	0x25, 0xf9, 0x07, 0x4b, 0x1f, 0x95, 0x27, 0xfc, 0x13, 0x38, 0x2c, 0x85, 0x73, 0xc1, 0xb3, 0x1c,
+	0xc9, 0x11, 0xec, 0xb1, 0x2c, 0xc1, 0xcf, 0x5a, 0xb5, 0x1e, 0x99, 0x3f, 0xfe, 0x4b, 0x80, 0x11,
+	0x4d, 0xaf, 0xe1, 0x6e, 0x4d, 0x57, 0xbd, 0x4a, 0xd7, 0x06, 0x57, 0xd3, 0x19, 0x4d, 0xff, 0xb7,
+	0x03, 0xed, 0x71, 0x4c, 0xd3, 0x85, 0xb8, 0x86, 0x02, 0x81, 0xba, 0x42, 0x39, 0xb7, 0x02, 0xba,
+	0x26, 0xcf, 0x60, 0x1f, 0x33, 0x25, 0x19, 0xe6, 0x9d, 0x5a, 0xaf, 0x36, 0x70, 0x87, 0xc7, 0xc1,
+	0x96, 0x87, 0x0c, 0x8c, 0xee, 0x8b, 0x4c, 0xc9, 0x2f, 0x51, 0x79, 0x88, 0xdc, 0x05, 0x10, 0x12,
+	0x2f, 0xce, 0x8d, 0xf5, 0xba, 0x66, 0x6e, 0x15, 0x9d, 0x49, 0xd1, 0x20, 0x7d, 0x38, 0xa0, 0x7c,
+	0x3e, 0x67, 0xca, 0x02, 0xf6, 0x34, 0xc0, 0x35, 0x3d, 0x03, 0xb9, 0x03, 0xad, 0x98, 0xa6, 0x76,
+	0xde, 0xd0, 0xf3, 0x66, 0x4c, 0x53, 0x3d, 0xf4, 0x11, 0x0e, 0xcb, 0xeb, 0xda, 0xd4, 0x6f, 0x9a,
+	0xe8, 0x3a, 0x85, 0xda, 0xdf, 0x14, 0xfc, 0x37, 0xe0, 0x5e, 0xb9, 0xdd, 0xbf, 0x5f, 0xf6, 0x46,
+	0xeb, 0x33, 0xfc, 0x56, 0x85, 0x5b, 0xb6, 0x99, 0xbf, 0x46, 0x59, 0x38, 0x24, 0x67, 0xd0, 0x30,
+	0x2b, 0x45, 0x4e, 0xb6, 0x86, 0xbe, 0xb1, 0xec, 0xdd, 0x07, 0xff, 0xc5, 0xd9, 0x94, 0x5e, 0x41,
+	0x6d, 0x44, 0x53, 0x72, 0x7f, 0x3b, 0x7e, 0xbd, 0xa3, 0xdd, 0xe3, 0xdd, 0x20, 0xcb, 0x78, 0x06,
+	0x0d, 0x13, 0xd1, 0x0e, 0xb3, 0x1b, 0x9b, 0xb9, 0xc3, 0xec, 0xe6, 0x93, 0x8e, 0x3b, 0xdf, 0x97,
+	0x9e, 0x73, 0xb9, 0xf4, 0x9c, 0x5f, 0x4b, 0xcf, 0xf9, 0xba, 0xf2, 0x2a, 0x97, 0x2b, 0xaf, 0xf2,
+	0x63, 0xe5, 0x55, 0xa6, 0x0d, 0xfd, 0xd1, 0x3f, 0xfe, 0x13, 0x00, 0x00, 0xff, 0xff, 0xb4, 0x77,
+	0x20, 0xdb, 0x80, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -415,7 +472,7 @@ type RequestsServiceClient interface {
 	// Acknowledges a request in the store
 	Ack(ctx context.Context, in *AckRequest, opts ...grpc.CallOption) (*AckResponse, error)
 	// Backs up changes to a replica
-	Backup(ctx context.Context, opts ...grpc.CallOption) (RequestsService_BackupClient, error)
+	Backup(ctx context.Context, in *BackupRequest, opts ...grpc.CallOption) (*BackupResponse, error)
 }
 
 type requestsServiceClient struct {
@@ -444,35 +501,13 @@ func (c *requestsServiceClient) Ack(ctx context.Context, in *AckRequest, opts ..
 	return out, nil
 }
 
-func (c *requestsServiceClient) Backup(ctx context.Context, opts ...grpc.CallOption) (RequestsService_BackupClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_RequestsService_serviceDesc.Streams[0], "/onos.ric.store.requests.RequestsService/Backup", opts...)
+func (c *requestsServiceClient) Backup(ctx context.Context, in *BackupRequest, opts ...grpc.CallOption) (*BackupResponse, error) {
+	out := new(BackupResponse)
+	err := c.cc.Invoke(ctx, "/onos.ric.store.requests.RequestsService/Backup", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &requestsServiceBackupClient{stream}
-	return x, nil
-}
-
-type RequestsService_BackupClient interface {
-	Send(*BackupRequest) error
-	Recv() (*BackupResponse, error)
-	grpc.ClientStream
-}
-
-type requestsServiceBackupClient struct {
-	grpc.ClientStream
-}
-
-func (x *requestsServiceBackupClient) Send(m *BackupRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *requestsServiceBackupClient) Recv() (*BackupResponse, error) {
-	m := new(BackupResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // RequestsServiceServer is the server API for RequestsService service.
@@ -482,7 +517,7 @@ type RequestsServiceServer interface {
 	// Acknowledges a request in the store
 	Ack(context.Context, *AckRequest) (*AckResponse, error)
 	// Backs up changes to a replica
-	Backup(RequestsService_BackupServer) error
+	Backup(context.Context, *BackupRequest) (*BackupResponse, error)
 }
 
 // UnimplementedRequestsServiceServer can be embedded to have forward compatible implementations.
@@ -495,8 +530,8 @@ func (*UnimplementedRequestsServiceServer) Append(ctx context.Context, req *Appe
 func (*UnimplementedRequestsServiceServer) Ack(ctx context.Context, req *AckRequest) (*AckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ack not implemented")
 }
-func (*UnimplementedRequestsServiceServer) Backup(srv RequestsService_BackupServer) error {
-	return status.Errorf(codes.Unimplemented, "method Backup not implemented")
+func (*UnimplementedRequestsServiceServer) Backup(ctx context.Context, req *BackupRequest) (*BackupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Backup not implemented")
 }
 
 func RegisterRequestsServiceServer(s *grpc.Server, srv RequestsServiceServer) {
@@ -539,30 +574,22 @@ func _RequestsService_Ack_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RequestsService_Backup_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(RequestsServiceServer).Backup(&requestsServiceBackupServer{stream})
-}
-
-type RequestsService_BackupServer interface {
-	Send(*BackupResponse) error
-	Recv() (*BackupRequest, error)
-	grpc.ServerStream
-}
-
-type requestsServiceBackupServer struct {
-	grpc.ServerStream
-}
-
-func (x *requestsServiceBackupServer) Send(m *BackupResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *requestsServiceBackupServer) Recv() (*BackupRequest, error) {
-	m := new(BackupRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _RequestsService_Backup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BackupRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(RequestsServiceServer).Backup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/onos.ric.store.requests.RequestsService/Backup",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RequestsServiceServer).Backup(ctx, req.(*BackupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _RequestsService_serviceDesc = grpc.ServiceDesc{
@@ -577,15 +604,12 @@ var _RequestsService_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Ack",
 			Handler:    _RequestsService_Ack_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Backup",
-			Handler:       _RequestsService_Backup_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Backup",
+			Handler:    _RequestsService_Backup_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "api/store/requests/requests.proto",
 }
 
@@ -737,35 +761,37 @@ func (m *BackupRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Ack != 0 {
-		i = encodeVarintRequests(dAtA, i, uint64(m.Ack))
+	if m.AckIndex != 0 {
+		i = encodeVarintRequests(dAtA, i, uint64(m.AckIndex))
 		i--
 		dAtA[i] = 0x30
 	}
-	if m.Commit != 0 {
-		i = encodeVarintRequests(dAtA, i, uint64(m.Commit))
+	if m.CommitIndex != 0 {
+		i = encodeVarintRequests(dAtA, i, uint64(m.CommitIndex))
 		i--
 		dAtA[i] = 0x28
 	}
-	if m.Request != nil {
-		{
-			size, err := m.Request.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRequests(dAtA, i, uint64(size))
-		}
+	if m.PrevIndex != 0 {
+		i = encodeVarintRequests(dAtA, i, uint64(m.PrevIndex))
 		i--
-		dAtA[i] = 0x22
+		dAtA[i] = 0x20
+	}
+	if len(m.Entries) > 0 {
+		for iNdEx := len(m.Entries) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Entries[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintRequests(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if m.Term != 0 {
 		i = encodeVarintRequests(dAtA, i, uint64(m.Term))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Index != 0 {
-		i = encodeVarintRequests(dAtA, i, uint64(m.Index))
 		i--
 		dAtA[i] = 0x10
 	}
@@ -815,6 +841,46 @@ func (m *BackupResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintRequests(dAtA, i, uint64(len(m.DeviceID)))
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *BackupEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BackupEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *BackupEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Request != nil {
+		{
+			size, err := m.Request.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRequests(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Index != 0 {
+		i = encodeVarintRequests(dAtA, i, uint64(m.Index))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -894,21 +960,23 @@ func (m *BackupRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovRequests(uint64(l))
 	}
-	if m.Index != 0 {
-		n += 1 + sovRequests(uint64(m.Index))
-	}
 	if m.Term != 0 {
 		n += 1 + sovRequests(uint64(m.Term))
 	}
-	if m.Request != nil {
-		l = m.Request.Size()
-		n += 1 + l + sovRequests(uint64(l))
+	if len(m.Entries) > 0 {
+		for _, e := range m.Entries {
+			l = e.Size()
+			n += 1 + l + sovRequests(uint64(l))
+		}
 	}
-	if m.Commit != 0 {
-		n += 1 + sovRequests(uint64(m.Commit))
+	if m.PrevIndex != 0 {
+		n += 1 + sovRequests(uint64(m.PrevIndex))
 	}
-	if m.Ack != 0 {
-		n += 1 + sovRequests(uint64(m.Ack))
+	if m.CommitIndex != 0 {
+		n += 1 + sovRequests(uint64(m.CommitIndex))
+	}
+	if m.AckIndex != 0 {
+		n += 1 + sovRequests(uint64(m.AckIndex))
 	}
 	return n
 }
@@ -928,6 +996,22 @@ func (m *BackupResponse) Size() (n int) {
 	}
 	if m.Term != 0 {
 		n += 1 + sovRequests(uint64(m.Term))
+	}
+	return n
+}
+
+func (m *BackupEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Index != 0 {
+		n += 1 + sovRequests(uint64(m.Index))
+	}
+	if m.Request != nil {
+		l = m.Request.Size()
+		n += 1 + l + sovRequests(uint64(l))
 	}
 	return n
 }
@@ -1351,25 +1435,6 @@ func (m *BackupRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
-			}
-			m.Index = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRequests
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Index |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Term", wireType)
 			}
 			m.Term = 0
@@ -1387,9 +1452,9 @@ func (m *BackupRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Request", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Entries", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1416,18 +1481,16 @@ func (m *BackupRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Request == nil {
-				m.Request = &e2ap.RicControlRequest{}
-			}
-			if err := m.Request.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.Entries = append(m.Entries, &BackupEntry{})
+			if err := m.Entries[len(m.Entries)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 4:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Commit", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PrevIndex", wireType)
 			}
-			m.Commit = 0
+			m.PrevIndex = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRequests
@@ -1437,16 +1500,35 @@ func (m *BackupRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Commit |= uint64(b&0x7F) << shift
+				m.PrevIndex |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommitIndex", wireType)
+			}
+			m.CommitIndex = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRequests
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CommitIndex |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 		case 6:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Ack", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field AckIndex", wireType)
 			}
-			m.Ack = 0
+			m.AckIndex = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowRequests
@@ -1456,7 +1538,7 @@ func (m *BackupRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Ack |= uint64(b&0x7F) << shift
+				m.AckIndex |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1584,6 +1666,114 @@ func (m *BackupResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRequests(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRequests
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRequests
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BackupEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRequests
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BackupEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BackupEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			m.Index = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRequests
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Index |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Request", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRequests
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRequests
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRequests
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Request == nil {
+				m.Request = &e2ap.RicControlRequest{}
+			}
+			if err := m.Request.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRequests(dAtA[iNdEx:])

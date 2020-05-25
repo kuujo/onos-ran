@@ -23,7 +23,6 @@ import (
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
-	"io"
 	"sort"
 	"sync"
 )
@@ -74,7 +73,7 @@ func (s *masterStore) open() error {
 					errCh <- err
 				} else {
 					client := requests.NewRequestsServiceClient(conn)
-					backup, err := newMasterBackup(s.deviceKey, replicaID, s.mastership, client, s.log.OpenReader(0), s.commitCh)
+					backup, err := newMasterBackup(s, replicaID, client, s.log.OpenReader(0))
 					if err != nil {
 						errCh <- err
 					} else {
@@ -226,14 +225,12 @@ type backupCommit struct {
 
 var _ storeHandler = &masterStore{}
 
-func newMasterBackup(deviceKey device.Key, replicaID cluster.ReplicaID, mastership mastership.State, client requests.RequestsServiceClient, reader Reader, commitCh chan<- backupCommit) (*masterBackup, error) {
+func newMasterBackup(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*masterBackup, error) {
 	backup := &masterBackup{
-		deviceKey:  deviceKey,
-		replicaID:  replicaID,
-		mastership: mastership,
-		client:     client,
-		reader:     reader,
-		commitCh:   commitCh,
+		store:     store,
+		replicaID: replicaID,
+		client:    client,
+		reader:    reader,
 	}
 	if err := backup.open(); err != nil {
 		return nil, err
@@ -242,40 +239,49 @@ func newMasterBackup(deviceKey device.Key, replicaID cluster.ReplicaID, mastersh
 }
 
 type masterBackup struct {
-	deviceKey  device.Key
-	replicaID  cluster.ReplicaID
-	mastership mastership.State
-	client     requests.RequestsServiceClient
-	reader     Reader
-	cancel     context.CancelFunc
-	commitCh   chan<- backupCommit
+	store     *masterStore
+	replicaID cluster.ReplicaID
+	client    requests.RequestsServiceClient
+	reader    Reader
+	closed    bool
 }
 
 func (b *masterBackup) open() error {
-	ctx, cancel := context.WithCancel(context.Background())
-	stream, err := b.client.Backup(ctx)
-	if err != nil {
-		cancel()
-		return err
-	}
-	b.cancel = cancel
-	go b.receiveStream(stream)
-	go b.sendStream(stream)
+	go b.backupEntries()
 	return nil
 }
 
-func (b *masterBackup) receiveStream(stream requests.RequestsService_BackupClient) {
-	for {
-		response, err := stream.Recv()
-		if err == io.EOF {
-			return
-		} else if err != nil {
-			logger.Errorf("Failed receiving stream from %s: %s", b.replicaID, err)
-		} else {
-			if mastership.Term(response.Term) > b.mastership.Term {
-				return
+func (b *masterBackup) backupEntries() {
+	for !b.closed {
+		batch := b.reader.Read()
+		b.store.mu.RLock()
+		entries := make([]*requests.BackupEntry, len(batch.Entries))
+		for i := 0; i < len(batch.Entries); i++ {
+			entry := batch.Entries[i]
+			entries[i] = &requests.BackupEntry{
+				Index:   uint64(entry.Index),
+				Request: entry.Value.(*e2ap.RicControlRequest),
 			}
-			b.commitCh <- backupCommit{
+		}
+		request := &requests.BackupRequest{
+			DeviceID:    string(b.store.deviceKey),
+			Term:        uint64(b.store.mastership.Term),
+			Entries:     entries,
+			PrevIndex:   uint64(batch.PrevIndex),
+			CommitIndex: uint64(b.store.commitIndex),
+			AckIndex:    uint64(b.store.ackIndex),
+		}
+		b.store.mu.RUnlock()
+
+		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+		response, err := b.client.Backup(ctx, request)
+		cancel()
+		if err != nil {
+			b.reader.Seek(batch.PrevIndex + 1)
+		} else if Index(response.Index) != batch.Entries[len(batch.Entries)-1].Index {
+			b.reader.Seek(Index(response.Index) + 1)
+		} else {
+			b.store.commitCh <- backupCommit{
 				replica: b.replicaID,
 				index:   Index(response.Index),
 			}
@@ -283,23 +289,7 @@ func (b *masterBackup) receiveStream(stream requests.RequestsService_BackupClien
 	}
 }
 
-func (b *masterBackup) sendStream(stream requests.RequestsService_BackupClient) {
-	for {
-		entry := b.reader.Read()
-		err := stream.Send(&requests.BackupRequest{
-			DeviceID: string(b.deviceKey),
-			Index:    uint64(entry.Index),
-			Term:     uint64(b.mastership.Term),
-			Request:  entry.Value.(*e2ap.RicControlRequest),
-		})
-		if err != nil {
-			logger.Errorf("Failed to backup request %d to %s: %s", entry.Index, b.replicaID, err)
-			b.reader.Reset(entry.Index)
-		}
-	}
-}
-
 func (b *masterBackup) close() error {
-	b.cancel()
+	b.closed = true
 	return nil
 }

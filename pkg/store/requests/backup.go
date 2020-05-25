@@ -18,10 +18,12 @@ import (
 	"context"
 	"errors"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"google.golang.org/grpc"
+	"sync"
 )
 
 func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, mastership mastership.State, log Log) (storeHandler, error) {
@@ -44,6 +46,7 @@ type backupStore struct {
 	log        Log
 	conn       *grpc.ClientConn
 	client     requests.RequestsServiceClient
+	mu         sync.RWMutex
 }
 
 func (s *backupStore) open() error {
@@ -80,7 +83,39 @@ func (s *backupStore) Ack(request *Request) error {
 }
 
 func (s *backupStore) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) error {
-	panic("implement me")
+	options := &watchOptions{}
+	for _, opt := range opts {
+		opt.applyWatch(options)
+	}
+
+	var reader Reader
+	nextIndex := s.log.Writer().Index() + 1
+	if options.replay {
+		reader = s.log.OpenReader(0)
+	} else {
+		reader = s.log.OpenReader(nextIndex)
+	}
+
+	go func() {
+		for {
+			batch := reader.Read()
+			for _, entry := range batch.Entries {
+				var eventType EventType
+				if entry.Index < nextIndex {
+					eventType = EventNone
+				} else {
+					eventType = EventAppend
+				}
+				request := New(entry.Value.(*e2ap.RicControlRequest))
+				request.Index = entry.Index
+				ch <- Event{
+					Type:    eventType,
+					Request: *request,
+				}
+			}
+		}
+	}()
+	return nil
 }
 
 func (s *backupStore) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
@@ -92,7 +127,27 @@ func (s *backupStore) ack(ctx context.Context, request *requests.AckRequest) (*r
 }
 
 func (s *backupStore) backup(ctx context.Context, request *requests.BackupRequest) (*requests.BackupResponse, error) {
-	panic("implement me")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	prevIndex := Index(request.PrevIndex)
+	lastIndex := s.log.Writer().Index()
+	if prevIndex != 0 && lastIndex != prevIndex {
+		return &requests.BackupResponse{
+			DeviceID: string(s.deviceKey),
+			Index:    uint64(lastIndex),
+			Term:     uint64(s.mastership.Term),
+		}, nil
+	}
+
+	for _, entry := range request.Entries {
+		s.log.Writer().Write(entry.Request)
+	}
+	return &requests.BackupResponse{
+		DeviceID: string(s.deviceKey),
+		Index:    uint64(s.log.Writer().Index()),
+		Term:     uint64(s.mastership.Term),
+	}, nil
 }
 
 func (s *backupStore) Close() error {

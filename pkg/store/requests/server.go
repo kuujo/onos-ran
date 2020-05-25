@@ -21,7 +21,6 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"google.golang.org/grpc"
-	"io"
 	"sync"
 )
 
@@ -86,26 +85,10 @@ func (s *storeServer) Ack(ctx context.Context, request *requests.AckRequest) (*r
 	return handler.ack(ctx, request)
 }
 
-func (s *storeServer) Backup(stream requests.RequestsService_BackupServer) error {
+func (s *storeServer) Backup(ctx context.Context, request *requests.BackupRequest) (*requests.BackupResponse, error) {
 	handler, err := s.getHandler()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	for {
-		request, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		} else if err != nil {
-			return err
-		}
-		response, err := handler.backup(stream.Context(), request)
-		if err != nil {
-			return err
-		} else if response != nil {
-			err := stream.Send(response)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	return handler.backup(ctx, request)
 }
