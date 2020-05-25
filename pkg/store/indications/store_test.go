@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"testing"
+	"time"
 )
 
 func TestStoreIndications(t *testing.T) {
@@ -70,11 +71,13 @@ func TestStoreIndications(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, store2)
 
+	time.Sleep(time.Second)
+
 	defer store1.Close()
 	defer store2.Close()
 
-	subscribeCh2 := make(chan Event)
-	err = store2.Subscribe(subscribeCh2, WithReplay())
+	subscribeCh1 := make(chan Event)
+	err = store1.Subscribe(subscribeCh1, WithReplay())
 	assert.NoError(t, err)
 
 	indication1 := &e2ap.RicIndication{
@@ -93,10 +96,10 @@ func TestStoreIndications(t *testing.T) {
 			},
 		},
 	}
-	err = store1.Record(New(indication1))
+	err = store2.Record(New(indication1))
 	assert.Nil(t, err)
 
-	event := <-subscribeCh2
+	event := <-subscribeCh1
 	assert.Equal(t, "test-ecid-1", event.Indication.GetMsg().GetUEAdmissionRequest().Ecgi.Ecid)
 	assert.Equal(t, "test-plmnid-1", event.Indication.GetMsg().GetUEAdmissionRequest().Ecgi.PlmnId)
 }
