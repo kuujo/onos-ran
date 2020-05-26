@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
@@ -33,6 +34,7 @@ func newDeviceRequestsStore(deviceKey device.Key, cluster cluster.Cluster, elect
 		deviceKey: deviceKey,
 		cluster:   cluster,
 		election:  election,
+		state:     &deviceStoreState{},
 		log:       newLog(),
 	}
 	if err := store.open(); err != nil {
@@ -47,7 +49,7 @@ type deviceRequestsStore struct {
 	deviceKey device.Key
 	cluster   cluster.Cluster
 	election  mastership.Election
-	state     *mastership.State
+	state     *deviceStoreState
 	handler   storeHandler
 	log       Log
 	mu        sync.RWMutex
@@ -62,15 +64,15 @@ func (s *deviceRequestsStore) open() error {
 	if err != nil {
 		return err
 	}
-	s.state = state
+	s.state.setMastership(state)
 	if state.Master == s.cluster.Node().ID {
-		handler, err := newMasterStore(s.deviceKey, s.cluster, *state, s.log, s.config)
+		handler, err := newMasterStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 		if err != nil {
 			return fmt.Errorf("failed to initialize master store: %s", err)
 		}
 		s.handler = handler
 	} else {
-		handler, err := newBackupStore(s.deviceKey, s.cluster, *state, s.log, s.config)
+		handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 		if err != nil {
 			return fmt.Errorf("failed to initialize backup store: %s", err)
 		}
@@ -83,12 +85,12 @@ func (s *deviceRequestsStore) open() error {
 func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State) {
 	for state := range ch {
 		s.mu.Lock()
-		s.state = &state
+		s.state.setMastership(&state)
 		if state.Master == s.cluster.Node().ID {
 			if s.handler != nil {
 				s.handler.Close()
 			}
-			handler, err := newMasterStore(s.deviceKey, s.cluster, state, s.log, s.config)
+			handler, err := newMasterStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 			if err != nil {
 				logger.Errorf("Failed to initialize master store: %s", err)
 			} else {
@@ -98,7 +100,7 @@ func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State)
 			if s.handler != nil {
 				s.handler.Close()
 			}
-			handler, err := newBackupStore(s.deviceKey, s.cluster, state, s.log, s.config)
+			handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 			if err != nil {
 				logger.Errorf("Failed to initialize backup store: %s", err)
 			} else {
@@ -134,7 +136,34 @@ func (s *deviceRequestsStore) Watch(deviceID device.ID, ch chan<- Event, opts ..
 	for _, opt := range opts {
 		opt.applyWatch(options)
 	}
-	// TODO
+
+	var reader Reader
+	nextIndex := s.log.Writer().Index() + 1
+	if options.replay {
+		reader = s.log.OpenReader(0)
+	} else {
+		reader = s.log.OpenReader(nextIndex)
+	}
+
+	go func() {
+		for {
+			batch := reader.ReadUntil(s.state.getCommitIndex())
+			for _, entry := range batch.Entries {
+				var eventType EventType
+				if entry.Index < nextIndex {
+					eventType = EventNone
+				} else {
+					eventType = EventAppend
+				}
+				request := New(entry.Value.(*e2ap.RicControlRequest))
+				request.Index = entry.Index
+				ch <- Event{
+					Type:    eventType,
+					Request: *request,
+				}
+			}
+		}
+	}()
 	return nil
 }
 

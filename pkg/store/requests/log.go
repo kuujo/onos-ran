@@ -70,6 +70,9 @@ type Reader interface {
 	// Read reads the next batch from the log
 	Read() *Batch
 
+	// ReadUntil reads the next batch from the log up to the given index
+	ReadUntil(Index) *Batch
+
 	// Seek resets the log reader to the given index
 	Seek(index Index)
 }
@@ -194,6 +197,45 @@ func (r *memoryReader) Read() *Batch {
 	r.log.mu.RLock()
 	r.mu.Lock()
 	if (r.elem == nil && r.log.entries.Len() > 0) || (r.elem != nil && r.elem.Next() != nil) {
+		var elem *list.Element
+		if r.elem == nil {
+			elem = r.log.entries.Front()
+		} else {
+			elem = r.elem.Next()
+		}
+
+		var lastElem *list.Element
+		entries := make([]*Entry, 0)
+		for elem != nil {
+			entries = append(entries, elem.Value.(*Entry))
+			lastElem = elem
+			elem = elem.Next()
+		}
+
+		var prevIndex Index
+		if r.elem != nil {
+			prevIndex = r.elem.Value.(*Entry).Index
+		}
+		r.elem = lastElem
+		r.mu.Unlock()
+		r.log.mu.RUnlock()
+		return &Batch{
+			PrevIndex: prevIndex,
+			Entries:   entries,
+		}
+	}
+	r.wg = &sync.WaitGroup{}
+	r.wg.Add(1)
+	r.mu.Unlock()
+	r.log.mu.RUnlock()
+	r.wg.Wait()
+	return r.Read()
+}
+
+func (r *memoryReader) ReadUntil(index Index) *Batch {
+	r.log.mu.RLock()
+	r.mu.Lock()
+	if r.log.writer.lastIndex >= index && (r.elem == nil && r.log.entries.Len() > 0) || (r.elem != nil && r.elem.Next() != nil) {
 		var elem *list.Element
 		if r.elem == nil {
 			elem = r.log.entries.Front()

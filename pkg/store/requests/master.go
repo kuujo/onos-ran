@@ -23,18 +23,17 @@ import (
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
-	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"sort"
 	"sync"
 )
 
-func newMasterStore(deviceKey device.Key, c cluster.Cluster, mastership mastership.State, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
+func newMasterStore(deviceKey device.Key, c cluster.Cluster, state *deviceStoreState, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
 	handler := &masterStore{
 		config:         config,
 		deviceKey:      deviceKey,
 		cluster:        c,
-		mastership:     mastership,
 		backups:        make([]*masterBackup, 0),
+		state:          state,
 		log:            log,
 		commitCh:       make(chan backupCommit),
 		commitChannels: make(map[Index]chan<- Index),
@@ -50,21 +49,20 @@ type masterStore struct {
 	config         config.RequestsStoreConfig
 	deviceKey      device.Key
 	cluster        cluster.Cluster
-	mastership     mastership.State
 	backups        []*masterBackup
+	state          *deviceStoreState
 	log            Log
 	commitCh       chan backupCommit
 	commitChannels map[Index]chan<- Index
 	commitIndexes  map[cluster.ReplicaID]Index
-	commitIndex    Index
-	ackIndex       Index
 	mu             sync.RWMutex
 }
 
 func (s *masterStore) open() error {
 	wg := &sync.WaitGroup{}
 	errCh := make(chan error)
-	for _, replicaID := range s.mastership.Replicas {
+	mastership := s.state.getMastership()
+	for _, replicaID := range mastership.Replicas {
 		wg.Add(1)
 		go func(replicaID cluster.ReplicaID) {
 			replica := s.cluster.Replica(replicaID)
@@ -122,7 +120,7 @@ func (s *masterStore) Ack(request *Request) error {
 }
 
 func (s *masterStore) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) error {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (s *masterStore) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
@@ -144,7 +142,9 @@ func (s *masterStore) append(ctx context.Context, request *requests.AppendReques
 
 func (s *masterStore) ack(ctx context.Context, request *requests.AckRequest) (*requests.AckResponse, error) {
 	s.mu.Lock()
-	s.ackIndex = Index(request.Index)
+	index := Index(request.Index)
+	s.log.Writer().Discard(index)
+	s.state.setAckIndex(index)
 	s.mu.Unlock()
 	return &requests.AckResponse{}, nil
 }
@@ -152,7 +152,7 @@ func (s *masterStore) ack(ctx context.Context, request *requests.AckRequest) (*r
 func (s *masterStore) backup(ctx context.Context, request *requests.BackupRequest) (*requests.BackupResponse, error) {
 	return &requests.BackupResponse{
 		DeviceID: string(s.deviceKey),
-		Term:     uint64(s.mastership.Term),
+		Term:     uint64(s.state.getMastership().Term),
 	}, nil
 }
 
@@ -177,19 +177,20 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 			return indexes[i] < indexes[j]
 		})
 
-		commitIndex := indexes[s.config.GetBackups()-1]
+		index := indexes[s.config.GetBackups()-1]
 		s.mu.Lock()
 		defer s.mu.Unlock()
-		if commitIndex > s.commitIndex {
-			for i := s.commitIndex + 1; i <= commitIndex; i++ {
-				s.commitIndex = index
-				ch, ok := s.commitChannels[index]
+		commitIndex := s.state.getCommitIndex()
+		if index > commitIndex {
+			for i := commitIndex + 1; i <= index; i++ {
+				s.state.setCommitIndex(i)
+				ch, ok := s.commitChannels[i]
 				if ok {
-					ch <- index
-					delete(s.commitChannels, index)
+					ch <- i
+					delete(s.commitChannels, i)
 				}
 			}
-			logger.Debugf("Committed entries up to %d", commitIndex)
+			logger.Debugf("Committed entries up to %d", index)
 		}
 	}
 }
@@ -197,10 +198,11 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 func (s *masterStore) backupEntry(entry *Entry, ch chan<- Index) {
 	if len(s.backups) == 0 {
 		s.mu.Lock()
-		if entry.Index > s.commitIndex {
-			s.commitIndex = entry.Index
+		commitIndex := s.state.getCommitIndex()
+		if entry.Index > commitIndex {
+			s.state.setCommitIndex(entry.Index)
 		}
-		index := s.commitIndex
+		index := s.state.getCommitIndex()
 		s.mu.Unlock()
 		ch <- index
 		return
@@ -268,11 +270,11 @@ func (b *masterBackup) backupEntries() {
 		}
 		request := &requests.BackupRequest{
 			DeviceID:    string(b.store.deviceKey),
-			Term:        uint64(b.store.mastership.Term),
+			Term:        uint64(b.store.state.getMastership().Term),
 			Entries:     entries,
 			PrevIndex:   uint64(batch.PrevIndex),
-			CommitIndex: uint64(b.store.commitIndex),
-			AckIndex:    uint64(b.store.ackIndex),
+			CommitIndex: uint64(b.store.state.getCommitIndex()),
+			AckIndex:    uint64(b.store.state.getAckIndex()),
 		}
 		b.store.mu.RUnlock()
 

@@ -18,22 +18,20 @@ import (
 	"context"
 	"errors"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
-	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
-	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"google.golang.org/grpc"
 	"sync"
 )
 
-func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, mastership mastership.State, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
+func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, state *deviceStoreState, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
 	handler := &backupStore{
-		config:     config,
-		deviceKey:  deviceKey,
-		mastership: mastership,
-		cluster:    cluster,
-		log:        log,
+		config:    config,
+		deviceKey: deviceKey,
+		state:     state,
+		cluster:   cluster,
+		log:       log,
 	}
 	if err := handler.open(); err != nil {
 		return nil, err
@@ -42,18 +40,18 @@ func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, mastership ma
 }
 
 type backupStore struct {
-	config     config.RequestsStoreConfig
-	deviceKey  device.Key
-	cluster    cluster.Cluster
-	mastership mastership.State
-	log        Log
-	conn       *grpc.ClientConn
-	client     requests.RequestsServiceClient
-	mu         sync.RWMutex
+	config    config.RequestsStoreConfig
+	deviceKey device.Key
+	cluster   cluster.Cluster
+	state     *deviceStoreState
+	log       Log
+	conn      *grpc.ClientConn
+	client    requests.RequestsServiceClient
+	mu        sync.RWMutex
 }
 
 func (s *backupStore) open() error {
-	master := s.cluster.Replica(cluster.ReplicaID(s.mastership.Master))
+	master := s.cluster.Replica(cluster.ReplicaID(s.state.getMastership().Master))
 	if master == nil {
 		return errors.New("unknown master node")
 	}
@@ -86,39 +84,7 @@ func (s *backupStore) Ack(request *Request) error {
 }
 
 func (s *backupStore) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) error {
-	options := &watchOptions{}
-	for _, opt := range opts {
-		opt.applyWatch(options)
-	}
-
-	var reader Reader
-	nextIndex := s.log.Writer().Index() + 1
-	if options.replay {
-		reader = s.log.OpenReader(0)
-	} else {
-		reader = s.log.OpenReader(nextIndex)
-	}
-
-	go func() {
-		for {
-			batch := reader.Read()
-			for _, entry := range batch.Entries {
-				var eventType EventType
-				if entry.Index < nextIndex {
-					eventType = EventNone
-				} else {
-					eventType = EventAppend
-				}
-				request := New(entry.Value.(*e2ap.RicControlRequest))
-				request.Index = entry.Index
-				ch <- Event{
-					Type:    eventType,
-					Request: *request,
-				}
-			}
-		}
-	}()
-	return nil
+	panic("not implemented")
 }
 
 func (s *backupStore) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
@@ -139,7 +105,7 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 		return &requests.BackupResponse{
 			DeviceID: string(s.deviceKey),
 			Index:    uint64(lastIndex),
-			Term:     uint64(s.mastership.Term),
+			Term:     uint64(s.state.getMastership().Term),
 		}, nil
 	}
 
@@ -149,7 +115,7 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 	return &requests.BackupResponse{
 		DeviceID: string(s.deviceKey),
 		Index:    uint64(s.log.Writer().Index()),
-		Term:     uint64(s.mastership.Term),
+		Term:     uint64(s.state.getMastership().Term),
 	}, nil
 }
 
