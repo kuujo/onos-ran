@@ -98,15 +98,20 @@ func (l *memoryLog) Writer() Writer {
 }
 
 func (l *memoryLog) OpenReader(index Index) Reader {
-	l.mu.RLock()
-	if index > l.writer.lastIndex {
-		index = l.writer.lastIndex + 1
-	}
-	if index < l.writer.firstIndex {
-		index = l.writer.firstIndex
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	var elem *list.Element
+	if index > 0 {
+		elem = l.entries.Front()
+		next := elem
+		for next != nil && next.Value.(*Entry).Index <= index {
+			elem = next
+			next = next.Next()
+		}
 	}
 	reader := &memoryReader{
-		log: l,
+		log:  l,
+		elem: elem,
 	}
 	l.readers = append(l.readers, reader)
 	return reader
@@ -188,14 +193,19 @@ func (r *memoryReader) next() {
 func (r *memoryReader) Read() *Batch {
 	r.log.mu.RLock()
 	r.mu.Lock()
-	if r.elem == nil {
-		r.elem = r.log.entries.Front()
-	}
-	elem := r.elem.Next()
-	if elem != nil {
+	if (r.elem == nil && r.log.entries.Len() > 0) || (r.elem != nil && r.elem.Next() != nil) {
+		var elem *list.Element
+		if r.elem == nil {
+			elem = r.log.entries.Front()
+		} else {
+			elem = r.elem.Next()
+		}
+
+		var lastElem *list.Element
 		entries := make([]*Entry, 0)
 		for elem != nil {
 			entries = append(entries, elem.Value.(*Entry))
+			lastElem = elem
 			elem = elem.Next()
 		}
 
@@ -203,7 +213,7 @@ func (r *memoryReader) Read() *Batch {
 		if r.elem != nil {
 			prevIndex = r.elem.Value.(*Entry).Index
 		}
-		r.elem = elem
+		r.elem = lastElem
 		r.mu.Unlock()
 		r.log.mu.RUnlock()
 		return &Batch{
@@ -211,7 +221,6 @@ func (r *memoryReader) Read() *Batch {
 			Entries:   entries,
 		}
 	}
-	r.mu.Lock()
 	r.wg = &sync.WaitGroup{}
 	r.wg.Add(1)
 	r.mu.Unlock()
