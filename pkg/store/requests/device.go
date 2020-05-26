@@ -72,11 +72,25 @@ func (s *deviceRequestsStore) open() error {
 		}
 		s.handler = handler
 	} else {
-		handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
-		if err != nil {
-			return fmt.Errorf("failed to initialize backup store: %s", err)
+		var index int
+		for i := 1; i < len(state.Replicas); i++ {
+			if state.Replicas[i] == cluster.ReplicaID(s.cluster.Node().ID) {
+				index = i
+			}
 		}
-		s.handler = handler
+		if index != 0 && index <= s.config.Backups+s.config.AsyncBackups {
+			handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
+			if err != nil {
+				return fmt.Errorf("failed to initialize backup store: %s", err)
+			}
+			s.handler = handler
+		} else {
+			handler, err := newStandbyStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
+			if err != nil {
+				return fmt.Errorf("failed to initialize standby store: %s", err)
+			}
+			s.handler = handler
+		}
 	}
 	go s.processElectionChanges(ch)
 	return nil
