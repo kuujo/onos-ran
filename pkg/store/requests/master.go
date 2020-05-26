@@ -21,14 +21,16 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
+	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"sort"
 	"sync"
 )
 
-func newMasterStore(deviceKey device.Key, c cluster.Cluster, mastership mastership.State, log Log) (storeHandler, error) {
+func newMasterStore(deviceKey device.Key, c cluster.Cluster, mastership mastership.State, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
 	handler := &masterStore{
+		config:         config,
 		deviceKey:      deviceKey,
 		cluster:        c,
 		mastership:     mastership,
@@ -45,6 +47,7 @@ func newMasterStore(deviceKey device.Key, c cluster.Cluster, mastership mastersh
 }
 
 type masterStore struct {
+	config         config.RequestsStoreConfig
 	deviceKey      device.Key
 	cluster        cluster.Cluster
 	mastership     mastership.State
@@ -174,7 +177,7 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 			return indexes[i] < indexes[j]
 		})
 
-		commitIndex := indexes[syncBackupCount-1]
+		commitIndex := indexes[s.config.GetBackups()-1]
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		if commitIndex > s.commitIndex {

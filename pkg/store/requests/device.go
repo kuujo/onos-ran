@@ -20,14 +20,16 @@ import (
 	"fmt"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/store/requests"
+	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"sync"
 )
 
-// newDeviceIndicationsStore creates a new indications store for a single device
-func newDeviceIndicationsStore(deviceKey device.Key, cluster cluster.Cluster, election mastership.Election) (*deviceRequestsStore, error) {
+// newDeviceRequestsStore creates a new requests store for a single device
+func newDeviceRequestsStore(deviceKey device.Key, cluster cluster.Cluster, election mastership.Election, config config.RequestsStoreConfig) (*deviceRequestsStore, error) {
 	store := &deviceRequestsStore{
+		config:    config,
 		deviceKey: deviceKey,
 		cluster:   cluster,
 		election:  election,
@@ -41,6 +43,7 @@ func newDeviceIndicationsStore(deviceKey device.Key, cluster cluster.Cluster, el
 
 // deviceRequestsStore is a store of requests for a single device
 type deviceRequestsStore struct {
+	config    config.RequestsStoreConfig
 	deviceKey device.Key
 	cluster   cluster.Cluster
 	election  mastership.Election
@@ -61,13 +64,13 @@ func (s *deviceRequestsStore) open() error {
 	}
 	s.state = state
 	if state.Master == s.cluster.Node().ID {
-		handler, err := newMasterStore(s.deviceKey, s.cluster, *state, s.log)
+		handler, err := newMasterStore(s.deviceKey, s.cluster, *state, s.log, s.config)
 		if err != nil {
-			return fmt.Errorf("Failed to initialize master store: %s", err)
+			return fmt.Errorf("failed to initialize master store: %s", err)
 		}
 		s.handler = handler
 	} else {
-		handler, err := newBackupStore(s.deviceKey, s.cluster, *state, s.log)
+		handler, err := newBackupStore(s.deviceKey, s.cluster, *state, s.log, s.config)
 		if err != nil {
 			return fmt.Errorf("failed to initialize backup store: %s", err)
 		}
@@ -85,7 +88,7 @@ func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State)
 			if s.handler != nil {
 				s.handler.Close()
 			}
-			handler, err := newMasterStore(s.deviceKey, s.cluster, state, s.log)
+			handler, err := newMasterStore(s.deviceKey, s.cluster, state, s.log, s.config)
 			if err != nil {
 				logger.Errorf("Failed to initialize master store: %s", err)
 			} else {
@@ -95,7 +98,7 @@ func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State)
 			if s.handler != nil {
 				s.handler.Close()
 			}
-			handler, err := newBackupStore(s.deviceKey, s.cluster, state, s.log)
+			handler, err := newBackupStore(s.deviceKey, s.cluster, state, s.log, s.config)
 			if err != nil {
 				logger.Errorf("Failed to initialize backup store: %s", err)
 			} else {

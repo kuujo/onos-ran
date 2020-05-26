@@ -20,14 +20,16 @@ import (
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
+	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"google.golang.org/grpc"
 	"sync"
 )
 
-func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, mastership mastership.State, log Log) (storeHandler, error) {
+func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, mastership mastership.State, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
 	handler := &backupStore{
+		config:     config,
 		deviceKey:  deviceKey,
 		mastership: mastership,
 		cluster:    cluster,
@@ -40,6 +42,7 @@ func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, mastership ma
 }
 
 type backupStore struct {
+	config     config.RequestsStoreConfig
 	deviceKey  device.Key
 	cluster    cluster.Cluster
 	mastership mastership.State

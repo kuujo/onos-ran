@@ -32,9 +32,6 @@ var logger = logging.GetLogger("store", "requests")
 
 const requestTimeout = 30 * time.Second
 
-// TODO: Make backup count configurable
-const syncBackupCount = 1;
-
 // New creates a new indication
 func New(request *e2ap.RicControlRequest) *Request {
 	return &Request{
@@ -87,6 +84,7 @@ type Store interface {
 func NewDistributedStore(cluster cluster.Cluster, devices device.Store, masterships mastership.Store, config config.Config) (Store, error) {
 	logger.Info("Creating distributed requests store")
 	store := &store{
+		config:         config.Stores.Requests,
 		cluster:        cluster,
 		devices:        devices,
 		masterships:    masterships,
@@ -101,6 +99,7 @@ func NewDistributedStore(cluster cluster.Cluster, devices device.Store, mastersh
 var _ Store = &store{}
 
 type store struct {
+	config         config.RequestsStoreConfig
 	cluster        cluster.Cluster
 	devices        device.Store
 	masterships    mastership.Store
@@ -141,7 +140,7 @@ func (s *store) getDeviceStore(deviceKey device.Key) (*deviceRequestsStore, erro
 			if err != nil {
 				return nil, err
 			}
-			store, err := newDeviceIndicationsStore(deviceKey, s.cluster, election)
+			store, err := newDeviceRequestsStore(deviceKey, s.cluster, election, s.config)
 			if err != nil {
 				return nil, err
 			}
