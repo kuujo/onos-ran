@@ -16,7 +16,7 @@ package mastership
 
 import (
 	"github.com/onosproject/onos-lib-go/pkg/atomix"
-	"github.com/onosproject/onos-ric/pkg/store/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

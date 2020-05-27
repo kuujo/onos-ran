@@ -22,16 +22,16 @@ import (
 	"github.com/atomix/go-client/pkg/client/election"
 	"github.com/atomix/go-client/pkg/client/primitive"
 	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/onosproject/onos-ric/pkg/store/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"io"
 	"sync"
 	"time"
 )
 
 // newDistributedElection returns a new distributed mastership election
-func newDistributedElection(partitionID PartitionID, database *client.Database) (Election, error) {
+func newDistributedElection(partitionID PartitionID, database *client.Database, cluster cluster.Cluster) (Election, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%d", partitionID), election.WithID(string(cluster.GetNodeID())))
+	election, err := database.GetElection(ctx, fmt.Sprintf("mastership-%d", partitionID), election.WithID(string(cluster.Node().ID)))
 	cancel()
 	if err != nil {
 		return nil, err
@@ -81,6 +81,9 @@ type State struct {
 
 	// Master is the NodeID of the master for the key
 	Master cluster.NodeID
+
+	// Replicas is the replicas for the key
+	Replicas []cluster.ReplicaID
 }
 
 // Election is an election for a single mastership
@@ -138,10 +141,15 @@ func (e *distributedMastershipElection) enter() error {
 
 	// Set the mastership term
 	e.mu.Lock()
+	replicas := make([]cluster.ReplicaID, 0, len(term.Candidates))
+	for _, id := range term.Candidates {
+		replicas = append(replicas, cluster.ReplicaID(id))
+	}
 	e.mastership = &State{
 		PartitionID: e.partitionID,
 		Master:      cluster.NodeID(term.Leader),
 		Term:        Term(term.ID),
+		Replicas:    replicas,
 	}
 	e.mu.Unlock()
 
@@ -163,10 +171,15 @@ func (e *distributedMastershipElection) watchElection(ch <-chan *election.Event)
 		var mastership *State
 		e.mu.Lock()
 		if uint64(e.mastership.Term) != event.Term.ID {
+			replicas := make([]cluster.ReplicaID, 0, len(event.Term.Candidates))
+			for _, id := range event.Term.Candidates {
+				replicas = append(replicas, cluster.ReplicaID(id))
+			}
 			mastership = &State{
 				PartitionID: e.partitionID,
 				Term:        Term(event.Term.ID),
 				Master:      cluster.NodeID(event.Term.Leader),
+				Replicas:    replicas,
 			}
 			e.mastership = mastership
 		}

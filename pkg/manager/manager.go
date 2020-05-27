@@ -17,6 +17,8 @@ package manager
 
 import (
 	"fmt"
+	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
@@ -33,9 +35,18 @@ import (
 var log = logging.GetLogger("manager")
 var mgr Manager
 
+// ClusterFactory creates the cluster
+var ClusterFactory = func(configuration config.Config) (cluster.Cluster, error) {
+	client, err := atomix.GetClient(configuration.Atomix)
+	if err != nil {
+		return nil, err
+	}
+	return cluster.New(client)
+}
+
 // MastershipStoreFactory creates the mastership store
-var MastershipStoreFactory = func(configuration config.Config) (mastership.Store, error) {
-	return mastership.NewDistributedStore(configuration)
+var MastershipStoreFactory = func(cluster cluster.Cluster, configuration config.Config) (mastership.Store, error) {
+	return mastership.NewDistributedStore(cluster, configuration)
 }
 
 // IndicationsStoreFactory creates the indications store
@@ -62,7 +73,12 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		return nil, err
 	}
 
-	mastershipStore, err := MastershipStoreFactory(configuration)
+	cluster, err := ClusterFactory(configuration)
+	if err != nil {
+		return nil, err
+	}
+
+	mastershipStore, err := MastershipStoreFactory(cluster, configuration)
 	if err != nil {
 		return nil, err
 	}
