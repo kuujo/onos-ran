@@ -17,6 +17,7 @@ package requests
 import (
 	"github.com/golang/mock/gomock"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
@@ -33,6 +34,8 @@ import (
 )
 
 func TestStoreRequests(t *testing.T) {
+	logging.SetLevel(logging.DebugLevel)
+
 	factory := cluster.NewTestFactory(func(id cluster.NodeID, server *grpc.Server) {
 		requests.RegisterRequestsServiceServer(server, newServer())
 	})

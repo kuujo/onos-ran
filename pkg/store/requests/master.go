@@ -62,30 +62,17 @@ func (s *masterStore) open() error {
 	wg := &sync.WaitGroup{}
 	errCh := make(chan error)
 	mastership := s.state.getMastership()
-	for _, replicaID := range mastership.Replicas {
-		wg.Add(1)
-		go func(replicaID cluster.ReplicaID) {
-			replica := s.cluster.Replica(replicaID)
-			if replica == nil {
-				errCh <- fmt.Errorf("unknown replica node %s", replicaID)
-			} else {
-				conn, err := replica.Connect()
+	for index, replicaID := range mastership.Replicas {
+		if index > 0 && index < s.config.GetBackups()+s.config.GetAsyncBackups() {
+			wg.Add(1)
+			go func(replicaID cluster.ReplicaID) {
+				err := s.addBackup(replicaID)
 				if err != nil {
 					errCh <- err
-				} else {
-					client := requests.NewRequestsServiceClient(conn)
-					backup, err := newMasterBackup(s, replicaID, client, s.log.OpenReader(0))
-					if err != nil {
-						errCh <- err
-					} else {
-						s.mu.Lock()
-						s.backups = append(s.backups, backup)
-						s.mu.Unlock()
-					}
 				}
-			}
-			wg.Done()
-		}(replicaID)
+				wg.Done()
+			}(replicaID)
+		}
 	}
 
 	wg.Wait()
@@ -96,6 +83,26 @@ func (s *masterStore) open() error {
 	}
 
 	go s.processCommits()
+	return nil
+}
+
+func (s *masterStore) addBackup(replicaID cluster.ReplicaID) error {
+	replica := s.cluster.Replica(replicaID)
+	if replica == nil {
+		return fmt.Errorf("unknown replica node %s", replicaID)
+	}
+	conn, err := replica.Connect()
+	if err != nil {
+		return err
+	}
+	client := requests.NewRequestsServiceClient(conn)
+	backup, err := newMasterBackup(s, replicaID, client, s.log.OpenReader(0))
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.backups = append(s.backups, backup)
+	s.mu.Unlock()
 	return nil
 }
 

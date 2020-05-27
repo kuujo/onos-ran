@@ -37,7 +37,9 @@ func newDeviceRequestsStore(deviceKey device.Key, cluster cluster.Cluster, elect
 		state:     &deviceStoreState{},
 		log:       newLog(),
 	}
+	logger.Debugf("Initializing device store %s", deviceKey)
 	if err := store.open(); err != nil {
+		logger.Errorf("Failed to initialize device store %s: %s", deviceKey, err)
 		return nil, err
 	}
 	return store, nil
@@ -63,9 +65,33 @@ func (s *deviceRequestsStore) open() error {
 	state, err := s.election.GetState()
 	if err != nil {
 		return err
+	} else if state == nil {
+		return errors.New("failed to join mastership election")
 	}
-	s.state.setMastership(state)
+	logger.Debugf("Initial election state for %s: %v", s.deviceKey, *state)
+	if err := s.processElectionChange(*state); err != nil {
+		return err
+	}
+	go s.processElectionChanges(ch)
+	return nil
+}
+
+func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State) {
+	for state := range ch {
+		logger.Debugf("Election state changed for %s: %v", s.deviceKey, state)
+		s.mu.Lock()
+		err := s.processElectionChange(state)
+		if err != nil {
+			logger.Errorf("Failed to process election state change for %s: %s", s.deviceKey, err)
+		}
+		s.mu.Unlock()
+	}
+}
+
+func (s *deviceRequestsStore) processElectionChange(state mastership.State) error {
+	s.state.setMastership(&state)
 	if state.Master == s.cluster.Node().ID {
+		logger.Debugf("Transitioning to master role for %s", s.deviceKey)
 		handler, err := newMasterStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 		if err != nil {
 			return fmt.Errorf("failed to initialize master store: %s", err)
@@ -79,12 +105,14 @@ func (s *deviceRequestsStore) open() error {
 			}
 		}
 		if index != 0 && index <= s.config.Backups+s.config.AsyncBackups {
+			logger.Debugf("Transitioning to backup role for %s", s.deviceKey)
 			handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 			if err != nil {
 				return fmt.Errorf("failed to initialize backup store: %s", err)
 			}
 			s.handler = handler
 		} else {
+			logger.Debugf("Transitioning to standby role for %s", s.deviceKey)
 			handler, err := newStandbyStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 			if err != nil {
 				return fmt.Errorf("failed to initialize standby store: %s", err)
@@ -92,37 +120,7 @@ func (s *deviceRequestsStore) open() error {
 			s.handler = handler
 		}
 	}
-	go s.processElectionChanges(ch)
 	return nil
-}
-
-func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State) {
-	for state := range ch {
-		s.mu.Lock()
-		s.state.setMastership(&state)
-		if state.Master == s.cluster.Node().ID {
-			if s.handler != nil {
-				s.handler.Close()
-			}
-			handler, err := newMasterStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
-			if err != nil {
-				logger.Errorf("Failed to initialize master store: %s", err)
-			} else {
-				s.handler = handler
-			}
-		} else {
-			if s.handler != nil {
-				s.handler.Close()
-			}
-			handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
-			if err != nil {
-				logger.Errorf("Failed to initialize backup store: %s", err)
-			} else {
-				s.handler = handler
-			}
-		}
-		s.mu.Unlock()
-	}
 }
 
 func (s *deviceRequestsStore) Append(request *Request, opts ...AppendOption) error {
