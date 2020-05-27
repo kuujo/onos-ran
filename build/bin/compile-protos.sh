@@ -20,3 +20,4 @@ protoc -I=$proto_imports --doc_out=docs/api --doc_opt=markdown,a1-interface-qos.
 
 ## store related protobuf files
 protoc -I=$proto_imports --gogofaster_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,import_path=ran/store/requests,plugins=grpc:. api/store/requests/*.proto
+protoc -I=$proto_imports --gogofaster_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,import_path=ran/store/indications,plugins=grpc:. api/store/indications/*.proto
