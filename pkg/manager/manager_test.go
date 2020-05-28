@@ -211,21 +211,13 @@ func Test_TelemetrySubscribe(t *testing.T) {
 	err := newManager.SubscribeIndications(ch)
 	assert.NoError(t, err)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	var e1 indications.Event
-	go func() {
-		e1 = <-ch
-		wg.Done()
-	}()
-
 	err = newManager.StoreTelemetry(telemetryMessage)
 	assert.NoError(t, err, "error storing telemetry %v", err)
 
-	wg.Wait()
+	event := <-ch
 
 	// First event should be an insert
-	checkEvent(t, telemetryMessage, e1, indications.EventReceived)
+	checkEvent(t, telemetryMessage, event, indications.EventReceived)
 
 	// Second event should be delete
 	removeNewManager()

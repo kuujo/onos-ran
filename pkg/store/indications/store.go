@@ -78,10 +78,11 @@ type Store interface {
 func NewDistributedStore(cluster cluster.Cluster, devices device.Store, masterships mastership.Store, config config.Config) (Store, error) {
 	log.Info("Creating distributed indications store")
 	store := &store{
-		cluster:           cluster,
-		devices:           devices,
-		masterships:       masterships,
-		deviceIndications: make(map[device.Key]*deviceIndicationsStore),
+		cluster:     cluster,
+		devices:     devices,
+		masterships: masterships,
+		subscribers: make([]chan<- Event, 0),
+		indications: make(map[device.Key]*deviceIndicationsStore),
 	}
 	if err := store.open(); err != nil {
 		return nil, err
@@ -92,11 +93,12 @@ func NewDistributedStore(cluster cluster.Cluster, devices device.Store, mastersh
 var _ Store = &store{}
 
 type store struct {
-	cluster           cluster.Cluster
-	devices           device.Store
-	masterships       mastership.Store
-	deviceIndications map[device.Key]*deviceIndicationsStore
-	mu                sync.RWMutex
+	cluster     cluster.Cluster
+	devices     device.Store
+	masterships mastership.Store
+	subscribers []chan<- Event
+	indications map[device.Key]*deviceIndicationsStore
+	mu          sync.RWMutex
 }
 
 func (s *store) open() error {
@@ -121,12 +123,12 @@ func (s *store) open() error {
 
 func (s *store) getDeviceStore(deviceKey device.Key) (*deviceIndicationsStore, error) {
 	s.mu.RLock()
-	store, ok := s.deviceIndications[deviceKey]
+	store, ok := s.indications[deviceKey]
 	s.mu.RUnlock()
 	if !ok {
 		s.mu.Lock()
 		defer s.mu.Unlock()
-		store, ok = s.deviceIndications[deviceKey]
+		store, ok = s.indications[deviceKey]
 		if !ok {
 			election, err := s.masterships.GetElection(mastership.Key(deviceKey))
 			if err != nil {
@@ -136,7 +138,13 @@ func (s *store) getDeviceStore(deviceKey device.Key) (*deviceIndicationsStore, e
 			if err != nil {
 				return nil, err
 			}
-			s.deviceIndications[deviceKey] = store
+			for _, subscriber := range s.subscribers {
+				err := store.Subscribe(subscriber)
+				if err != nil {
+					return nil, err
+				}
+			}
+			s.indications[deviceKey] = store
 		}
 	}
 	return store, nil
@@ -172,7 +180,7 @@ func (s *store) List(ch chan<- Indication) error {
 
 	wg := &sync.WaitGroup{}
 	errCh := make(chan error)
-	for _, store := range s.deviceIndications {
+	for _, store := range s.indications {
 		wg.Add(1)
 		go func(store Store) {
 			err := store.List(ch)
@@ -193,12 +201,12 @@ func (s *store) List(ch chan<- Indication) error {
 }
 
 func (s *store) Subscribe(ch chan<- Event, opts ...SubscribeOption) error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	wg := &sync.WaitGroup{}
 	errCh := make(chan error)
-	for _, store := range s.deviceIndications {
+	for _, store := range s.indications {
 		wg.Add(1)
 		go func(store Store) {
 			err := store.Subscribe(ch, opts...)
@@ -211,6 +219,8 @@ func (s *store) Subscribe(ch chan<- Event, opts ...SubscribeOption) error {
 
 	wg.Wait()
 	close(errCh)
+
+	s.subscribers = append(s.subscribers, ch)
 
 	for err := range errCh {
 		return err
