@@ -1,0 +1,69 @@
+/*
+Copyright 2019-present Open Networking Foundation.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package onos.ric.store.requests;
+
+import "github.com/onosproject/onos-ric/api/sb/e2ap/e2ap.proto";
+import "gogoproto/gogo.proto";
+
+message AppendRequest {
+    string device_id = 1 [(gogoproto.customname) = "DeviceID"];
+    interface.e2ap.RicControlRequest request = 2;
+}
+
+message AppendResponse {
+    uint64 index = 1;
+}
+
+message AckRequest {
+    string device_id = 1 [(gogoproto.customname) = "DeviceID"];
+    uint64 index = 2;
+}
+
+message AckResponse {
+
+}
+
+message BackupRequest {
+    string device_id = 1 [(gogoproto.customname) = "DeviceID"];
+    uint64 term = 2;
+    repeated BackupEntry entries = 3;
+    uint64 prev_index = 4;
+    uint64 commit_index = 5;
+    uint64 ack_index = 6;
+}
+
+message BackupResponse {
+    string device_id = 1 [(gogoproto.customname) = "DeviceID"];
+    uint64 index = 2;
+    uint64 term = 3;
+}
+
+message BackupEntry {
+    uint64 index = 1;
+    interface.e2ap.RicControlRequest request = 2;
+}
+
+// RequestsService implements a primary-backup requests store
+service RequestsService {
+    // Appends a request to the store
+    rpc Append (AppendRequest) returns (AppendResponse);
+
+    // Acknowledges a request in the store
+    rpc Ack (AckRequest) returns (AckResponse);
+
+    // Backs up changes to a replica
+    rpc Backup (BackupRequest) returns (BackupResponse);
+}

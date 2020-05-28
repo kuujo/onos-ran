@@ -17,3 +17,6 @@ protoc -I=$proto_imports --grpc-gateway_out=$grpc_gateway_out  --doc_out=docs/ap
 protoc -I=$proto_imports --doc_out=docs/api --doc_opt=markdown,a1-interface-types.md  --gogofaster_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,import_path=ran/nb/a1/types,plugins=grpc:. api/nb/a1/types/*.proto
 protoc -I=$proto_imports --doc_out=docs/api --doc_opt=markdown,a1-interface-tsp.md  --gogofaster_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,import_path=ran/nb/a1/tsp,plugins=grpc:. api/nb/a1/a1-p/tsp/*.proto
 protoc -I=$proto_imports --doc_out=docs/api --doc_opt=markdown,a1-interface-qos.md  --gogofaster_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,import_path=ran/nb/a1/qos,plugins=grpc:. api/nb/a1/a1-p/qos/*.proto
+
+## store related protobuf files
+protoc -I=$proto_imports --gogofaster_out=Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types,import_path=ran/store/requests,plugins=grpc:. api/store/requests/*.proto
