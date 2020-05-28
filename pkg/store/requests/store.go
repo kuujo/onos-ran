@@ -16,17 +16,13 @@ package requests
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"github.com/atomix/go-client/pkg/client/log"
-	"github.com/atomix/go-client/pkg/client/primitive"
-	"github.com/atomix/go-client/pkg/client/util/net"
-	"github.com/gogo/protobuf/proto"
-	"github.com/onosproject/onos-lib-go/pkg/atomix"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
+	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"io"
 	"sync"
 	"time"
@@ -34,18 +30,11 @@ import (
 
 var logger = logging.GetLogger("store", "requests")
 
-const requestTimeout = 15 * time.Second
-
-const primitiveName = "indications"
-const databaseType = atomix.DatabaseTypeCache
-
-// Index is a message index
-type Index int64
+const requestTimeout = 30 * time.Second
 
 // New creates a new indication
-func New(deviceID device.ID, request *e2ap.RicControlRequest) *Request {
+func New(request *e2ap.RicControlRequest) *Request {
 	return &Request{
-		DeviceID:          deviceID,
 		RicControlRequest: request,
 	}
 }
@@ -55,8 +44,6 @@ type Request struct {
 	*e2ap.RicControlRequest
 	// Index is the request index
 	Index Index
-	// DeviceID is the request device identifier
-	DeviceID device.ID
 }
 
 // Event is a store event
@@ -94,154 +81,45 @@ type Store interface {
 }
 
 // NewDistributedStore creates a new distributed indications store
-func NewDistributedStore(config config.Config) (Store, error) {
-	logger.Info("Creating distributed message store")
-	database, err := atomix.GetDatabase(config.Atomix, config.Atomix.GetDatabase(databaseType))
-	if err != nil {
+func NewDistributedStore(cluster cluster.Cluster, devices device.Store, masterships mastership.Store, config config.Config) (Store, error) {
+	logger.Info("Creating distributed requests store")
+	store := &store{
+		config:         config.Stores.Requests,
+		cluster:        cluster,
+		devices:        devices,
+		masterships:    masterships,
+		deviceRequests: make(map[device.Key]*deviceRequestsStore),
+	}
+	if err := store.open(); err != nil {
 		return nil, err
 	}
-	return &store{
-		factory: func(id device.ID) (log.Log, error) {
-			ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-			defer cancel()
-			name := fmt.Sprintf("%s-%s-%s", primitiveName, id.PlmnId, id.Ecid)
-			return database.GetLog(ctx, name)
-		},
-		logs: make(map[device.ID]log.Log),
-	}, nil
-}
-
-// NewLocalStore returns a new local indications store
-func NewLocalStore() (Store, error) {
-	_, address := atomix.StartLocalNode()
-	return newLocalStore(address)
-}
-
-// newLocalStore creates a new local indications store
-func newLocalStore(address net.Address) (Store, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	session, err := primitive.NewSession(ctx, primitive.Partition{ID: 1, Address: address})
-	if err != nil {
-		return nil, err
-	}
-	return &store{
-		factory: func(id device.ID) (log.Log, error) {
-			logName := primitive.Name{
-				Namespace: "local",
-				Name:      fmt.Sprintf("%s-%s-%s", primitiveName, id.PlmnId, id.Ecid),
-			}
-			return log.New(context.Background(), logName, []*primitive.Session{session})
-		},
-		logs: make(map[device.ID]log.Log),
-	}, nil
+	return store, nil
 }
 
 var _ Store = &store{}
 
 type store struct {
-	factory func(device.ID) (log.Log, error)
-	logs    map[device.ID]log.Log
-	mu      sync.RWMutex
+	config         config.RequestsStoreConfig
+	cluster        cluster.Cluster
+	devices        device.Store
+	masterships    mastership.Store
+	deviceRequests map[device.Key]*deviceRequestsStore
+	mu             sync.RWMutex
 }
 
-func (s *store) getLog(deviceID device.ID) (log.Log, error) {
-	s.mu.RLock()
-	log, ok := s.logs[deviceID]
-	s.mu.RUnlock()
-	if ok {
-		return log, nil
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	log, ok = s.logs[deviceID]
-	if ok {
-		return log, nil
-	}
-
-	log, err := s.factory(deviceID)
-	if err != nil {
-		return nil, err
-	}
-	s.logs[deviceID] = log
-	return log, nil
-}
-
-func (s *store) Append(request *Request, opts ...AppendOption) error {
-	deviceLog, err := s.getLog(request.DeviceID)
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-	bytes, err := encode(request.RicControlRequest)
-	if err != nil {
-		return err
-	}
-	entry, err := deviceLog.Append(ctx, bytes)
-	if err != nil {
-		return err
-	}
-	request.Index = Index(entry.Index)
-	return nil
-}
-
-func (s *store) Ack(request *Request) error {
-	deviceLog, err := s.getLog(request.DeviceID)
-	if err != nil {
-		return err
-	}
-	if request.Index == 0 {
-		return errors.New("cannot acknowledge request at unknown index")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-	_, err = deviceLog.Remove(ctx, int64(request.Index))
-	return err
-}
-
-func (s *store) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) error {
-	watchOpts := &watchOptions{}
-	for _, opt := range opts {
-		opt.applyWatch(watchOpts)
-	}
-
-	options := []log.WatchOption{}
-	if watchOpts.replay {
-		options = append(options, log.WithReplay())
-	}
-
-	deviceLog, err := s.getLog(deviceID)
-	if err != nil {
-		return err
-	}
-
-	eventCh := make(chan *log.Event)
-	err = deviceLog.Watch(context.Background(), eventCh, options...)
+func (s *store) open() error {
+	getServer().registerHandler(s)
+	ch := make(chan device.Event)
+	err := s.devices.Watch(ch)
 	if err != nil {
 		return err
 	}
 	go func() {
-		for event := range eventCh {
-			request, err := decode(event.Entry.Value)
-			if err == nil {
-				var eventType EventType
-				switch event.Type {
-				case log.EventNone:
-					eventType = EventNone
-				case log.EventAppended:
-					eventType = EventAppend
-				case log.EventRemoved:
-					eventType = EventRemove
-				}
-				ch <- Event{
-					Type: eventType,
-					Request: Request{
-						RicControlRequest: request,
-						DeviceID:          deviceID,
-						Index:             Index(event.Entry.Index),
-					},
+		for event := range ch {
+			if event.Type != device.EventUpdated {
+				_, err := s.getDeviceStore(event.Device.ID.Key())
+				if err != nil {
+					logger.Errorf("Failed to initialize requests store for device %s: %s", event.Device.ID.Key(), err)
 				}
 			}
 		}
@@ -249,30 +127,99 @@ func (s *store) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) 
 	return nil
 }
 
-func (s *store) Close() error {
+func (s *store) getDeviceStore(deviceKey device.Key) (*deviceRequestsStore, error) {
+	s.mu.RLock()
+	store, ok := s.deviceRequests[deviceKey]
+	s.mu.RUnlock()
+	if !ok {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		store, ok = s.deviceRequests[deviceKey]
+		if !ok {
+			election, err := s.masterships.GetElection(mastership.Key(deviceKey))
+			if err != nil {
+				return nil, err
+			}
+			store, err := newDeviceRequestsStore(deviceKey, s.cluster, election, s.config)
+			if err != nil {
+				return nil, err
+			}
+			s.deviceRequests[deviceKey] = store
+		}
+	}
+	return store, nil
+}
+
+func getDeviceID(request *Request) device.ID {
+	return device.ID(*request.Hdr.Ecgi)
+}
+
+func (s *store) Append(request *Request, opts ...AppendOption) error {
+	store, err := s.getDeviceStore(getDeviceID(request).Key())
+	if err != nil {
+		return err
+	}
+	return store.Append(request, opts...)
+}
+
+func (s *store) Ack(request *Request) error {
+	store, err := s.getDeviceStore(getDeviceID(request).Key())
+	if err != nil {
+		return err
+	}
+	return store.Ack(request)
+}
+
+func (s *store) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var returnErr error
-	for _, log := range s.logs {
-		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-		err := log.Close(ctx)
-		cancel()
-		if err != nil {
-			returnErr = err
-		}
+	wg := &sync.WaitGroup{}
+	errCh := make(chan error)
+	for _, store := range s.deviceRequests {
+		wg.Add(1)
+		go func(store Store) {
+			err := store.Watch(deviceID, ch, opts...)
+			if err != nil {
+				errCh <- err
+			}
+			wg.Done()
+		}(store)
 	}
-	return returnErr
+
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		return err
+	}
+	return nil
 }
 
-func decode(bytes []byte) (*e2ap.RicControlRequest, error) {
-	m := &e2ap.RicControlRequest{}
-	if err := proto.Unmarshal(bytes, m); err != nil {
+func (s *store) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
+	store, err := s.getDeviceStore(device.Key(request.DeviceID))
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return store.append(ctx, request)
 }
 
-func encode(m *e2ap.RicControlRequest) ([]byte, error) {
-	return proto.Marshal(m)
+func (s *store) ack(ctx context.Context, request *requests.AckRequest) (*requests.AckResponse, error) {
+	store, err := s.getDeviceStore(device.Key(request.DeviceID))
+	if err != nil {
+		return nil, err
+	}
+	return store.ack(ctx, request)
+}
+
+func (s *store) backup(ctx context.Context, request *requests.BackupRequest) (*requests.BackupResponse, error) {
+	store, err := s.getDeviceStore(device.Key(request.DeviceID))
+	if err != nil {
+		return nil, err
+	}
+	return store.backup(ctx, request)
+}
+
+func (s *store) Close() error {
+	return nil
 }

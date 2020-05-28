@@ -26,13 +26,22 @@ var config *Config
 // Config is the onos-config configuration
 type Config struct {
 	// Mastership is the mastership configuration
-	Mastership MastershipConfig `yaml:"mastership,omitempty"`
+	// Deprecated: use StoreConfig instead
+	Mastership MastershipStoreConfig `yaml:"mastership,omitempty"`
 	// Atomix is the Atomix configuration
 	Atomix atomix.Config `yaml:"atomix,omitempty"`
+	// Stores is the store configurations
+	Stores StoresConfig `yaml:"stores,omitempty"`
 }
 
-// MastershipConfig is the configuration for store mastership
-type MastershipConfig struct {
+// StoresConfig is the configuration for stores
+type StoresConfig struct {
+	Mastership MastershipStoreConfig `yaml:"mastership,omitempty"`
+	Requests   RequestsStoreConfig   `yaml:"requests,omitempty"`
+}
+
+// MastershipStoreConfig is the configuration for store mastership
+type MastershipStoreConfig struct {
 	// Partitions is the number of store partitions
 	Partitions int `yaml:"partitions,omitempty"`
 }
@@ -43,12 +52,34 @@ func WithConfig(newConfig *Config) {
 }
 
 // GetPartitions returns the number of store partitions
-func (c MastershipConfig) GetPartitions() int {
+func (c MastershipStoreConfig) GetPartitions() int {
 	partitions := c.Partitions
 	if partitions == 0 {
 		partitions = defaultPartitions
 	}
 	return partitions
+}
+
+// RequestsStoreConfig is the requests store configuration
+type RequestsStoreConfig struct {
+	// Backups configures the number of synchronous backups
+	Backups int `yaml:"backups,omitempty"`
+	// AsyncBackups configures the number of asynchronous backups
+	AsyncBackups int `yaml:"asyncBackups,omitempty"`
+}
+
+// GetBackups returns the number of synchronous backups
+func (c RequestsStoreConfig) GetBackups() int {
+	backups := c.Backups
+	if backups == 0 {
+		backups = 1
+	}
+	return backups
+}
+
+// GetAsyncBackups returns the number of asynchronous backups
+func (c RequestsStoreConfig) GetAsyncBackups() int {
+	return c.AsyncBackups
 }
 
 // GetConfig gets the onos-config configuration

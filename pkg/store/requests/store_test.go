@@ -15,7 +15,15 @@
 package requests
 
 import (
+	"github.com/golang/mock/gomock"
+	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/logging"
+	"github.com/onosproject/onos-ric/api/store/requests"
+	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
+	"github.com/onosproject/onos-ric/pkg/store/mastership"
+	"github.com/onosproject/onos-ric/test/mocks/store/device"
+	"google.golang.org/grpc"
 	"testing"
 	"time"
 
@@ -26,52 +34,87 @@ import (
 )
 
 func TestStoreRequests(t *testing.T) {
-	testStore, err := NewLocalStore()
-	assert.NoError(t, err)
-	assert.NotNil(t, testStore)
+	logging.SetLevel(logging.DebugLevel)
 
-	defer testStore.Close()
+	factory := cluster.NewTestFactory(func(id cluster.NodeID, server *grpc.Server) {
+		requests.RegisterRequestsServiceServer(server, newServer())
+	})
 
-	deviceID := device.ID{
+	node1 := cluster.NodeID("node-1")
+	node2 := cluster.NodeID("node-2")
+
+	deviceECGI := sb.ECGI{
 		PlmnId: "test",
 		Ecid:   "test-1",
 	}
+	deviceID := device.ID(deviceECGI)
+
+	deviceStore := mock_device_store.NewMockStore(gomock.NewController(t))
+	deviceStore.EXPECT().Watch(gomock.Any()).DoAndReturn(func(ch chan<- device.Event) error {
+		go func() {
+			ch <- device.Event{
+				Type: device.EventNone,
+				Device: device.Device{
+					ID: deviceID,
+				},
+			}
+		}()
+		return nil
+	}).AnyTimes()
+
+	cluster1, err := factory.NewCluster(node1)
+	assert.NoError(t, err)
+	mastershipStore1, err := mastership.NewLocalStore("TestStoreRequests", node1)
+	assert.NoError(t, err)
+	store1, err := NewDistributedStore(cluster1, deviceStore, mastershipStore1, config.Config{})
+	assert.NoError(t, err)
+	assert.NotNil(t, store1)
+
+	cluster2, err := factory.NewCluster(node2)
+	assert.NoError(t, err)
+	mastershipStore2, err := mastership.NewLocalStore("TestStoreRequests", node2)
+	assert.NoError(t, err)
+	store2, err := NewDistributedStore(cluster2, deviceStore, mastershipStore2, config.Config{})
+	assert.NoError(t, err)
+	assert.NotNil(t, store2)
+
+	time.Sleep(time.Second)
+
+	defer store1.Close()
+	defer store2.Close()
 
 	watchCh := make(chan Event)
-	err = testStore.Watch(deviceID, watchCh, WithReplay())
+	err = store1.Watch(deviceID, watchCh, WithReplay())
 	assert.NoError(t, err)
 
-	err = testStore.Append(&Request{
-		DeviceID: deviceID,
-		RicControlRequest: &e2ap.RicControlRequest{
-			Hdr: &e2sm.RicControlHeader{
-				MessageType: sb.MessageType_HO_REQUEST,
-			},
-			Msg: &e2sm.RicControlMessage{
-				S: &e2sm.RicControlMessage_HORequest{
-					HORequest: &sb.HORequest{
-						Crnti: "1",
-						EcgiS: &sb.ECGI{
-							PlmnId: "test",
-							Ecid:   "test-1",
-						},
-						EcgiT: &sb.ECGI{
-							PlmnId: "test",
-							Ecid:   "test-2",
-						},
-						Crntis: []string{"1"},
+	err = store1.Append(New(&e2ap.RicControlRequest{
+		Hdr: &e2sm.RicControlHeader{
+			MessageType: sb.MessageType_HO_REQUEST,
+			Ecgi: &deviceECGI,
+		},
+		Msg: &e2sm.RicControlMessage{
+			S: &e2sm.RicControlMessage_HORequest{
+				HORequest: &sb.HORequest{
+					Crnti: "1",
+					EcgiS: &sb.ECGI{
+						PlmnId: "test",
+						Ecid:   "test-1",
 					},
+					EcgiT: &sb.ECGI{
+						PlmnId: "test",
+						Ecid:   "test-2",
+					},
+					Crntis: []string{"1"},
 				},
 			},
 		},
-	})
+	}))
 	assert.NoError(t, err)
 
 	select {
 	case event := <-watchCh:
 		assert.Equal(t, EventAppend, event.Type)
-		assert.Equal(t, deviceID, event.Request.DeviceID)
-		err = testStore.Ack(&event.Request)
+		err = store1.Ack(&event.Request)
 		assert.NoError(t, err)
 	case <-time.After(5 * time.Second):
 		t.Log("Timed out waiting for EventAppend")
