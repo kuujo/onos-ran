@@ -154,17 +154,6 @@ func generateRicIndicationsUEAdmissionRequest(ID uint32) e2ap.RicIndication {
 	}
 }
 
-func generateRicIndicationsUEReleaseRequest(ID uint32) e2ap.RicIndication {
-	return e2ap.RicIndication{
-		Hdr: &e2sm.RicIndicationHeader{MessageType: sb.MessageType_UE_RELEASE_IND},
-		Msg: &e2sm.RicIndicationMessage{S: &e2sm.RicIndicationMessage_UEReleaseInd{UEReleaseInd: &sb.UEReleaseInd{
-			Crnti:        IDToCrnti(ID),
-			Ecgi:         IDToECGI(ID),
-			ReleaseCause: sb.ReleaseCause_RELEASE_INACTIVITY,
-		}}},
-	}
-}
-
 func generateRicControlRequest(ID uint32) e2ap.RicControlRequest {
 	return e2ap.RicControlRequest{
 		Hdr: &e2sm.RicControlHeader{
@@ -279,6 +268,8 @@ func Test_StoreControlUpdateUEAdmission(t *testing.T) {
 	removeNewManager()
 }
 
+/*
+TODO: UERelease disabled for indications store
 func Test_StoreControlUpdateUERelease(t *testing.T) {
 	newManager := makeNewManager(t)
 
@@ -307,6 +298,7 @@ func Test_StoreControlUpdateUERelease(t *testing.T) {
 	assert.Empty(t, indsAfter)
 	removeNewManager()
 }
+*/
 
 func Test_RicControlMessages(t *testing.T) {
 	newManager := makeNewManager(t)
@@ -353,12 +345,4 @@ func Test_StoresBadConfig(t *testing.T) {
 	mship, err := MastershipStoreFactory(cluster, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, mship)
-
-	inds, err := IndicationsStoreFactory(cluster, devs, mship, cfg)
-	assert.Error(t, err)
-	assert.Nil(t, inds)
-
-	reqs, err := RequestsStoreFactory(cfg)
-	assert.Error(t, err)
-	assert.Nil(t, reqs)
 }

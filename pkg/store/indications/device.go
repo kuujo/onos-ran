@@ -188,6 +188,7 @@ func (s *deviceIndicationsStore) Record(indication *Indication) error {
 
 func (s *deviceIndicationsStore) List(ch chan<- Indication) error {
 	go func() {
+		defer close(ch)
 		s.mu.RLock()
 		defer s.mu.RUnlock()
 		for _, indication := range s.cache {

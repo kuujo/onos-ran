@@ -178,21 +178,33 @@ func (s *store) List(ch chan<- Indication) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	wg := &sync.WaitGroup{}
+	listWg := &sync.WaitGroup{}
+	chanWg := &sync.WaitGroup{}
 	errCh := make(chan error)
 	for _, store := range s.indications {
-		wg.Add(1)
+		listWg.Add(1)
+		chanWg.Add(1)
+		deviceCh := make(chan Indication)
 		go func(store Store) {
-			err := store.List(ch)
+			err := store.List(deviceCh)
 			if err != nil {
 				errCh <- err
 			}
-			wg.Done()
+			listWg.Done()
+			for indication := range deviceCh {
+				ch <- indication
+			}
+			chanWg.Done()
 		}(store)
 	}
 
-	wg.Wait()
+	listWg.Wait()
 	close(errCh)
+
+	go func() {
+		chanWg.Wait()
+		close(ch)
+	}()
 
 	for err := range errCh {
 		return err
