@@ -54,6 +54,7 @@ func (s *TestSuite) SetupTestSuite() error {
 		Release("sd-ran").
 		Set("global.store.controller", "onos-ric-atomix-kubernetes-controller:5679").
 		Set("import.onos-gui.enabled", false).
+		Set("import.nem-monitoring.enabled", false).
 		Set("onos-ric.service.external.nodePort", 0).
 		Set("onos-ric-ho.service.external.nodePort", 0).
 		Set("onos-ric-mlb.service.external.nodePort", 0)
