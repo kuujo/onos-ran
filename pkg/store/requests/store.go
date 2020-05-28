@@ -140,7 +140,7 @@ func (s *store) getDeviceStore(deviceKey device.Key) (*deviceRequestsStore, erro
 			if err != nil {
 				return nil, err
 			}
-			store, err := newDeviceRequestsStore(deviceKey, s.cluster, election, s.config)
+			store, err = newDeviceRequestsStore(deviceKey, s.cluster, election, s.config)
 			if err != nil {
 				return nil, err
 			}

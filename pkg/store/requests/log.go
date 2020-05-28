@@ -223,11 +223,12 @@ func (r *memoryReader) Read() *Batch {
 			Entries:   entries,
 		}
 	}
-	r.wg = &sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	r.wg = wg
 	r.wg.Add(1)
 	r.mu.Unlock()
 	r.log.mu.RUnlock()
-	r.wg.Wait()
+	wg.Wait()
 	return r.Read()
 }
 
@@ -262,11 +263,12 @@ func (r *memoryReader) ReadUntil(index Index) *Batch {
 			Entries:   entries,
 		}
 	}
-	r.wg = &sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	r.wg = wg
 	r.wg.Add(1)
 	r.mu.Unlock()
 	r.log.mu.RUnlock()
-	r.wg.Wait()
+	wg.Wait()
 	return r.Read()
 }
 
