@@ -37,7 +37,7 @@ import (
 
 var oldClusterFactory func(configuration config.Config) (cluster.Cluster, error)
 var oldMastershipStoreFactory func(cluster cluster.Cluster, configuration config.Config) (mastership.Store, error)
-var oldIndicationsStoreFactory func(configuration config.Config) (indications.Store, error)
+var oldIndicationsStoreFactory func(cluster cluster.Cluster, deviceStore device.Store, mastershipStore mastership.Store, configuration config.Config) (indications.Store, error)
 var oldRequestsStoreFactory func(configuration config.Config) (requests.Store, error)
 var oldDeviceStoreFactory func(topoEndPoint string, opts ...grpc.DialOption) (store device.Store, err error)
 
@@ -75,8 +75,8 @@ func makeNewManager(t *testing.T) *Manager {
 	MastershipStoreFactory = func(cluster cluster.Cluster, configuration config.Config) (mastership.Store, error) {
 		return mastership.NewLocalStore("cluster1", "node1")
 	}
-	IndicationsStoreFactory = func(configuration config.Config) (indications.Store, error) {
-		return indications.NewLocalStore()
+	IndicationsStoreFactory = func(cluster cluster.Cluster, deviceStore device.Store, mastershipStore mastership.Store, configuration config.Config) (indications.Store, error) {
+		return indications.NewDistributedStore(cluster, deviceStore, mastershipStore, configuration)
 	}
 	RequestsStoreFactory = func(configuration config.Config) (requests.Store, error) {
 		return requests.NewLocalStore()
@@ -214,26 +214,20 @@ func Test_TelemetrySubscribe(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	var e1 indications.Event
-	var e2 indications.Event
 	go func() {
 		e1 = <-ch
-		e2 = <-ch
-
 		wg.Done()
 	}()
 
 	err = newManager.StoreTelemetry(telemetryMessage)
 	assert.NoError(t, err, "error storing telemetry %v", err)
-	err = newManager.DeleteTelemetry(IDToPlmnid(1), IDToEcid(1), IDToCrnti(1))
-	assert.NoError(t, err, "error deleting telemetry %v", err)
 
 	wg.Wait()
 
 	// First event should be an insert
-	checkEvent(t, telemetryMessage, e1, indications.EventInsert)
+	checkEvent(t, telemetryMessage, e1, indications.EventReceived)
 
 	// Second event should be delete
-	assert.Equal(t, indications.EventDelete, e2.Type)
 	removeNewManager()
 }
 
@@ -322,24 +316,6 @@ func Test_StoreControlUpdateUERelease(t *testing.T) {
 	removeNewManager()
 }
 
-func Test_GetUEAdmissionByID(t *testing.T) {
-	newManager := makeNewManager(t)
-	ID := uint32(778899)
-
-	// Add a UE
-	UEAdmissionMessage := generateRicIndicationsUEAdmissionRequest(ID)
-	err := newManager.StoreControlUpdate(UEAdmissionMessage)
-	assert.NoError(t, err)
-
-	// Check that the UE made it into the store
-	crnti := IDToCrnti(ID)
-	ecgi := IDToECGI(ID)
-	ue, err := newManager.GetUEAdmissionByID(ecgi, crnti)
-	assert.NoError(t, err)
-	assert.Equal(t, UEAdmissionMessage.Msg.GetUEAdmissionRequest(), ue.Msg.GetUEAdmissionRequest())
-	removeNewManager()
-}
-
 func Test_RicControlMessages(t *testing.T) {
 	newManager := makeNewManager(t)
 	ID := uint32(556677)
@@ -378,19 +354,19 @@ func Test_StoresBadConfig(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, cluster)
 
+	devs, err := DeviceStoreFactory("abc")
+	assert.Error(t, err)
+	assert.Nil(t, devs)
+
 	mship, err := MastershipStoreFactory(cluster, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, mship)
 
-	inds, err := IndicationsStoreFactory(cfg)
+	inds, err := IndicationsStoreFactory(cluster, devs, mship, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, inds)
 
 	reqs, err := RequestsStoreFactory(cfg)
 	assert.Error(t, err)
 	assert.Nil(t, reqs)
-
-	devs, err := DeviceStoreFactory("abc")
-	assert.Error(t, err)
-	assert.Nil(t, devs)
 }
