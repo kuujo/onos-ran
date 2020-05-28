@@ -90,7 +90,7 @@ func TestStoreRequests(t *testing.T) {
 	err = store1.Append(New(&e2ap.RicControlRequest{
 		Hdr: &e2sm.RicControlHeader{
 			MessageType: sb.MessageType_HO_REQUEST,
-			Ecgi: &deviceECGI,
+			Ecgi:        &deviceECGI,
 		},
 		Msg: &e2sm.RicControlMessage{
 			S: &e2sm.RicControlMessage_HORequest{

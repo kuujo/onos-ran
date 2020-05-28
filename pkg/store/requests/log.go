@@ -125,9 +125,8 @@ func (l *memoryLog) Close() error {
 }
 
 type memoryWriter struct {
-	log        *memoryLog
-	firstIndex Index
-	lastIndex  Index
+	log       *memoryLog
+	lastIndex Index
 }
 
 func (w *memoryWriter) Index() Index {
