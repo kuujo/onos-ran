@@ -25,8 +25,9 @@ import (
 )
 
 func init() {
+	s := newServer()
 	atomix.RegisterService(func(id cluster.NodeID, server *grpc.Server) {
-		requests.RegisterRequestsServiceServer(server, newServer())
+		requests.RegisterRequestsServiceServer(server, s)
 	})
 }
 
