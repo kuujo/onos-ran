@@ -137,7 +137,7 @@ func (m *SessionManager) removeDevice(device device.Device) error {
 // processRequests processes events from the requests store
 func (m *SessionManager) processRequests(session *Session, ch <-chan requests.Event) {
 	for event := range ch {
-		if event.Request.DeviceID == session.Device.ID && event.Type == requests.EventNone || event.Type == requests.EventAppend {
+		if event.Type == requests.EventNone || event.Type == requests.EventAppend {
 			log.Debugf("Processing request %+v", event.Request.RicControlRequest)
 			err := m.processRequest(session, event.Request)
 			if err != nil {

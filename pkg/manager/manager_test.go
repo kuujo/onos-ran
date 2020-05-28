@@ -38,7 +38,7 @@ import (
 var oldClusterFactory func(configuration config.Config) (cluster.Cluster, error)
 var oldMastershipStoreFactory func(cluster cluster.Cluster, configuration config.Config) (mastership.Store, error)
 var oldIndicationsStoreFactory func(configuration config.Config) (indications.Store, error)
-var oldRequestsStoreFactory func(configuration config.Config) (requests.Store, error)
+var oldRequestsStoreFactory func(cluster cluster.Cluster, devices device.Store, masterships mastership.Store, configuration config.Config) (requests.Store, error)
 var oldDeviceStoreFactory func(topoEndPoint string, opts ...grpc.DialOption) (store device.Store, err error)
 
 func saveFactories() {
@@ -61,10 +61,7 @@ func makeNewManager(t *testing.T) *Manager {
 	saveFactories()
 	_, address := atomix.StartLocalNode()
 	assert.NotNil(t, address)
-	mockConfig := &config.Config{
-		Mastership: config.MastershipConfig{},
-		Atomix:     atomix.Config{},
-	}
+	mockConfig := &config.Config{}
 	mockTopoStore := mock_device_store.NewMockStore(gomock.NewController(t))
 	mockTopoStore.EXPECT().Watch(gomock.Any()).AnyTimes()
 	mockConfig.Atomix.Controller = string(address)
@@ -78,8 +75,8 @@ func makeNewManager(t *testing.T) *Manager {
 	IndicationsStoreFactory = func(configuration config.Config) (indications.Store, error) {
 		return indications.NewLocalStore()
 	}
-	RequestsStoreFactory = func(configuration config.Config) (requests.Store, error) {
-		return requests.NewLocalStore()
+	RequestsStoreFactory = func(cluster cluster.Cluster, devices device.Store, masterships mastership.Store, configuration config.Config) (requests.Store, error) {
+		return requests.NewDistributedStore(cluster, devices, masterships, configuration)
 	}
 	DeviceStoreFactory = func(topoEndPoint string, opts ...grpc.DialOption) (store device.Store, err error) {
 		return mockTopoStore, nil
@@ -343,10 +340,9 @@ func Test_GetUEAdmissionByID(t *testing.T) {
 func Test_RicControlMessages(t *testing.T) {
 	newManager := makeNewManager(t)
 	ID := uint32(556677)
-	deviceID := device.ID{PlmnId: IDToPlmnid(ID), Ecid: IDToEcid(ID)}
 
 	requestMessage := generateRicControlRequest(ID)
-	err := newManager.StoreRicControlRequest(deviceID, &requestMessage)
+	err := newManager.StoreRicControlRequest(&requestMessage)
 	assert.NoError(t, err)
 
 	time.Sleep(2 * time.Second)
@@ -385,10 +381,6 @@ func Test_StoresBadConfig(t *testing.T) {
 	inds, err := IndicationsStoreFactory(cfg)
 	assert.Error(t, err)
 	assert.Nil(t, inds)
-
-	reqs, err := RequestsStoreFactory(cfg)
-	assert.Error(t, err)
-	assert.Nil(t, reqs)
 
 	devs, err := DeviceStoreFactory("abc")
 	assert.Error(t, err)

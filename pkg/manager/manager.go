@@ -55,8 +55,8 @@ var IndicationsStoreFactory = func(configuration config.Config) (indications.Sto
 }
 
 // RequestsStoreFactory creates the requests store
-var RequestsStoreFactory = func(configuration config.Config) (requests.Store, error) {
-	return requests.NewDistributedStore(configuration)
+var RequestsStoreFactory = func(cluster cluster.Cluster, deviceStore device.Store, mastershipStore mastership.Store, configuration config.Config) (requests.Store, error) {
+	return requests.NewDistributedStore(cluster, deviceStore, mastershipStore, configuration)
 }
 
 // DeviceStoreFactory creates the device store
@@ -78,6 +78,12 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		return nil, err
 	}
 
+	deviceStore, err := DeviceStoreFactory(topoEndPoint, opts...)
+	if err != nil {
+		log.Info("Error in device change store")
+		return nil, err
+	}
+
 	mastershipStore, err := MastershipStoreFactory(cluster, configuration)
 	if err != nil {
 		return nil, err
@@ -88,14 +94,8 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		return nil, err
 	}
 
-	requestsStore, err := RequestsStoreFactory(configuration)
+	requestsStore, err := RequestsStoreFactory(cluster, deviceStore, mastershipStore, configuration)
 	if err != nil {
-		return nil, err
-	}
-
-	deviceStore, err := DeviceStoreFactory(topoEndPoint, opts...)
-	if err != nil {
-		log.Info("Error in device change store")
 		return nil, err
 	}
 
@@ -125,9 +125,9 @@ type Manager struct {
 }
 
 // StoreRicControlRequest stores a RicControlRequest to the store
-func (m *Manager) StoreRicControlRequest(deviceID device.ID, request *e2ap.RicControlRequest) error {
+func (m *Manager) StoreRicControlRequest(request *e2ap.RicControlRequest) error {
 	log.Debugf("Handling request %+v", request)
-	return m.requestsStore.Append(requests.New(deviceID, request))
+	return m.requestsStore.Append(requests.New(request))
 }
 
 // StoreRicControlResponse - write the RicControlResponse to store
