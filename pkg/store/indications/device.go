@@ -74,6 +74,7 @@ func (s *deviceIndicationsStore) open() error {
 		ctx, cancel := context.WithCancel(context.Background())
 		err := s.subscribeMaster(ctx, *state)
 		if err != nil {
+			cancel()
 			return err
 		}
 		go s.watchMastership(ch, cancel)
@@ -89,7 +90,8 @@ func (s *deviceIndicationsStore) processRecords() {
 		s.mu.Lock()
 
 		// Update the local cache
-		s.cache[indication.Hdr.MessageType] = &indication
+		ref := indication
+		s.cache[indication.Hdr.MessageType] = &ref
 
 		// Write the indication event to susbcriber channels
 		for _, subscriber := range s.subscribers {
@@ -119,7 +121,8 @@ func (s *deviceIndicationsStore) processRecords() {
 func (s *deviceIndicationsStore) watchMastership(ch <-chan mastership.State, cancel context.CancelFunc) {
 	for state := range ch {
 		s.mu.Lock()
-		s.state = &state
+		ref := state
+		s.state = &ref
 
 		if state.Master != s.cluster.Node().ID {
 			ctx, cancelFunc := context.WithCancel(context.Background())
