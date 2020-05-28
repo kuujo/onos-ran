@@ -3,89 +3,32 @@
 
 ## Table of Contents
 
-- [api/sb/e2ap/e2ap.proto](#api/sb/e2ap/e2ap.proto)
-    - [RicControlRequest](#interface.e2ap.RicControlRequest)
-    - [RicIndication](#interface.e2ap.RicIndication)
-    - [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest)
-    - [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse)
-  
-    - [E2AP](#interface.e2ap.E2AP)
+- [api/nb/a1/a1-p/qos/qos.proto](#api/nb/a1/a1-p/qos/qos.proto)
+    - [QosObjectives](#a1.qos.QosObjectives)
   
 - [Scalar Value Types](#scalar-value-types)
 
 
 
-<a name="api/sb/e2ap/e2ap.proto"></a>
+<a name="api/nb/a1/a1-p/qos/qos.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## api/sb/e2ap/e2ap.proto
-Copyright 2020-present Open Networking Foundation.
-
-Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an &#34;AS IS&#34; BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+## api/nb/a1/a1-p/qos/qos.proto
 
 
-<a name="interface.e2ap.RicControlRequest"></a>
 
-### RicControlRequest
+<a name="a1.qos.QosObjectives"></a>
 
+### QosObjectives
+QosObjectives attributes related to QoS
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| hdr | [interface.e2sm.RicControlHeader](#interface.e2sm.RicControlHeader) |  |  |
-| msg | [interface.e2sm.RicControlMessage](#interface.e2sm.RicControlMessage) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicIndication"></a>
-
-### RicIndication
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| hdr | [interface.e2sm.RicIndicationHeader](#interface.e2sm.RicIndicationHeader) |  |  |
-| msg | [interface.e2sm.RicIndicationMessage](#interface.e2sm.RicIndicationMessage) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicSubscriptionRequest"></a>
-
-### RicSubscriptionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| hdr | [interface.e2sm.RicSubscriptionHeader](#interface.e2sm.RicSubscriptionHeader) |  |  |
-| msg | [interface.e2sm.RicSubscriptionMessage](#interface.e2sm.RicSubscriptionMessage) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicSubscriptionResponse"></a>
-
-### RicSubscriptionResponse
-
+| gfbr | [int32](#int32) |  | Guaranteed flow bit rate |
+| mfbr | [int32](#int32) |  | Maximum flow bit rate |
+| priority_level | [int32](#int32) |  | Priority level |
+| pdb | [int32](#int32) |  | Packet delay budget |
 
 
 
@@ -96,17 +39,6 @@ limitations under the License.
  
 
  
-
-
-<a name="interface.e2ap.E2AP"></a>
-
-### E2AP
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| RicSubscribe | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) | [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse) | RicSubscribe is a unary service for the RIC to subscribe to events/reports from E2 Node |
-| RicChan | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | RicChan is a bi-directonal stream for all E2AP Control and E2AP Indication messaging between RIC and E2-Node |
 
  
 

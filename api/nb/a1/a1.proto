@@ -1,0 +1,148 @@
+/*
+Copyright 2020-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package a1;
+
+import "github.com/onosproject/onos-ric/api/nb/a1/a1-p/qos/qos.proto";
+import "github.com/onosproject/onos-ric/api/nb/a1/a1-p/tsp/tsp.proto";
+import "github.com/onosproject/onos-ric/api/nb/a1/types/types.proto";
+
+// ProblemDetails
+message ProblemDetails {
+    string title = 1;
+    string detail = 2;
+    // TODO some other fields should be added
+}
+
+
+
+// PolicyStatement 	Expression of a directive in an A1 policy
+// that is related to policy objectives and/or policy resources
+// and are to be applied to/for the entities identified by the scope identifier.
+message PolicyStatement {
+    types.PolicyType type = 1;
+    oneof statement {
+        // QosObjectives
+        qos.QosObjectives qos_objectives = 2;
+        // TspResources Traffic steering optimization
+        tsp.TspResources tsp_resources = 3;
+    }
+    // TODO QoeObjectives, custom policy statements, etc
+}
+
+
+// Policy an A1 policy which contains a scope identifier and one or more policy statements
+message Policy {
+    types.ScopeIdentifier scope_id = 1;
+    repeated PolicyStatement policy_statement = 2;
+
+}
+
+// CreateOrUpdateRequest a request to create or update a policy
+message CreateOrUpdateRequest {
+    types.PolicyID policy_id = 1;
+    Policy policy = 2;
+}
+
+// CreateOrUpdateResponse response to a CreateOrUpdateRequest
+message CreateOrUpdateResponse {
+    Policy policy = 1;
+    types.OperationStatus status = 2;
+    ProblemDetails problem_details = 3;
+
+}
+
+// SinglePolicyResponse representation of a A1 single policy response
+message SinglePolicyResponse {
+    Policy policy = 1;
+}
+
+
+// AllPolicyResponse representation of a A1 All policy response which contains list of all policy IDs
+message AllPolicyResponse {
+    repeated types.PolicyID policy_id = 1;
+
+}
+
+// PolicyStatus representation of a A1  policy enforcement status and reasons
+message PolicyStatus {
+    types.EnforcementStatusType enforce_status = 1;
+    types.EnforcementReasonType enforce_reason = 2;
+}
+
+// PolicyStatusResponse
+message PolicyStatusResponse {
+    PolicyStatus policy_status = 1;
+}
+
+// QueryRequest a request to query about one or more than one policy
+message QueryRequest {
+    // Policy Type
+    types.PolicyQueryType type = 1;
+    // PolicyID
+    types.PolicyID policy_id = 2;
+}
+
+
+// QueryResponse a response to a query request
+message QueryResponse {
+    oneof response {
+        SinglePolicyResponse single_policy_response = 1;
+        AllPolicyResponse all_policy_response = 2;
+        PolicyStatusResponse policy_status_response = 3;
+    }
+    types.OperationStatus status = 4;
+    ProblemDetails problem_details = 5;
+
+}
+
+// DeleteRequest a request to delete a policy
+message DeleteRequest {
+    types.PolicyID policy_id = 1;
+}
+
+// DeleteResponse a response to a DeleteRequest
+message DeleteResponse {
+    types.OperationStatus status = 1;
+    ProblemDetails problem_details = 2;
+
+}
+
+// NotifyRequest a request to get updates about changes in the policy enforcement status for an A1 policy;
+message NotifyRequest {}
+
+// NotifyResponse a notification response contains the information about changes and causes
+message NotifyResponse {
+    PolicyStatus policy_status = 1;
+}
+
+
+// a1 A1 policy based service
+service a1 {
+    // CreateOrUpdate creates an A1 policy
+    rpc CreateOrUpdate (CreateOrUpdateRequest) returns (CreateOrUpdateResponse);
+
+    // Query queries about one or more than one A1 policies
+    rpc Query (QueryRequest) returns (stream QueryResponse);
+    
+    // Delete deletes an A1 policy
+    rpc Delete (DeleteRequest) returns (DeleteResponse);
+
+    // Notify notify about an enforcement status change of a policy between 'enforced' and 'not enforced'.
+    rpc Notify (stream NotifyRequest) returns (stream NotifyResponse);
+}

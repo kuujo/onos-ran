@@ -39,6 +39,7 @@ import (
 	service "github.com/onosproject/onos-lib-go/pkg/northbound"
 
 	"github.com/onosproject/onos-ric/pkg/manager"
+	"github.com/onosproject/onos-ric/pkg/northbound/a1"
 	"github.com/onosproject/onos-ric/pkg/northbound/c1"
 )
 
@@ -85,6 +86,7 @@ func main() {
 func startServer(caPath string, keyPath string, certPath string) error {
 	s := service.NewServer(service.NewServerConfig(caPath, keyPath, certPath, 5150, true))
 	s.AddService(c1.Service{})
+	s.AddService(a1.Service{})
 	s.AddService(logging.Service{})
 
 	return s.Serve(func(started string) {

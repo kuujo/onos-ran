@@ -1,0 +1,104 @@
+/*
+Copyright 2020-present Open Networking Foundation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+
+package types;
+
+
+// PolicyID Identifier of an A1 policy that is used in policy operations.
+message PolicyID {
+    string ID = 1;
+}
+
+// CellID an identifier for a single cell
+message CellID {
+    // TODO it should be defined properly
+    // The ECGI uniquely identifies the cell, while the C-RNTI uniquely identifies a UE within a gNB.
+    // The ECGI+C-RNTI pair constitutes a globally unique UE identifier
+}
+
+// UeID an identifier for a single UE
+message UeID {
+    // TODO should be defined properly
+    // The ECGI uniquely identifies the cell, while the C-RNTI uniquely identifies a UE within a gNB.
+    // The ECGI+C-RNTI pair constitutes a globally unique UE identifier
+
+}
+
+// GroupID an identifier for a group of UEs
+message GroupID {
+    // TODO should be defined properly
+}
+
+// SliceID an identifier for a slice
+message SliceID {
+    // TODO should be defined properly
+
+}
+
+// QoSID an identifier for QoS
+message QosID {
+    // TODO should be defined properly
+
+}
+
+// PolicyType
+enum PolicyType {
+    QOS = 0;
+    TSP = 1;
+}
+
+// OperationStatus status of performing an A1 methods
+enum OperationStatus {
+    SUCCESS = 0;
+    FAILED = 1;
+}
+// EnforcementStatusType represents if a policy is enforced or not.
+enum EnforcementStatusType {
+    ENFORCED = 0;
+    NOT_ENFORCED = 1;
+    UNDEFINED = 2;
+}
+
+// EnforcementReasonType  represents the reason why notification is sent (e.g. why enforcement status has changed).
+enum EnforcementReasonType {
+    SCOPE_NOT_APPLICABLE = 0;
+    STATEMENT_NOT_APPLICABLE = 1;
+    OTHER_REASON = 2;
+}
+
+// PolicyQueryType type of a policy query (Query single policy, Query all policies, Query policy status)
+enum PolicyQueryType {
+    // get a single policy based on a given PolicyID
+    SINGLE_POLICY = 0;
+    // get all policies identities
+    ALL_POLICIES = 1;
+    // get the policy status based on a given policyID
+    POLICY_STATUS = 2;
+}
+
+
+
+// ScopeIdentifier Identifier of what the statements in the policy
+// applies to (UE, group of UEs, slice, QoS flow, network resource or combinations thereof).
+message ScopeIdentifier {
+    UeID ue_id = 1;
+    GroupID group_id = 2;
+    SliceID slice_id = 3;
+    QosID qos_id = 4;
+    CellID cell_id = 5;
+}

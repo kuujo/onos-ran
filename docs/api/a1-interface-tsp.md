@@ -3,89 +3,34 @@
 
 ## Table of Contents
 
-- [api/sb/e2ap/e2ap.proto](#api/sb/e2ap/e2ap.proto)
-    - [RicControlRequest](#interface.e2ap.RicControlRequest)
-    - [RicIndication](#interface.e2ap.RicIndication)
-    - [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest)
-    - [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse)
+- [api/nb/a1/a1-p/tsp/tsp.proto](#api/nb/a1/a1-p/tsp/tsp.proto)
+    - [TspResources](#a1.tsp.TspResources)
   
-    - [E2AP](#interface.e2ap.E2AP)
+    - [Preference](#a1.tsp.Preference)
   
 - [Scalar Value Types](#scalar-value-types)
 
 
 
-<a name="api/sb/e2ap/e2ap.proto"></a>
+<a name="api/nb/a1/a1-p/tsp/tsp.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## api/sb/e2ap/e2ap.proto
-Copyright 2020-present Open Networking Foundation.
-
-Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an &#34;AS IS&#34; BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+## api/nb/a1/a1-p/tsp/tsp.proto
 
 
-<a name="interface.e2ap.RicControlRequest"></a>
 
-### RicControlRequest
+<a name="a1.tsp.TspResources"></a>
 
+### TspResources
+TspResources Traffic Steering Preference (TSP) Attributes used to schedule traffic
+on available cells in a different way than what would be through default behavior
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| hdr | [interface.e2sm.RicControlHeader](#interface.e2sm.RicControlHeader) |  |  |
-| msg | [interface.e2sm.RicControlMessage](#interface.e2sm.RicControlMessage) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicIndication"></a>
-
-### RicIndication
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| hdr | [interface.e2sm.RicIndicationHeader](#interface.e2sm.RicIndicationHeader) |  |  |
-| msg | [interface.e2sm.RicIndicationMessage](#interface.e2sm.RicIndicationMessage) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicSubscriptionRequest"></a>
-
-### RicSubscriptionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| hdr | [interface.e2sm.RicSubscriptionHeader](#interface.e2sm.RicSubscriptionHeader) |  |  |
-| msg | [interface.e2sm.RicSubscriptionMessage](#interface.e2sm.RicSubscriptionMessage) |  |  |
-
-
-
-
-
-
-<a name="interface.e2ap.RicSubscriptionResponse"></a>
-
-### RicSubscriptionResponse
-
+| cell_id_list | [types.CellID](#types.CellID) | repeated |  |
+| preference | [Preference](#a1.tsp.Preference) |  |  |
+| primary | [bool](#bool) |  |  |
 
 
 
@@ -93,20 +38,23 @@ limitations under the License.
 
  
 
- 
+
+<a name="a1.tsp.Preference"></a>
+
+### Preference
+Preference the preference of cell usage
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SHALL | 0 |  |
+| PREFER | 1 |  |
+| AVOID | 2 |  |
+| FORBID | 3 |  |
+
 
  
 
-
-<a name="interface.e2ap.E2AP"></a>
-
-### E2AP
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| RicSubscribe | [RicSubscriptionRequest](#interface.e2ap.RicSubscriptionRequest) | [RicSubscriptionResponse](#interface.e2ap.RicSubscriptionResponse) | RicSubscribe is a unary service for the RIC to subscribe to events/reports from E2 Node |
-| RicChan | [RicControlRequest](#interface.e2ap.RicControlRequest) stream | [RicIndication](#interface.e2ap.RicIndication) stream | RicChan is a bi-directonal stream for all E2AP Control and E2AP Indication messaging between RIC and E2-Node |
+ 
 
  
 

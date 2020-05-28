@@ -1,0 +1,23 @@
+type: google.api.Service
+config_version: 3
+
+http:
+  rules:
+    # Create a policy
+    - selector: a1.a1.CreateOrUpdate
+      put: /A1-P/v1/policies/{policy_id.ID}
+      body: "policy"
+    # Query all policies
+    - selector: a1.a1.Query
+      get: /A1-P/v1/policies
+      additional_bindings:
+        # Query a single policy
+        - selector: a1.a1.Query
+          get: /A1-P/v1/policies/{policy_id.ID}
+        # Query policy status
+        - selector: a1.a1.Query
+          get: /A1-P/v1/policies/{policy_id.ID}
+
+    # Delete a policy
+    - selector: a1.a1.Delete
+      delete: /A1-P/v1/policies/{policy_id.ID}
