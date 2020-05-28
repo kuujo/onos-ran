@@ -166,7 +166,6 @@ func createMockIndicationsStore(t *testing.T) {
 
 			return nil
 		})
-	indicationsStore.EXPECT().Lookup(gomock.Any()).Return(nil, nil).AnyTimes()
 	manager.InitializeManager(indicationsStore, nil, nil)
 }
 
