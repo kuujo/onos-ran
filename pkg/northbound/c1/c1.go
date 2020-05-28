@@ -65,9 +65,7 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != indications.EventDelete {
-						ch <- *event.Indication.RicIndication
-					}
+					ch <- *event.Indication.RicIndication
 				}
 			}()
 		} else {
@@ -111,9 +109,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != indications.EventDelete {
-						ch <- *event.Indication.RicIndication
-					}
+					ch <- *event.Indication.RicIndication
 				}
 			}()
 		} else {
@@ -166,9 +162,7 @@ func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_List
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != indications.EventDelete {
-						ch <- *event.Indication.RicIndication
-					}
+					ch <- *event.Indication.RicIndication
 				}
 			}()
 		} else {
@@ -223,9 +217,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 			go func() {
 				defer close(ch)
 				for event := range watchCh {
-					if event.Type != indications.EventDelete {
-						ch <- *event.Indication.RicIndication
-					}
+					ch <- *event.Indication.RicIndication
 				}
 			}()
 		} else {
@@ -264,14 +256,6 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 					Ecgi:             &ecgi,
 					Crnti:            radioReportUe.GetCrnti(),
 					ChannelQualities: cqis,
-				}
-				if !req.Noimsi {
-					update, err := manager.GetManager().GetUEAdmissionByID(radioReportUe.GetEcgi(), radioReportUe.Crnti)
-					if err == nil {
-						ueLinkInfo.Imsi = fmt.Sprintf("%d", update.GetMsg().GetUEAdmissionRequest().GetImsi())
-					} else {
-						log.Infof("Cannot find Imsi for %v %s", radioReportUe.GetEcgi(), radioReportUe.GetCrnti())
-					}
 				}
 				if err := stream.Send(&ueLinkInfo); err != nil {
 					return err
@@ -392,20 +376,6 @@ func sendHandoverTrigger(req *nb.HandOverRequest) (*nb.HandOverResponse, error) 
 	for err := range errCh {
 		return nil, err
 	}
-
-	go func() {
-		err := manager.GetManager().DeleteTelemetry(src.GetPlmnid(), src.GetEcid(), crnti)
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	}()
-	go func() {
-		err := manager.GetManager().DeleteUEAdmissionRequest(src.GetPlmnid(), src.GetEcid(), crnti)
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	}()
-
 	return &nb.HandOverResponse{Success: true}, nil
 }
 

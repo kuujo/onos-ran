@@ -29,7 +29,6 @@ import (
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"github.com/onosproject/onos-ric/pkg/store/requests"
 	"google.golang.org/grpc"
-	"sync"
 )
 
 var log = logging.GetLogger("manager")
@@ -50,8 +49,8 @@ var MastershipStoreFactory = func(cluster cluster.Cluster, configuration config.
 }
 
 // IndicationsStoreFactory creates the indications store
-var IndicationsStoreFactory = func(configuration config.Config) (indications.Store, error) {
-	return indications.NewDistributedStore(configuration)
+var IndicationsStoreFactory = func(cluster cluster.Cluster, deviceStore device.Store, mastershipStore mastership.Store, configuration config.Config) (indications.Store, error) {
+	return indications.NewDistributedStore(cluster, deviceStore, mastershipStore, configuration)
 }
 
 // RequestsStoreFactory creates the requests store
@@ -89,7 +88,7 @@ func NewManager(topoEndPoint string, opts []grpc.DialOption) (*Manager, error) {
 		return nil, err
 	}
 
-	indicationsStore, err := IndicationsStoreFactory(configuration)
+	indicationsStore, err := IndicationsStoreFactory(cluster, deviceStore, mastershipStore, configuration)
 	if err != nil {
 		return nil, err
 	}
@@ -149,30 +148,6 @@ func (m *Manager) StoreControlUpdate(update e2ap.RicIndication) error {
 		msg := update.GetMsg().GetUEAdmissionRequest()
 		log.Infof("plmnid:%s, ecid:%s, crnti:%s, imsi:%d", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti(), msg.GetImsi())
 		return m.indicationsStore.Record(indications.New(&update))
-	case sb.MessageType_UE_RELEASE_IND:
-		msg := update.GetMsg().GetUEReleaseInd()
-		log.Infof("delete ue - plmnid:%s, ecid:%s, crnti:%s", msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-		errs := make(chan error, 2)
-		wg := &sync.WaitGroup{}
-		wg.Add(2)
-		go func() {
-			err := m.DeleteTelemetry(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-			errs <- err
-			wg.Done()
-		}()
-		go func() {
-			err := m.DeleteUEAdmissionRequest(msg.GetEcgi().GetPlmnId(), msg.GetEcgi().GetEcid(), msg.GetCrnti())
-			errs <- err
-			wg.Done()
-		}()
-		wg.Wait()
-		close(errs)
-		for err := range errs {
-			if err != nil {
-				return err
-			}
-		}
-		return nil
 	default:
 		return fmt.Errorf("ControlReport has unexpected type %T", update.GetHdr().GetMessageType())
 	}
@@ -189,17 +164,6 @@ func (m *Manager) GetIndications() ([]e2ap.RicIndication, error) {
 		messages = append(messages, update)
 	}
 	return messages, nil
-}
-
-// GetUEAdmissionByID retrieve a single value from the updates store
-func (m *Manager) GetUEAdmissionByID(ecgi *sb.ECGI, crnti string) (*e2ap.RicIndication, error) {
-	indication, err := m.indicationsStore.Lookup(indications.NewID(sb.MessageType_UE_ADMISSION_REQUEST, ecgi.PlmnId, ecgi.Ecid, crnti))
-	if err != nil {
-		return nil, err
-	} else if indication == nil {
-		return nil, nil
-	}
-	return indication.RicIndication, nil
 }
 
 // ListIndications lists control updates
@@ -219,9 +183,9 @@ func (m *Manager) ListIndications(ch chan<- e2ap.RicIndication) error {
 }
 
 // SubscribeIndications subscribes the given channel to control updates
-func (m *Manager) SubscribeIndications(ch chan<- indications.Event, opts ...indications.WatchOption) error {
+func (m *Manager) SubscribeIndications(ch chan<- indications.Event, opts ...indications.SubscribeOption) error {
 	indicationCh := make(chan indications.Event)
-	err := m.indicationsStore.Watch(indicationCh, opts...)
+	err := m.indicationsStore.Subscribe(indicationCh, opts...)
 	if err != nil {
 		return err
 	}
@@ -279,24 +243,4 @@ func (m *Manager) StoreTelemetry(update e2ap.RicIndication) error {
 	default:
 		return fmt.Errorf("telemetry update has unexpected type %T", update.GetHdr().GetMessageType())
 	}
-}
-
-// DeleteTelemetry deletes telemetry when a handover happens
-func (m *Manager) DeleteTelemetry(plmnid string, ecid string, crnti string) error {
-	id := indications.NewID(sb.MessageType_RADIO_MEAS_REPORT_PER_UE, plmnid, ecid, crnti)
-	if err := m.indicationsStore.Discard(id); err != nil {
-		log.Infof("Error deleting Telemetry, key=%s", id)
-		return err
-	}
-	return nil
-}
-
-// DeleteUEAdmissionRequest deletes UpdateControls
-func (m *Manager) DeleteUEAdmissionRequest(plmnid string, ecid string, crnti string) error {
-	id := indications.NewID(sb.MessageType_UE_ADMISSION_REQUEST, plmnid, ecid, crnti)
-	if err := m.indicationsStore.Discard(id); err != nil {
-		log.Infof("Error deleting UEAdmissionRequest, key=%s", id)
-		return err
-	}
-	return nil
 }
