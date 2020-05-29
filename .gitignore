@@ -6,3 +6,9 @@ coverage.txt
 *.coverprofile
 .idea
 .vscode
+*.o
+*.a
+.project
+.cproject
+.eclipse
+.settings/

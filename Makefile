@@ -1,4 +1,4 @@
-export CGO_ENABLED=0
+export CGO_ENABLED=1
 export GO111MODULE=on
 
 .PHONY: build
@@ -11,9 +11,10 @@ ONOS_PROTOC_VERSION := v0.6.4
 
 build: # @HELP build the Go binaries and run all validations (default)
 build:
-	CGO_ENABLED=1 go build -o build/_output/onos-ric ./cmd/onos-ric
-	CGO_ENABLED=1 go build -o build/_output/apps/onos-ric-ho ./cmd/apps/onos-ric-ho
-	CGO_ENABLED=1 go build -o build/_output/apps/onos-ric-mlb ./cmd/apps/onos-ric-mlb
+	go build -o build/_output/onos-ric ./cmd/onos-ric
+	go build -o build/_output/apps/onos-ric-ho ./cmd/apps/onos-ric-ho
+	go build -o build/_output/apps/onos-ric-mlb ./cmd/apps/onos-ric-mlb
+	go build -o build/_output/e2asn1proxy ./cmd/e2asn1proxy
 
 generate: # @HELP generate store interfaces and implementations
 generate:
@@ -22,9 +23,9 @@ generate:
 
 test: # @HELP run the unit tests and source code validation
 test: build deps linters
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ric/pkg/...
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ric/cmd/...
-	CGO_ENABLED=1 go test -race github.com/onosproject/onos-ric/api/...
+	go test -race github.com/onosproject/onos-ric/pkg/...
+	go test -race github.com/onosproject/onos-ric/cmd/...
+	go test -race github.com/onosproject/onos-ric/api/...
 
 coverage: # @HELP generate unit test coverage data
 coverage: build deps linters license_check
