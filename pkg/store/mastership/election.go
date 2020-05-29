@@ -170,14 +170,34 @@ func (e *distributedMastershipElection) watchElection(ch <-chan *election.Event)
 	for event := range ch {
 		var mastership *State
 		e.mu.Lock()
-		if uint64(e.mastership.Term) != event.Term.ID {
+
+		changed := false
+		term := Term(event.Term.ID)
+		if term > e.mastership.Term {
+			changed = true
+		} else if e.mastership.Term == Term(event.Term.ID) {
+			if len(e.mastership.Replicas) != len(event.Term.Candidates) {
+				changed = true
+			} else {
+				for _, candidateID := range event.Term.Candidates {
+					for _, replicaID := range e.mastership.Replicas {
+						if cluster.ReplicaID(candidateID) != replicaID {
+							changed = true
+							break
+						}
+					}
+				}
+			}
+		}
+
+		if changed {
 			replicas := make([]cluster.ReplicaID, 0, len(event.Term.Candidates))
 			for _, id := range event.Term.Candidates {
 				replicas = append(replicas, cluster.ReplicaID(id))
 			}
 			mastership = &State{
 				PartitionID: e.partitionID,
-				Term:        Term(event.Term.ID),
+				Term:        term,
 				Master:      cluster.NodeID(event.Term.Leader),
 				Replicas:    replicas,
 			}

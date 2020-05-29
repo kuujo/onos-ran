@@ -99,6 +99,8 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	logger.Debugf("Received BackupRequest %s", request)
+
 	// TODO: Backup should compare entry terms when appending to avoid inconsistencies
 	prevIndex := Index(request.PrevIndex)
 	lastIndex := s.log.Writer().Index()
@@ -113,11 +115,13 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 	for _, entry := range request.Entries {
 		s.log.Writer().Write(entry.Request)
 	}
-	return &requests.BackupResponse{
+	response := &requests.BackupResponse{
 		DeviceID: string(s.deviceKey),
 		Index:    uint64(s.log.Writer().Index()),
 		Term:     uint64(s.state.getMastership().Term),
-	}, nil
+	}
+	logger.Debugf("Sending BackupResponse %s", response)
+	return response, nil
 }
 
 func (s *backupStore) Close() error {

@@ -294,6 +294,7 @@ func (b *backupSynchronizer) backupEntries() {
 				Request: entry.Value.(*e2ap.RicControlRequest),
 			}
 		}
+
 		request := &requests.BackupRequest{
 			DeviceID:    string(b.store.deviceKey),
 			Term:        uint64(b.store.state.getMastership().Term),
@@ -304,9 +305,11 @@ func (b *backupSynchronizer) backupEntries() {
 		}
 		b.store.mu.RUnlock()
 
+		logger.Debugf("Sending BackupRequest %s", request)
 		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 		response, err := b.client.Backup(ctx, request)
 		cancel()
+		logger.Debugf("Received BackupResponse %s", response)
 		if err != nil {
 			b.reader.Seek(batch.PrevIndex + 1)
 		} else if Index(response.Index) != batch.Entries[len(batch.Entries)-1].Index {
