@@ -98,27 +98,12 @@ func (s *deviceRequestsStore) processElectionChange(state mastership.State) erro
 		}
 		s.handler = handler
 	} else {
-		var index int
-		for i := 1; i < len(state.Replicas); i++ {
-			if state.Replicas[i] == cluster.ReplicaID(s.cluster.Node().ID) {
-				index = i
-			}
+		logger.Debugf("Transitioning to backup role for %s", s.deviceKey)
+		handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
+		if err != nil {
+			return fmt.Errorf("failed to initialize backup store: %s", err)
 		}
-		if index != 0 && index <= s.config.Backups+s.config.AsyncBackups {
-			logger.Debugf("Transitioning to backup role for %s", s.deviceKey)
-			handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
-			if err != nil {
-				return fmt.Errorf("failed to initialize backup store: %s", err)
-			}
-			s.handler = handler
-		} else {
-			logger.Debugf("Transitioning to standby role for %s", s.deviceKey)
-			handler, err := newStandbyStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
-			if err != nil {
-				return fmt.Errorf("failed to initialize standby store: %s", err)
-			}
-			s.handler = handler
-		}
+		s.handler = handler
 	}
 	return nil
 }

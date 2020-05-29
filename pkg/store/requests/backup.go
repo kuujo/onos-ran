@@ -99,6 +99,7 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// TODO: Backup should compare entry terms when appending to avoid inconsistencies
 	prevIndex := Index(request.PrevIndex)
 	lastIndex := s.log.Writer().Index()
 	if prevIndex != 0 && lastIndex != prevIndex {

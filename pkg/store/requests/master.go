@@ -23,7 +23,6 @@ import (
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
-	"sort"
 	"sync"
 )
 
@@ -32,10 +31,10 @@ func newMasterStore(deviceKey device.Key, c cluster.Cluster, state *deviceStoreS
 		config:         config,
 		deviceKey:      deviceKey,
 		cluster:        c,
-		backups:        make([]*masterBackup, 0),
+		backups:        make([]*backupSynchronizer, 0),
 		state:          state,
 		log:            log,
-		commitCh:       make(chan backupCommit),
+		commitCh:       make(chan commit),
 		commitChannels: make(map[Index]chan<- Index),
 		commitIndexes:  make(map[cluster.ReplicaID]Index),
 	}
@@ -49,10 +48,10 @@ type masterStore struct {
 	config         config.RequestsStoreConfig
 	deviceKey      device.Key
 	cluster        cluster.Cluster
-	backups        []*masterBackup
+	backups        []*backupSynchronizer
 	state          *deviceStoreState
 	log            Log
-	commitCh       chan backupCommit
+	commitCh       chan commit
 	commitChannels map[Index]chan<- Index
 	commitIndexes  map[cluster.ReplicaID]Index
 	mu             sync.RWMutex
@@ -63,10 +62,16 @@ func (s *masterStore) open() error {
 	errCh := make(chan error)
 	mastership := s.state.getMastership()
 	for index, replicaID := range mastership.Replicas {
-		if index > 0 && index < s.config.GetBackups()+s.config.GetAsyncBackups() {
+		if index > 0 {
+			sync := index < s.config.GetSyncBackups()
 			wg.Add(1)
 			go func(replicaID cluster.ReplicaID) {
-				err := s.addBackup(replicaID)
+				var err error
+				if sync {
+					err = s.addBackup(replicaID, newSyncBackup)
+				} else {
+					err = s.addBackup(replicaID, newAsyncBackup)
+				}
 				if err != nil {
 					errCh <- err
 				}
@@ -86,7 +91,7 @@ func (s *masterStore) open() error {
 	return nil
 }
 
-func (s *masterStore) addBackup(replicaID cluster.ReplicaID) error {
+func (s *masterStore) addBackup(replicaID cluster.ReplicaID, factory func(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*backupSynchronizer, error)) error {
 	replica := s.cluster.Replica(replicaID)
 	if replica == nil {
 		return fmt.Errorf("unknown replica node %s", replicaID)
@@ -96,12 +101,12 @@ func (s *masterStore) addBackup(replicaID cluster.ReplicaID) error {
 		return err
 	}
 	client := requests.NewRequestsServiceClient(conn)
-	backup, err := newMasterBackup(s, replicaID, client, s.log.OpenReader(0))
+	synchronizer, err := factory(s, replicaID, client, s.log.OpenReader(0))
 	if err != nil {
 		return err
 	}
 	s.mu.Lock()
-	s.backups = append(s.backups, backup)
+	s.backups = append(s.backups, synchronizer)
 	s.mu.Unlock()
 	return nil
 }
@@ -174,30 +179,26 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 	if index > prevIndex {
 		s.commitIndexes[replicaID] = index
 
-		indexes := make([]Index, len(s.backups))
-		i := 0
+		var minIndex Index
 		for _, index := range s.commitIndexes {
-			indexes[i] = index
-			i++
+			if minIndex == 0 || index < minIndex {
+				minIndex = index
+			}
 		}
-		sort.Slice(indexes, func(i, j int) bool {
-			return indexes[i] < indexes[j]
-		})
 
-		index := indexes[s.config.GetBackups()-1]
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		commitIndex := s.state.getCommitIndex()
-		if index > commitIndex {
-			for i := commitIndex + 1; i <= index; i++ {
-				s.state.setCommitIndex(i)
-				ch, ok := s.commitChannels[i]
+		if minIndex > commitIndex {
+			for index := commitIndex + 1; index <= minIndex; index++ {
+				s.state.setCommitIndex(index)
+				ch, ok := s.commitChannels[index]
 				if ok {
-					ch <- i
-					delete(s.commitChannels, i)
+					ch <- index
+					delete(s.commitChannels, index)
 				}
 			}
-			logger.Debugf("Committed entries up to %d", index)
+			logger.Debugf("Committed entries up to %d", minIndex)
 		}
 	}
 }
@@ -230,42 +231,60 @@ func (s *masterStore) Close() error {
 	return nil
 }
 
-type backupCommit struct {
+type commit struct {
 	replica cluster.ReplicaID
 	index   Index
 }
 
+type indexFunc func() Index
+
+type commitFunc func(Index)
+
 var _ storeHandler = &masterStore{}
 
-func newMasterBackup(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*masterBackup, error) {
-	backup := &masterBackup{
-		store:     store,
-		replicaID: replicaID,
-		client:    client,
-		reader:    reader,
+func newBackupSynchronizer(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader, limitFunc indexFunc, committer commitFunc) (*backupSynchronizer, error) {
+	synchronizer := &backupSynchronizer{
+		store:      store,
+		replicaID:  replicaID,
+		client:     client,
+		reader:     reader,
+		limitFunc:  limitFunc,
+		commitFunc: committer,
 	}
-	if err := backup.open(); err != nil {
+	if err := synchronizer.open(); err != nil {
 		return nil, err
 	}
-	return backup, nil
+	return synchronizer, nil
 }
 
-type masterBackup struct {
-	store     *masterStore
-	replicaID cluster.ReplicaID
-	client    requests.RequestsServiceClient
-	reader    Reader
-	closed    bool
+type backupSynchronizer struct {
+	store      *masterStore
+	replicaID  cluster.ReplicaID
+	client     requests.RequestsServiceClient
+	reader     Reader
+	closed     bool
+	limitFunc  indexFunc
+	commitFunc commitFunc
+	mu         sync.RWMutex
 }
 
-func (b *masterBackup) open() error {
+func (b *backupSynchronizer) open() error {
 	go b.backupEntries()
 	return nil
 }
 
-func (b *masterBackup) backupEntries() {
-	for !b.closed {
-		batch := b.reader.Read()
+func (b *backupSynchronizer) backupEntries() {
+	b.mu.RLock()
+	closed := b.closed
+	b.mu.RUnlock()
+	for !closed {
+		var batch *Batch
+		if b.limitFunc != nil {
+			batch = b.reader.ReadUntil(b.limitFunc())
+		} else {
+			batch = b.reader.Read()
+		}
+
 		b.store.mu.RLock()
 		entries := make([]*requests.BackupEntry, len(batch.Entries))
 		for i := 0; i < len(batch.Entries); i++ {
@@ -292,16 +311,35 @@ func (b *masterBackup) backupEntries() {
 			b.reader.Seek(batch.PrevIndex + 1)
 		} else if Index(response.Index) != batch.Entries[len(batch.Entries)-1].Index {
 			b.reader.Seek(Index(response.Index) + 1)
-		} else {
-			b.store.commitCh <- backupCommit{
-				replica: b.replicaID,
-				index:   Index(response.Index),
-			}
+		} else if b.commitFunc != nil {
+			b.commitFunc(Index(response.Index))
 		}
+		b.mu.RLock()
+		closed = b.closed
+		b.mu.RUnlock()
 	}
 }
 
-func (b *masterBackup) close() error {
+func (b *backupSynchronizer) close() error {
+	b.mu.Lock()
 	b.closed = true
+	b.mu.Unlock()
 	return nil
+}
+
+func newSyncBackup(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*backupSynchronizer, error) {
+	committer := func(index Index) {
+		store.commitCh <- commit{
+			replica: replicaID,
+			index:   index,
+		}
+	}
+	return newBackupSynchronizer(store, replicaID, client, reader, nil, committer)
+}
+
+func newAsyncBackup(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*backupSynchronizer, error) {
+	limiter := func() Index {
+		return store.state.getCommitIndex()
+	}
+	return newBackupSynchronizer(store, replicaID, client, reader, limiter, nil)
 }

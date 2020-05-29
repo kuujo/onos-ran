@@ -62,24 +62,17 @@ func (c MastershipStoreConfig) GetPartitions() int {
 
 // RequestsStoreConfig is the requests store configuration
 type RequestsStoreConfig struct {
-	// Backups configures the number of synchronous backups
-	Backups int `yaml:"backups,omitempty"`
-	// AsyncBackups configures the number of asynchronous backups
-	AsyncBackups int `yaml:"asyncBackups,omitempty"`
+	// SyncBackups configures the number of synchronous backups
+	SyncBackups int `yaml:"syncBackups,omitempty"`
 }
 
-// GetBackups returns the number of synchronous backups
-func (c RequestsStoreConfig) GetBackups() int {
-	backups := c.Backups
+// GetSyncBackups returns the number of synchronous backups
+func (c RequestsStoreConfig) GetSyncBackups() int {
+	backups := c.SyncBackups
 	if backups == 0 {
 		backups = 1
 	}
 	return backups
-}
-
-// GetAsyncBackups returns the number of asynchronous backups
-func (c RequestsStoreConfig) GetAsyncBackups() int {
-	return c.AsyncBackups
 }
 
 // GetConfig gets the onos-config configuration
