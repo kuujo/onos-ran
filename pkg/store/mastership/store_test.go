@@ -143,6 +143,11 @@ func TestMastershipStore(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, master)
 
+	// node1 should be removed from the election for device2
+	mastership = <-store3Ch2
+	assert.Equal(t, getPartitionFor(key2, 16), mastership.PartitionID)
+	assert.Equal(t, node2, mastership.Master)
+
 	// node3 should also be the master for device2
 	mastership = <-store3Ch2
 	assert.Equal(t, getPartitionFor(key2, 16), mastership.PartitionID)
