@@ -58,11 +58,11 @@ func TestMastershipElection(t *testing.T) {
 
 	mastership := <-store2Ch
 	assert.Equal(t, cluster.NodeID("a"), mastership.Master)
-	assert.Len(t,  mastership.Replicas, 3)
+	assert.Len(t, mastership.Replicas, 3)
 
 	mastership = <-store2Ch
 	assert.Equal(t, cluster.NodeID("b"), mastership.Master)
-	assert.Len(t,  mastership.Replicas, 2)
+	assert.Len(t, mastership.Replicas, 2)
 
 	master, err = store2.IsMaster()
 	assert.NoError(t, err)
