@@ -112,9 +112,19 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 		}, nil
 	}
 
+	commitIndex := Index(request.CommitIndex)
+	ackIndex := Index(request.AckIndex)
 	for _, entry := range request.Entries {
 		s.log.Writer().Write(entry.Request)
 	}
+
+	// Discard entries up to the ackIndex
+	s.log.Writer().Discard(ackIndex)
+
+	// Update the commitIndex and ackIndex to trigger watch events
+	s.state.setCommitIndex(commitIndex)
+	s.state.setAckIndex(ackIndex)
+
 	response := &requests.BackupResponse{
 		DeviceID: string(s.deviceKey),
 		Index:    uint64(s.log.Writer().Index()),

@@ -34,8 +34,11 @@ func newDeviceRequestsStore(deviceKey device.Key, cluster cluster.Cluster, elect
 		deviceKey: deviceKey,
 		cluster:   cluster,
 		election:  election,
-		state:     &deviceStoreState{},
-		log:       newLog(),
+		state: &deviceStoreState{
+			commitWatchers: make(map[string]chan<- Index),
+			ackWatchers:    make(map[string]chan<- Index),
+		},
+		log: newLog(),
 	}
 	logger.Debugf("Initializing device store %s", deviceKey)
 	if err := store.open(); err != nil {
@@ -134,29 +137,49 @@ func (s *deviceRequestsStore) Watch(deviceID device.ID, ch chan<- Event, opts ..
 		opt.applyWatch(options)
 	}
 
-	var reader Reader
+	var firstIndex Index
 	nextIndex := s.log.Writer().Index() + 1
 	if options.replay {
-		reader = s.log.OpenReader(0)
+		firstIndex = 1
 	} else {
-		reader = s.log.OpenReader(nextIndex)
+		firstIndex = nextIndex
 	}
+	reader := s.log.OpenReader(firstIndex)
+
+	commitCh := make(chan Index)
+	s.state.watchCommitIndex(context.Background(), commitCh)
+
+	ackCh := make(chan Index)
+	s.state.watchAckIndex(context.Background(), ackCh)
 
 	go func() {
+		lastAckIndex := firstIndex - 1
 		for {
-			batch := reader.ReadUntil(s.state.getCommitIndex())
-			for _, entry := range batch.Entries {
-				var eventType EventType
-				if entry.Index < nextIndex {
-					eventType = EventNone
-				} else {
-					eventType = EventAppend
+			select {
+			case commitIndex := <-commitCh:
+				batch := reader.ReadUntil(commitIndex)
+				for _, entry := range batch.Entries {
+					var eventType EventType
+					if entry.Index < nextIndex {
+						eventType = EventNone
+					} else {
+						eventType = EventAppend
+					}
+					request := New(entry.Value.(*e2ap.RicControlRequest))
+					request.Index = entry.Index
+					ch <- Event{
+						Type:    eventType,
+						Request: *request,
+					}
 				}
-				request := New(entry.Value.(*e2ap.RicControlRequest))
-				request.Index = entry.Index
-				ch <- Event{
-					Type:    eventType,
-					Request: *request,
+			case ackIndex := <-ackCh:
+				for index := lastAckIndex + 1; index <= ackIndex; index++ {
+					ch <- Event{
+						Type: EventAck,
+						Request: Request{
+							Index: index,
+						},
+					}
 				}
 			}
 		}

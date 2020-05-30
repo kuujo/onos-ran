@@ -140,6 +140,11 @@ func (s *masterStore) append(ctx context.Context, request *requests.AppendReques
 	entry := s.log.Writer().Write(request.Request)
 	s.mu.Unlock()
 
+	s.commitCh <- commit{
+		replica: cluster.ReplicaID(s.cluster.Node().ID),
+		index:   entry.Index,
+	}
+
 	ch := make(chan Index)
 	go s.backupEntry(entry, ch)
 	select {
@@ -236,20 +241,16 @@ type commit struct {
 	index   Index
 }
 
-type indexFunc func() Index
-
-type commitFunc func(Index)
-
 var _ storeHandler = &masterStore{}
 
-func newBackupSynchronizer(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader, limitFunc indexFunc, committer commitFunc) (*backupSynchronizer, error) {
+func newBackupSynchronizer(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader, sync bool) (*backupSynchronizer, error) {
 	synchronizer := &backupSynchronizer{
-		store:      store,
-		replicaID:  replicaID,
-		client:     client,
-		reader:     reader,
-		limitFunc:  limitFunc,
-		commitFunc: committer,
+		store:     store,
+		replicaID: replicaID,
+		client:    client,
+		reader:    reader,
+		sync:      sync,
+		closeCh:   make(chan struct{}),
 	}
 	if err := synchronizer.open(); err != nil {
 		return nil, err
@@ -258,91 +259,153 @@ func newBackupSynchronizer(store *masterStore, replicaID cluster.ReplicaID, clie
 }
 
 type backupSynchronizer struct {
-	store      *masterStore
-	replicaID  cluster.ReplicaID
-	client     requests.RequestsServiceClient
-	reader     Reader
-	closed     bool
-	limitFunc  indexFunc
-	commitFunc commitFunc
-	mu         sync.RWMutex
+	store     *masterStore
+	replicaID cluster.ReplicaID
+	client    requests.RequestsServiceClient
+	reader    Reader
+	closeCh   chan struct{}
+	sync      bool
 }
 
 func (b *backupSynchronizer) open() error {
-	go b.backupEntries()
+	commitCh := make(chan Index)
+	ctx, cancel := context.WithCancel(context.Background())
+	b.store.state.watchCommitIndex(ctx, commitCh)
+	ackCh := make(chan Index)
+	b.store.state.watchAckIndex(ctx, ackCh)
+	go b.backupEntries(commitCh, ackCh)
+	go func() {
+		<-b.closeCh
+		cancel()
+	}()
 	return nil
 }
 
-func (b *backupSynchronizer) backupEntries() {
-	b.mu.RLock()
-	closed := b.closed
-	b.mu.RUnlock()
-	for !closed {
-		var batch *Batch
-		if b.limitFunc != nil {
-			batch = b.reader.ReadUntil(b.limitFunc())
+func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan Index) {
+	var backedUpIndex Index
+	var committedIndex Index
+	var ackedIndex Index
+	for {
+		if b.sync {
+			select {
+			case batch := <-b.reader.AwaitBatch():
+				commitIndex := b.store.state.getCommitIndex()
+				ackIndex := b.store.state.getAckIndex()
+				err := b.backupBatch(batch, commitIndex, ackIndex)
+				if err == nil {
+					backedUpIndex = batch.Entries[len(batch.Entries)-1].Index
+					committedIndex = commitIndex
+					ackedIndex = ackIndex
+				}
+			case commitIndex := <-commitCh:
+				if commitIndex > committedIndex {
+					ackIndex := b.store.state.getAckIndex()
+					err := b.backupBatch(&Batch{
+						PrevIndex: backedUpIndex,
+						Entries:   []*Entry{},
+					}, commitIndex, ackIndex)
+					if err == nil {
+						committedIndex = commitIndex
+						ackedIndex = ackIndex
+					}
+				}
+			case ackIndex := <-ackCh:
+				if ackIndex > ackedIndex {
+					commitIndex := b.store.state.getCommitIndex()
+					err := b.backupBatch(&Batch{
+						PrevIndex: backedUpIndex,
+						Entries:   []*Entry{},
+					}, commitIndex, ackIndex)
+					if err == nil {
+						committedIndex = commitIndex
+						ackedIndex = ackIndex
+					}
+				}
+			case <-b.closeCh:
+				return
+			}
 		} else {
-			batch = b.reader.Read()
-		}
-
-		b.store.mu.RLock()
-		entries := make([]*requests.BackupEntry, len(batch.Entries))
-		for i := 0; i < len(batch.Entries); i++ {
-			entry := batch.Entries[i]
-			entries[i] = &requests.BackupEntry{
-				Index:   uint64(entry.Index),
-				Request: entry.Value.(*e2ap.RicControlRequest),
+			select {
+			case commitIndex := <-commitCh:
+				if commitIndex > committedIndex {
+					ackIndex := b.store.state.getAckIndex()
+					batch := b.reader.ReadUntil(commitIndex)
+					err := b.backupBatch(batch, commitIndex, ackIndex)
+					if err == nil {
+						backedUpIndex = batch.Entries[len(batch.Entries)-1].Index
+						committedIndex = commitIndex
+						ackedIndex = ackIndex
+					}
+				}
+			case ackIndex := <-ackCh:
+				if ackIndex > ackedIndex {
+					commitIndex := b.store.state.getCommitIndex()
+					err := b.backupBatch(&Batch{
+						PrevIndex: backedUpIndex,
+						Entries:   []*Entry{},
+					}, commitIndex, ackIndex)
+					if err == nil {
+						committedIndex = commitIndex
+						ackedIndex = ackIndex
+					}
+				}
+			case <-b.closeCh:
+				return
 			}
 		}
-
-		request := &requests.BackupRequest{
-			DeviceID:    string(b.store.deviceKey),
-			Term:        uint64(b.store.state.getMastership().Term),
-			Entries:     entries,
-			PrevIndex:   uint64(batch.PrevIndex),
-			CommitIndex: uint64(b.store.state.getCommitIndex()),
-			AckIndex:    uint64(b.store.state.getAckIndex()),
-		}
-		b.store.mu.RUnlock()
-
-		logger.Debugf("Sending BackupRequest %s", request)
-		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-		response, err := b.client.Backup(ctx, request)
-		cancel()
-		logger.Debugf("Received BackupResponse %s", response)
-		if err != nil {
-			b.reader.Seek(batch.PrevIndex + 1)
-		} else if Index(response.Index) != batch.Entries[len(batch.Entries)-1].Index {
-			b.reader.Seek(Index(response.Index) + 1)
-		} else if b.commitFunc != nil {
-			b.commitFunc(Index(response.Index))
-		}
-		b.mu.RLock()
-		closed = b.closed
-		b.mu.RUnlock()
 	}
 }
 
+func (b *backupSynchronizer) backupBatch(batch *Batch, commitIndex Index, ackIndex Index) error {
+	b.store.mu.RLock()
+	entries := make([]*requests.BackupEntry, len(batch.Entries))
+	for i := 0; i < len(batch.Entries); i++ {
+		entry := batch.Entries[i]
+		entries[i] = &requests.BackupEntry{
+			Index:   uint64(entry.Index),
+			Request: entry.Value.(*e2ap.RicControlRequest),
+		}
+	}
+
+	request := &requests.BackupRequest{
+		DeviceID:    string(b.store.deviceKey),
+		Term:        uint64(b.store.state.getMastership().Term),
+		Entries:     entries,
+		PrevIndex:   uint64(batch.PrevIndex),
+		CommitIndex: uint64(commitIndex),
+		AckIndex:    uint64(ackIndex),
+	}
+	b.store.mu.RUnlock()
+
+	logger.Debugf("Sending BackupRequest %s", request)
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	response, err := b.client.Backup(ctx, request)
+	cancel()
+	logger.Debugf("Received BackupResponse %s", response)
+	if err != nil {
+		b.reader.Seek(batch.PrevIndex + 1)
+		return err
+	} else if Index(response.Index) != batch.Entries[len(batch.Entries)-1].Index {
+		b.reader.Seek(Index(response.Index) + 1)
+		return errors.New("uncommitted backup")
+	} else if b.sync {
+		b.store.commitCh <- commit{
+			replica: b.replicaID,
+			index:   Index(response.Index),
+		}
+	}
+	return nil
+}
+
 func (b *backupSynchronizer) close() error {
-	b.mu.Lock()
-	b.closed = true
-	b.mu.Unlock()
+	close(b.closeCh)
 	return nil
 }
 
 func newSyncBackup(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*backupSynchronizer, error) {
-	committer := func(index Index) {
-		store.commitCh <- commit{
-			replica: replicaID,
-			index:   index,
-		}
-	}
-	return newBackupSynchronizer(store, replicaID, client, reader, nil, committer)
+	return newBackupSynchronizer(store, replicaID, client, reader, true)
 }
 
 func newAsyncBackup(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*backupSynchronizer, error) {
-	limiter := func() Index {
-		return store.state.getCommitIndex()
-	}
-	return newBackupSynchronizer(store, replicaID, client, reader, limiter, nil)
+	return newBackupSynchronizer(store, replicaID, client, reader, false)
 }

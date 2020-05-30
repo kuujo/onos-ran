@@ -123,9 +123,9 @@ func TestStoreRequests(t *testing.T) {
 
 	select {
 	case event := <-watchCh:
-		assert.Equal(t, EventRemove, event.Type)
+		assert.Equal(t, EventAck, event.Type)
 	case <-time.After(5 * time.Second):
-		t.Log("Timed out waiting for EventRemove")
+		t.Log("Timed out waiting for EventAck")
 		t.FailNow()
 	}
 }

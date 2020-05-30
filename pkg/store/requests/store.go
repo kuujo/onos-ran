@@ -62,8 +62,8 @@ const (
 	EventNone EventType = ""
 	// EventAppend indicates the message was appended to the store
 	EventAppend EventType = "append"
-	// EventRemove indicates the message was removed from the store
-	EventRemove EventType = "update"
+	// EventAck indicates the message was acknowledged and removed from the store
+	EventAck EventType = "ack"
 )
 
 // Store is interface for store

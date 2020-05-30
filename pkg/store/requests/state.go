@@ -15,15 +15,19 @@
 package requests
 
 import (
+	"context"
+	"github.com/google/uuid"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
 	"sync"
 )
 
 type deviceStoreState struct {
-	mastership  *mastership.State
-	commitIndex Index
-	ackIndex    Index
-	mu          sync.RWMutex
+	mastership     *mastership.State
+	commitIndex    Index
+	commitWatchers map[string]chan<- Index
+	ackWatchers    map[string]chan<- Index
+	ackIndex       Index
+	mu             sync.RWMutex
 }
 
 func (s *deviceStoreState) setMastership(mastership *mastership.State) {
@@ -42,6 +46,9 @@ func (s *deviceStoreState) setCommitIndex(index Index) {
 	s.mu.Lock()
 	if index > s.commitIndex {
 		s.commitIndex = index
+		for _, watcher := range s.commitWatchers {
+			watcher <- index
+		}
 	}
 	s.mu.Unlock()
 }
@@ -52,10 +59,26 @@ func (s *deviceStoreState) getCommitIndex() Index {
 	return s.commitIndex
 }
 
+func (s *deviceStoreState) watchCommitIndex(ctx context.Context, ch chan<- Index) {
+	id := uuid.New().String()
+	s.mu.Lock()
+	s.commitWatchers[id] = ch
+	s.mu.Unlock()
+	go func() {
+		<-ctx.Done()
+		s.mu.Lock()
+		delete(s.commitWatchers, id)
+		s.mu.Unlock()
+	}()
+}
+
 func (s *deviceStoreState) setAckIndex(index Index) {
 	s.mu.Lock()
 	if index > s.ackIndex {
 		s.ackIndex = index
+		for _, watcher := range s.ackWatchers {
+			watcher <- index
+		}
 	}
 	s.mu.Unlock()
 }
@@ -64,4 +87,17 @@ func (s *deviceStoreState) getAckIndex() Index {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.ackIndex
+}
+
+func (s *deviceStoreState) watchAckIndex(ctx context.Context, ch chan<- Index) {
+	id := uuid.New().String()
+	s.mu.Lock()
+	s.ackWatchers[id] = ch
+	s.mu.Unlock()
+	go func() {
+		<-ctx.Done()
+		s.mu.Lock()
+		delete(s.ackWatchers, id)
+		s.mu.Unlock()
+	}()
 }

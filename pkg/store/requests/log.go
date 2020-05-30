@@ -67,11 +67,17 @@ type Writer interface {
 type Reader interface {
 	io.Closer
 
-	// Read reads the next batch from the log
-	Read() *Batch
+	// ReadBatch reads the next batch from the log
+	ReadBatch() *Batch
 
 	// ReadUntil reads the next batch from the log up to the given index
 	ReadUntil(Index) *Batch
+
+	// AwaitBatch reads the next batch from the log, waiting if necessary
+	AwaitBatch() <-chan *Batch
+
+	// AwaitUntil reads the next batch from the log up to the given index, waiting if necessary
+	AwaitUntil(Index) <-chan *Batch
 
 	// Seek resets the log reader to the given index
 	Seek(index Index)
@@ -192,7 +198,7 @@ func (r *memoryReader) next() {
 	}
 }
 
-func (r *memoryReader) Read() *Batch {
+func (r *memoryReader) ReadBatch() *Batch {
 	r.log.mu.RLock()
 	r.mu.Lock()
 	if (r.elem == nil && r.log.entries.Len() > 0) || (r.elem != nil && r.elem.Next() != nil) {
@@ -229,7 +235,7 @@ func (r *memoryReader) Read() *Batch {
 	r.mu.Unlock()
 	r.log.mu.RUnlock()
 	wg.Wait()
-	return r.Read()
+	return r.ReadBatch()
 }
 
 func (r *memoryReader) ReadUntil(index Index) *Batch {
@@ -269,7 +275,25 @@ func (r *memoryReader) ReadUntil(index Index) *Batch {
 	r.mu.Unlock()
 	r.log.mu.RUnlock()
 	wg.Wait()
-	return r.Read()
+	return r.ReadUntil(index)
+}
+
+func (r *memoryReader) AwaitBatch() <-chan *Batch {
+	ch := make(chan *Batch)
+	go func() {
+		ch <- r.ReadBatch()
+		close(ch)
+	}()
+	return ch
+}
+
+func (r *memoryReader) AwaitUntil(index Index) <-chan *Batch {
+	ch := make(chan *Batch)
+	go func() {
+		ch <- r.ReadUntil(index)
+		close(ch)
+	}()
+	return ch
 }
 
 func (r *memoryReader) Seek(index Index) {
