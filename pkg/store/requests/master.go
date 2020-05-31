@@ -158,10 +158,13 @@ func (s *masterStore) append(ctx context.Context, request *requests.AppendReques
 }
 
 func (s *masterStore) ack(ctx context.Context, request *requests.AckRequest) (*requests.AckResponse, error) {
-	s.mu.Lock()
 	index := Index(request.Index)
-	s.log.Writer().Discard(index)
-	s.state.setAckIndex(index)
+	s.mu.Lock()
+	if index > s.state.getAckIndex() {
+		s.log.Writer().Discard(index)
+		s.state.setAckIndex(index)
+		logger.Debugf("Acknowledged entries up to %d", index)
+	}
 	s.mu.Unlock()
 	return &requests.AckResponse{}, nil
 }
@@ -223,7 +226,11 @@ func (s *masterStore) backupEntry(entry *Entry, ch chan<- Index) {
 
 	// Acquire a write lock and add the channel to commitChannels
 	s.mu.Lock()
-	s.commitChannels[entry.Index] = ch
+	if s.state.getCommitIndex() >= entry.Index {
+		ch <- entry.Index
+	} else {
+		s.commitChannels[entry.Index] = ch
+	}
 	s.mu.Unlock()
 }
 
