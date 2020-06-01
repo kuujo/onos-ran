@@ -18,12 +18,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/atomix/go-client/pkg/client/util"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
+	"google.golang.org/grpc"
 	"sync"
+	"time"
 )
 
 func newMasterStore(deviceKey device.Key, c cluster.Cluster, state *deviceStoreState, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
@@ -94,9 +97,9 @@ func (s *masterStore) open() error {
 func (s *masterStore) addBackup(replicaID cluster.ReplicaID, factory func(store *masterStore, replicaID cluster.ReplicaID, client requests.RequestsServiceClient, reader Reader) (*backupSynchronizer, error)) error {
 	replica := s.cluster.Replica(replicaID)
 	if replica == nil {
-		return fmt.Errorf("unknown replica node %s", replicaID)
+		return fmt.Errorf("unknown replica %s", replicaID)
 	}
-	conn, err := replica.Connect()
+	conn, err := replica.Connect(grpc.WithInsecure(), grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(time.Second)))
 	if err != nil {
 		return err
 	}

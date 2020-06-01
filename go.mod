@@ -30,4 +30,7 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
+replace github.com/onosproject/onos-lib-go => ../onos-lib-go
+replace github.com/atomix/go-client => ../atomix-go-client
+
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3

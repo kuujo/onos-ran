@@ -40,9 +40,7 @@ func newDeviceRequestsStore(deviceKey device.Key, cluster cluster.Cluster, elect
 		},
 		log: newLog(),
 	}
-	logger.Debugf("Initializing device store %s", deviceKey)
 	if err := store.open(); err != nil {
-		logger.Errorf("Failed to initialize device store %s: %s", deviceKey, err)
 		return nil, err
 	}
 	return store, nil
@@ -61,6 +59,7 @@ type deviceRequestsStore struct {
 }
 
 func (s *deviceRequestsStore) open() error {
+	logger.Debugf("Initializing requests store for device %s", s.deviceKey)
 	ch := make(chan mastership.State)
 	if err := s.election.Watch(ch); err != nil {
 		return err

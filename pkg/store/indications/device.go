@@ -18,16 +18,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/atomix/go-client/pkg/client/util"
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/store/indications"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"github.com/onosproject/onos-ric/pkg/store/mastership"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
 	"sync"
+	"time"
 )
 
 // newDeviceIndicationsStore creates a new indications store for a single device
@@ -144,7 +147,7 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 	if master == nil {
 		return fmt.Errorf("cannot find master node %s", mastership.Master)
 	}
-	conn, err := master.Connect()
+	conn, err := master.Connect(grpc.WithInsecure(), grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(time.Second)))
 	if err != nil {
 		return err
 	}

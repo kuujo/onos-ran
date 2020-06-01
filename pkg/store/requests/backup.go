@@ -17,12 +17,15 @@ package requests
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/atomix/go-client/pkg/client/util"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"google.golang.org/grpc"
 	"sync"
+	"time"
 )
 
 func newBackupStore(deviceKey device.Key, cluster cluster.Cluster, state *deviceStoreState, log Log, config config.RequestsStoreConfig) (storeHandler, error) {
@@ -51,11 +54,12 @@ type backupStore struct {
 }
 
 func (s *backupStore) open() error {
-	master := s.cluster.Replica(cluster.ReplicaID(s.state.getMastership().Master))
+	mastership := s.state.getMastership()
+	master := s.cluster.Replica(cluster.ReplicaID(mastership.Master))
 	if master == nil {
-		return errors.New("unknown master node")
+		return fmt.Errorf("unknown master %s", mastership.Master)
 	}
-	conn, err := master.Connect()
+	conn, err := master.Connect(grpc.WithInsecure(), grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(time.Second)))
 	if err != nil {
 		return err
 	}
