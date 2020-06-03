@@ -57,7 +57,6 @@ type masterStore struct {
 	commitCh       chan commit
 	commitChannels map[Index]chan<- Index
 	commitIndexes  map[cluster.ReplicaID]Index
-	mu             sync.RWMutex
 }
 
 func (s *masterStore) open() error {
@@ -108,9 +107,9 @@ func (s *masterStore) addBackup(replicaID cluster.ReplicaID, factory func(store 
 	if err != nil {
 		return err
 	}
-	s.mu.Lock()
+	s.state.mu.Lock()
 	s.backups = append(s.backups, synchronizer)
-	s.mu.Unlock()
+	s.state.mu.Unlock()
 	return nil
 }
 
@@ -139,9 +138,9 @@ func (s *masterStore) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOp
 }
 
 func (s *masterStore) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
-	s.mu.Lock()
+	s.state.mu.Lock()
 	entry := s.log.Writer().Write(request.Request)
-	s.mu.Unlock()
+	s.state.mu.Unlock()
 
 	s.commitCh <- commit{
 		replica: cluster.ReplicaID(s.cluster.Node().ID),
@@ -162,17 +161,19 @@ func (s *masterStore) append(ctx context.Context, request *requests.AppendReques
 
 func (s *masterStore) ack(ctx context.Context, request *requests.AckRequest) (*requests.AckResponse, error) {
 	index := Index(request.Index)
-	s.mu.Lock()
+	s.state.mu.Lock()
 	if index > s.state.getAckIndex() {
 		s.log.Writer().Discard(index)
 		s.state.setAckIndex(index)
 		logger.Debugf("Acknowledged entries up to %d", index)
 	}
-	s.mu.Unlock()
+	s.state.mu.Unlock()
 	return &requests.AckResponse{}, nil
 }
 
 func (s *masterStore) backup(ctx context.Context, request *requests.BackupRequest) (*requests.BackupResponse, error) {
+	s.state.mu.RLock()
+	defer s.state.mu.RUnlock()
 	return &requests.BackupResponse{
 		DeviceID: string(s.deviceKey),
 		Term:     uint64(s.state.getMastership().Term),
@@ -197,8 +198,8 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 			}
 		}
 
-		s.mu.Lock()
-		defer s.mu.Unlock()
+		s.state.mu.Lock()
+		defer s.state.mu.Unlock()
 		commitIndex := s.state.getCommitIndex()
 		if minIndex > commitIndex {
 			for index := commitIndex + 1; index <= minIndex; index++ {
@@ -216,32 +217,33 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 
 func (s *masterStore) backupEntry(entry *Entry, ch chan<- Index) {
 	if len(s.backups) == 0 {
-		s.mu.Lock()
+		s.state.mu.Lock()
 		commitIndex := s.state.getCommitIndex()
 		if entry.Index > commitIndex {
 			s.state.setCommitIndex(entry.Index)
 		}
 		index := s.state.getCommitIndex()
-		s.mu.Unlock()
+		s.state.mu.Unlock()
 		ch <- index
 		return
 	}
 
 	// Acquire a write lock and add the channel to commitChannels
-	s.mu.Lock()
+	s.state.mu.Lock()
 	if s.state.getCommitIndex() >= entry.Index {
 		ch <- entry.Index
 	} else {
 		s.commitChannels[entry.Index] = ch
 	}
-	s.mu.Unlock()
+	s.state.mu.Unlock()
 }
 
 func (s *masterStore) Close() error {
-	s.mu.RLock()
+	s.state.mu.RLock()
 	for _, backup := range s.backups {
 		backup.close()
 	}
+	s.state.mu.RUnlock()
 	close(s.commitCh)
 	return nil
 }
@@ -280,9 +282,11 @@ type backupSynchronizer struct {
 func (b *backupSynchronizer) open() error {
 	commitCh := make(chan Index)
 	ctx, cancel := context.WithCancel(context.Background())
+	b.store.state.mu.Lock()
 	b.store.state.watchCommitIndex(ctx, commitCh)
 	ackCh := make(chan Index)
 	b.store.state.watchAckIndex(ctx, ackCh)
+	b.store.state.mu.Unlock()
 	go b.backupEntries(commitCh, ackCh)
 	go func() {
 		<-b.closeCh
@@ -299,8 +303,10 @@ func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan I
 		if b.sync {
 			select {
 			case batch := <-b.reader.AwaitBatch():
+				b.store.state.mu.RLock()
 				commitIndex := b.store.state.getCommitIndex()
 				ackIndex := b.store.state.getAckIndex()
+				b.store.state.mu.RUnlock()
 				err := b.backupBatch(batch, commitIndex, ackIndex)
 				if err == nil {
 					backedUpIndex = batch.Entries[len(batch.Entries)-1].Index
@@ -309,7 +315,9 @@ func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan I
 				}
 			case commitIndex := <-commitCh:
 				if commitIndex > committedIndex {
+					b.store.state.mu.RLock()
 					ackIndex := b.store.state.getAckIndex()
+					b.store.state.mu.RUnlock()
 					err := b.backupBatch(&Batch{
 						PrevIndex: backedUpIndex,
 						Entries:   []*Entry{},
@@ -321,7 +329,9 @@ func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan I
 				}
 			case ackIndex := <-ackCh:
 				if ackIndex > ackedIndex {
+					b.store.state.mu.RLock()
 					commitIndex := b.store.state.getCommitIndex()
+					b.store.state.mu.RUnlock()
 					err := b.backupBatch(&Batch{
 						PrevIndex: backedUpIndex,
 						Entries:   []*Entry{},
@@ -338,7 +348,9 @@ func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan I
 			select {
 			case commitIndex := <-commitCh:
 				if commitIndex > committedIndex {
+					b.store.state.mu.RLock()
 					ackIndex := b.store.state.getAckIndex()
+					b.store.state.mu.RUnlock()
 					batch := b.reader.ReadUntil(commitIndex)
 					err := b.backupBatch(batch, commitIndex, ackIndex)
 					if err == nil {
@@ -349,7 +361,9 @@ func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan I
 				}
 			case ackIndex := <-ackCh:
 				if ackIndex > ackedIndex {
+					b.store.state.mu.RLock()
 					commitIndex := b.store.state.getCommitIndex()
+					b.store.state.mu.RUnlock()
 					err := b.backupBatch(&Batch{
 						PrevIndex: backedUpIndex,
 						Entries:   []*Entry{},
@@ -367,7 +381,7 @@ func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan I
 }
 
 func (b *backupSynchronizer) backupBatch(batch *Batch, commitIndex Index, ackIndex Index) error {
-	b.store.mu.RLock()
+	b.store.state.mu.RLock()
 	entries := make([]*requests.BackupEntry, len(batch.Entries))
 	for i := 0; i < len(batch.Entries); i++ {
 		entry := batch.Entries[i]
@@ -385,7 +399,7 @@ func (b *backupSynchronizer) backupBatch(batch *Batch, commitIndex Index, ackInd
 		CommitIndex: uint64(commitIndex),
 		AckIndex:    uint64(ackIndex),
 	}
-	b.store.mu.RUnlock()
+	b.store.state.mu.RUnlock()
 
 	logger.Debugf("Sending BackupRequest %s", request)
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)

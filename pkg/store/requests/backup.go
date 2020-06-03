@@ -24,7 +24,6 @@ import (
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"google.golang.org/grpc"
-	"sync"
 	"time"
 )
 
@@ -50,7 +49,6 @@ type backupStore struct {
 	log       Log
 	conn      *grpc.ClientConn
 	client    requests.RequestsServiceClient
-	mu        sync.RWMutex
 }
 
 func (s *backupStore) open() error {
@@ -100,8 +98,8 @@ func (s *backupStore) ack(ctx context.Context, request *requests.AckRequest) (*r
 }
 
 func (s *backupStore) backup(ctx context.Context, request *requests.BackupRequest) (*requests.BackupResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.state.mu.Lock()
+	defer s.state.mu.Unlock()
 
 	logger.Debugf("Received BackupRequest %s", request)
 

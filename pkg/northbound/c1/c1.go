@@ -302,6 +302,7 @@ func (s Server) TriggerHandOverStream(stream nb.C1InterfaceService_TriggerHandOv
 		if err != nil {
 			return err
 		}
+		log.Debugf("Received HandOverRequest %+v", req)
 		if req == nil || req.GetCrnti() == "" ||
 			req.DstStation == nil || req.DstStation.Plmnid == "" || req.DstStation.Ecid == "" ||
 			req.SrcStation == nil || req.SrcStation.Plmnid == "" || req.SrcStation.Ecid == "" {

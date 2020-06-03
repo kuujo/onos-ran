@@ -31,73 +31,75 @@ type deviceStoreState struct {
 }
 
 func (s *deviceStoreState) setMastership(mastership *mastership.State) {
-	s.mu.Lock()
 	s.mastership = mastership
-	s.mu.Unlock()
 }
 
 func (s *deviceStoreState) getMastership() *mastership.State {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	return s.mastership
 }
 
 func (s *deviceStoreState) setCommitIndex(index Index) {
-	s.mu.Lock()
 	if index > s.commitIndex {
 		s.commitIndex = index
 		for _, watcher := range s.commitWatchers {
-			watcher <- index
+			go func() {
+				watcher <- index
+			}()
 		}
 	}
-	s.mu.Unlock()
 }
 
 func (s *deviceStoreState) getCommitIndex() Index {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	return s.commitIndex
 }
 
 func (s *deviceStoreState) watchCommitIndex(ctx context.Context, ch chan<- Index) {
 	id := uuid.New().String()
-	s.mu.Lock()
-	s.commitWatchers[id] = ch
-	s.mu.Unlock()
+	commitCh := make(chan Index)
+	s.commitWatchers[id] = commitCh
+	go func() {
+		var commitIndex Index
+		for commit := range commitCh {
+			if commit > commitIndex {
+				ch <- commit
+				commitIndex = commit
+			}
+		}
+	}()
 	go func() {
 		<-ctx.Done()
-		s.mu.Lock()
 		delete(s.commitWatchers, id)
-		s.mu.Unlock()
 	}()
 }
 
 func (s *deviceStoreState) setAckIndex(index Index) {
-	s.mu.Lock()
 	if index > s.ackIndex {
 		s.ackIndex = index
 		for _, watcher := range s.ackWatchers {
 			watcher <- index
 		}
 	}
-	s.mu.Unlock()
 }
 
 func (s *deviceStoreState) getAckIndex() Index {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	return s.ackIndex
 }
 
 func (s *deviceStoreState) watchAckIndex(ctx context.Context, ch chan<- Index) {
 	id := uuid.New().String()
-	s.mu.Lock()
-	s.ackWatchers[id] = ch
-	s.mu.Unlock()
+	ackCh := make(chan Index)
+	s.ackWatchers[id] = ackCh
+	go func() {
+		var ackIndex Index
+		for ack := range ackCh {
+			if ack > ackIndex {
+				ch <- ack
+				ackIndex = ack
+			}
+		}
+	}()
 	go func() {
 		<-ctx.Done()
-		s.mu.Lock()
 		delete(s.ackWatchers, id)
-		s.mu.Unlock()
 	}()
 }

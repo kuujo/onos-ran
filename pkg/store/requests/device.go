@@ -93,7 +93,9 @@ func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State)
 }
 
 func (s *deviceRequestsStore) processElectionChange(state mastership.State) error {
+	s.state.mu.Lock()
 	s.state.setMastership(&state)
+	s.state.mu.Unlock()
 	if state.Master == s.cluster.Node().ID {
 		logger.Debugf("Transitioning to master role for %s", s.deviceKey)
 		handler, err := newMasterStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
@@ -113,6 +115,7 @@ func (s *deviceRequestsStore) processElectionChange(state mastership.State) erro
 }
 
 func (s *deviceRequestsStore) Append(request *Request, opts ...AppendOption) error {
+	logger.Debugf("Appending request %v for device %s", request, s.deviceKey)
 	s.mu.RLock()
 	handler := s.handler
 	s.mu.RUnlock()
@@ -123,6 +126,7 @@ func (s *deviceRequestsStore) Append(request *Request, opts ...AppendOption) err
 }
 
 func (s *deviceRequestsStore) Ack(request *Request) error {
+	logger.Debugf("Acknowledging request %v for device %s", request, s.deviceKey)
 	s.mu.RLock()
 	handler := s.handler
 	s.mu.RUnlock()
@@ -147,11 +151,13 @@ func (s *deviceRequestsStore) Watch(deviceID device.ID, ch chan<- Event, opts ..
 	}
 	reader := s.log.OpenReader(firstIndex)
 
+	s.state.mu.Lock()
 	commitCh := make(chan Index)
 	s.state.watchCommitIndex(context.Background(), commitCh)
 
 	ackCh := make(chan Index)
 	s.state.watchAckIndex(context.Background(), ackCh)
+	s.state.mu.Unlock()
 
 	go func() {
 		lastAckIndex := firstIndex - 1
@@ -168,19 +174,23 @@ func (s *deviceRequestsStore) Watch(deviceID device.ID, ch chan<- Event, opts ..
 					}
 					request := New(entry.Value.(*e2ap.RicControlRequest))
 					request.Index = entry.Index
-					ch <- Event{
+					event := Event{
 						Type:    eventType,
 						Request: *request,
 					}
+					logger.Debugf("Received event %v for device %s", event, s.deviceKey)
+					ch <- event
 				}
 			case ackIndex := <-ackCh:
 				for index := lastAckIndex + 1; index <= ackIndex; index++ {
-					ch <- Event{
+					event := Event{
 						Type: EventAck,
 						Request: Request{
 							Index: index,
 						},
 					}
+					logger.Debugf("Received event %v for device %s", event, s.deviceKey)
+					ch <- event
 				}
 			}
 		}

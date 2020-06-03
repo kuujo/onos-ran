@@ -30,7 +30,11 @@ import (
 
 var logger = logging.GetLogger("store", "requests")
 
-const requestTimeout = 30 * time.Second
+func init() {
+	logger.SetLevel(logging.DebugLevel)
+}
+
+const requestTimeout = 10 * time.Second
 
 // New creates a new indication
 func New(request *e2ap.RicControlRequest) *Request {
@@ -171,29 +175,11 @@ func (s *store) Ack(request *Request) error {
 }
 
 func (s *store) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOption) error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	wg := &sync.WaitGroup{}
-	errCh := make(chan error)
-	for _, store := range s.deviceRequests {
-		wg.Add(1)
-		go func(store Store) {
-			err := store.Watch(deviceID, ch, opts...)
-			if err != nil {
-				errCh <- err
-			}
-			wg.Done()
-		}(store)
-	}
-
-	wg.Wait()
-	close(errCh)
-
-	for err := range errCh {
+	store, err := s.getDeviceStore(deviceID.Key())
+	if err != nil {
 		return err
 	}
-	return nil
+	return store.Watch(deviceID, ch, opts...)
 }
 
 func (s *store) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
