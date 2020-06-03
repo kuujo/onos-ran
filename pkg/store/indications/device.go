@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/atomix/go-client/pkg/client/util"
+	"github.com/cenkalti/backoff"
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/sb"
@@ -30,7 +30,6 @@ import (
 	"google.golang.org/grpc/status"
 	"io"
 	"sync"
-	"time"
 )
 
 // newDeviceIndicationsStore creates a new indications store for a single device
@@ -44,7 +43,8 @@ func newDeviceIndicationsStore(deviceKey device.Key, cluster cluster.Cluster, el
 		streams:     make(map[uuid.UUID]indications.IndicationsService_SubscribeServer),
 		recordCh:    make(chan Indication),
 	}
-	if err := store.open(); err != nil {
+	err := backoff.Retry(store.open, backoff.NewExponentialBackOff())
+	if err != nil {
 		return nil, err
 	}
 	return store, nil
@@ -73,7 +73,9 @@ func (s *deviceIndicationsStore) open() error {
 		return err
 	}
 	s.state = state
+	log.Debugf("Initializing store with mastership state %v for device %s", state, s.deviceKey)
 	if state.Master != s.cluster.Node().ID {
+		log.Debugf("Subscribing to events from %s for device %s", state.Master, s.deviceKey)
 		ctx, cancel := context.WithCancel(context.Background())
 		err := s.subscribeMaster(ctx, *state)
 		if err != nil {
@@ -97,21 +99,25 @@ func (s *deviceIndicationsStore) processRecords() {
 		s.cache[indication.Hdr.MessageType] = &ref
 
 		// Write the indication event to susbcriber channels
+		event := Event{
+			Type:       EventReceived,
+			Indication: indication,
+		}
 		for _, subscriber := range s.subscribers {
-			subscriber <- Event{
-				Type:       EventReceived,
-				Indication: indication,
-			}
+			log.Debugf("Received event %v for device %s", event, s.deviceKey)
+			subscriber <- event
 		}
 
 		// If this node is the master, send the indication to replicas
 		if s.state != nil && s.state.Master == s.cluster.Node().ID {
+			response := &indications.SubscribeResponse{
+				Device:     string(s.deviceKey),
+				Term:       uint64(s.state.Term),
+				Indication: indication.RicIndication,
+			}
 			for _, stream := range s.streams {
-				err := stream.Send(&indications.SubscribeResponse{
-					Device:     string(s.deviceKey),
-					Term:       uint64(s.state.Term),
-					Indication: indication.RicIndication,
-				})
+				log.Debugf("Sending SubscribeResponse %v for device %s", indication, s.deviceKey)
+				err := stream.Send(response)
 				if err != nil {
 					log.Errorf("Failed to send indication: %s", err)
 				}
@@ -123,18 +129,22 @@ func (s *deviceIndicationsStore) processRecords() {
 
 func (s *deviceIndicationsStore) watchMastership(ch <-chan mastership.State, cancel context.CancelFunc) {
 	for state := range ch {
+		log.Infof("Received mastership change %v for device %s", state, s.deviceKey)
 		s.mu.Lock()
 		ref := state
 		s.state = &ref
 
-		if state.Master != s.cluster.Node().ID {
+		if state.Master != s.cluster.Node().ID && cancel == nil {
+			log.Debugf("Subscribing to events from %s for device %s", state.Master, s.deviceKey)
 			ctx, cancelFunc := context.WithCancel(context.Background())
 			err := s.subscribeMaster(ctx, state)
-			cancel = cancelFunc
 			if err != nil {
 				log.Errorf("Failed to subscribe to master node %s: %s", state.Master, err)
+			} else {
+				cancel = cancelFunc
 			}
-		} else if cancel != nil {
+		} else if state.Master == s.cluster.Node().ID && cancel != nil {
+			log.Debugf("Cancelling subscription for device %s", s.deviceKey)
 			cancel()
 			cancel = nil
 		}
@@ -147,7 +157,7 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 	if master == nil {
 		return fmt.Errorf("cannot find master node %s", mastership.Master)
 	}
-	conn, err := master.Connect(grpc.WithInsecure(), grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(time.Second)))
+	conn, err := master.Connect(grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -156,6 +166,7 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 		Device: string(s.deviceKey),
 		Term:   uint64(mastership.Term),
 	}
+	log.Debugf("Sending SubscribeRequest %v for device %s", request, s.deviceKey)
 	stream, err := client.Subscribe(ctx, request)
 	if err != nil {
 		return err
@@ -165,6 +176,7 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 	go func() {
 		for {
 			response, err := stream.Recv()
+			log.Debugf("Received SubscribeResponse %v for device %s", response, s.deviceKey)
 			if err == io.EOF {
 				break
 			} else if err != nil {
@@ -179,6 +191,7 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 }
 
 func (s *deviceIndicationsStore) Record(indication *Indication) error {
+	log.Debugf("Recording indication %v for device %s", indication, s.deviceKey)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -216,10 +229,12 @@ func (s *deviceIndicationsStore) Subscribe(ch chan<- Event, opts ...SubscribeOpt
 			s.mu.RLock()
 			defer s.mu.RUnlock()
 			for _, indication := range s.cache {
-				ch <- Event{
+				event := Event{
 					Type:       EventNone,
 					Indication: *indication,
 				}
+				log.Debugf("Received event %v for device %s", event, s.deviceKey)
+				ch <- event
 			}
 		}()
 	}
@@ -227,6 +242,8 @@ func (s *deviceIndicationsStore) Subscribe(ch chan<- Event, opts ...SubscribeOpt
 }
 
 func (s *deviceIndicationsStore) subscribe(request *indications.SubscribeRequest, stream indications.IndicationsService_SubscribeServer) error {
+	log.Debugf("Received SubscribeRequest %v for device %s", request, s.deviceKey)
+
 	s.mu.RLock()
 	state := s.state
 	s.mu.RUnlock()

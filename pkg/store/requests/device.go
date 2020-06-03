@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
@@ -40,7 +41,8 @@ func newDeviceRequestsStore(deviceKey device.Key, cluster cluster.Cluster, elect
 		},
 		log: newLog(),
 	}
-	if err := store.open(); err != nil {
+	err := backoff.Retry(store.open, backoff.NewExponentialBackOff())
+	if err != nil {
 		return nil, err
 	}
 	return store, nil

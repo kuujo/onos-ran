@@ -66,7 +66,7 @@ func NewDistributedStore(cluster cluster.Cluster, config config.Config) (Store, 
 		return nil, err
 	}
 	return &distributedStore{
-		partitions: config.Mastership.GetPartitions(),
+		partitions: config.Stores.Mastership.GetPartitions(),
 		newElection: func(id PartitionID) (Election, error) {
 			return newDistributedElection(id, database, cluster)
 		},

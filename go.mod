@@ -4,7 +4,8 @@ go 1.14
 
 require (
 	github.com/DataDog/mmh3 v0.0.0-20200316233529-f5b682d8c981
-	github.com/atomix/go-client v0.2.0
+	github.com/atomix/go-client v0.2.1
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.3
@@ -14,7 +15,7 @@ require (
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/joncalhoun/pipe v0.0.0-20170510025636-72505674a733
 	github.com/onosproject/helmit v0.6.4
-	github.com/onosproject/onos-lib-go v0.6.5
+	github.com/onosproject/onos-lib-go v0.6.6-0.20200603091134-1bb39cfd056a
 	github.com/onosproject/onos-topo v0.6.3
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/prometheus/client_golang v1.4.1
@@ -29,8 +30,5 @@ require (
 	gopkg.in/yaml.v2 v2.2.8
 	gotest.tools v2.2.0+incompatible
 )
-
-replace github.com/onosproject/onos-lib-go => ../onos-lib-go
-replace github.com/atomix/go-client => ../atomix-go-client
 
 replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200229013735-71373c6105e3

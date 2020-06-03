@@ -31,7 +31,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-var log = logging.GetLogger("c1")
+var log = logging.GetLogger("northbound", "c1")
+
+func init() {
+	log.SetLevel(logging.DebugLevel)
+}
 
 // NewService returns a new device Service
 func NewService() (service.Service, error) {
@@ -55,6 +59,7 @@ type Server struct {
 
 // ListStations returns a stream of base station records.
 func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
+	log.Debugf("Received StationListRequest %+v", req)
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
@@ -86,6 +91,7 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 					Ecgi: &ecgi,
 				}
 				baseStationInfo.MaxNumConnectedUes = cellConfigReport.GetMaxNumConnectedUes()
+				log.Debugf("Sending StationInfo %v", baseStationInfo)
 				if err := stream.Send(&baseStationInfo); err != nil {
 					return err
 				}
@@ -99,6 +105,7 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 
 // ListStationLinks returns a stream of links between neighboring base stations.
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
+	log.Debugf("Received StationLinkListRequest %+v", req)
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
@@ -138,6 +145,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 					}
 					stationLinkInfo.NeighborECGI = append(stationLinkInfo.NeighborECGI, &nbEcgi)
 				}
+				log.Debugf("Sending StationLinkInfo %v", stationLinkInfo)
 				if err := stream.Send(&stationLinkInfo); err != nil {
 					return err
 				}
@@ -151,7 +159,7 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 
 // ListUEs returns a stream of UEs
 func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_ListUEsServer) error {
-
+	log.Debugf("Received UEListRequest %+v", req)
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
@@ -186,6 +194,7 @@ func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_List
 					Ecgi:  &ecgi,
 					Imsi:  imsi,
 				}
+				log.Debugf("Sending UEInfo %v", ueInfo)
 				if err := stream.Send(&ueInfo); err != nil {
 					return err
 				}
@@ -201,6 +210,7 @@ func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_List
 
 // ListUELinks returns a stream of UI and base station links; one-time or (later) continuous subscribe.
 func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
+	log.Debugf("Received UELinkListRequest %+v", req)
 	if req.Ecgi == nil {
 		ch := make(chan e2ap.RicIndication)
 		if req.Subscribe {
@@ -257,6 +267,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 					Crnti:            radioReportUe.GetCrnti(),
 					ChannelQualities: cqis,
 				}
+				log.Debugf("Sending UELinkInfo %v", ueLinkInfo)
 				if err := stream.Send(&ueLinkInfo); err != nil {
 					return err
 				}
@@ -271,6 +282,7 @@ func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceServ
 
 // TriggerHandOver returns a hand-over response indicating success or failure.
 func (s Server) TriggerHandOver(ctx context.Context, req *nb.HandOverRequest) (*nb.HandOverResponse, error) {
+	log.Debugf("Received HandOverRequest %+v", req)
 	if req == nil || req.GetCrnti() == "" ||
 		req.DstStation == nil || req.DstStation.Plmnid == "" || req.DstStation.Ecid == "" ||
 		req.SrcStation == nil || req.SrcStation.Plmnid == "" || req.SrcStation.Ecid == "" {

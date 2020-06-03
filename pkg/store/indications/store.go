@@ -29,6 +29,10 @@ import (
 
 var log = logging.GetLogger("store", "indications")
 
+func init() {
+	log.SetLevel(logging.DebugLevel)
+}
+
 // New creates a new indication
 func New(indication *e2ap.RicIndication) *Indication {
 	return &Indication{
@@ -110,6 +114,7 @@ func (s *store) open() error {
 	}
 	go func() {
 		for event := range ch {
+			log.Debugf("Received device Event %v", event)
 			if event.Type != device.EventUpdated {
 				_, err := s.getDeviceStore(event.Device.ID.Key())
 				if err != nil {
