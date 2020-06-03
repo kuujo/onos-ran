@@ -65,7 +65,7 @@ func (s *masterStore) open() error {
 	mastership := s.state.getMastership()
 	for index, replicaID := range mastership.Replicas {
 		if index > 0 {
-			sync := index < s.config.GetSyncBackups()
+			sync := index <= s.config.GetSyncBackups()
 			wg.Add(1)
 			go func(replicaID cluster.ReplicaID) {
 				var err error
@@ -211,7 +211,7 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 }
 
 func (s *masterStore) backupEntry(entry *Entry, ch chan<- Index) {
-	if len(s.backups) == 0 {
+	if len(s.backups) == 0 || s.config.GetSyncBackups() == 0 {
 		s.state.mu.Lock()
 		commitIndex := s.state.getCommitIndex()
 		if entry.Index > commitIndex {

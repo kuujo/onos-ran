@@ -42,9 +42,9 @@ func (s *deviceStoreState) setCommitIndex(index Index) {
 	if index > s.commitIndex {
 		s.commitIndex = index
 		for _, watcher := range s.commitWatchers {
-			go func() {
-				watcher <- index
-			}()
+			go func(ch chan<- Index) {
+				ch <- index
+			}(watcher)
 		}
 	}
 }
@@ -76,9 +76,9 @@ func (s *deviceStoreState) setAckIndex(index Index) {
 	if index > s.ackIndex {
 		s.ackIndex = index
 		for _, watcher := range s.ackWatchers {
-			go func() {
-				watcher <- index
-			}()
+			go func(ch chan<- Index) {
+				ch <- index
+			}(watcher)
 		}
 	}
 }

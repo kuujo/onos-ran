@@ -33,6 +33,10 @@ import (
 
 var log = logging.GetLogger("northbound", "c1")
 
+func init() {
+	log.SetLevel(logging.DebugLevel)
+}
+
 // NewService returns a new device Service
 func NewService() (service.Service, error) {
 	return &Service{}, nil

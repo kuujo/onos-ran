@@ -41,7 +41,7 @@ func newDeviceIndicationsStore(deviceKey device.Key, cluster cluster.Cluster, el
 		cache:       make(map[sb.MessageType]*Indication),
 		subscribers: make([]chan<- Event, 0),
 		streams:     make(map[uuid.UUID]indications.IndicationsService_SubscribeServer),
-		recordCh:    make(chan Indication),
+		recordCh:    make(chan Indication, 1000),
 	}
 	err := backoff.Retry(store.open, backoff.NewExponentialBackOff())
 	if err != nil {
