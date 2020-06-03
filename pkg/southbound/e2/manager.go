@@ -26,6 +26,8 @@ import (
 
 var log = logging.GetLogger("southbound", "e2")
 
+const chanSize = 1000
+
 func init() {
 	log.SetLevel(logging.DebugLevel)
 }
@@ -103,13 +105,13 @@ func (m *SessionManager) addDevice(device device.Device) error {
 		return err
 	}
 
-	requestsCh := make(chan requests.Event)
+	requestsCh := make(chan requests.Event, chanSize)
 	err = m.requests.Watch(device.ID, requestsCh, requests.WithReplay())
 	if err != nil {
 		return err
 	}
 
-	responsesCh := make(chan e2ap.RicIndication)
+	responsesCh := make(chan e2ap.RicIndication, chanSize)
 	err = session.subscribe(responsesCh)
 	if err != nil {
 		return err
@@ -163,7 +165,7 @@ func (m *SessionManager) processRequest(session *Session, request requests.Reque
 // processResponses processes responses from the session
 func (m *SessionManager) processResponses(ch <-chan e2ap.RicIndication) {
 	for response := range ch {
-		log.Debugf("Processing response %v", response)
+		//log.Debugf("Processing response %v", response)
 		err := m.processResponse(response)
 		if err != nil {
 			log.Errorf("Error processing response %v: %v", response, err)

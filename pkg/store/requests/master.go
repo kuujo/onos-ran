@@ -37,7 +37,7 @@ func newMasterStore(deviceKey device.Key, c cluster.Cluster, state *deviceStoreS
 		backups:        make([]*backupSynchronizer, 0),
 		state:          state,
 		log:            log,
-		commitCh:       make(chan commit),
+		commitCh:       make(chan commit, 1000),
 		commitChannels: make(map[Index]chan<- Index),
 		commitIndexes:  make(map[cluster.ReplicaID]Index),
 	}
@@ -142,12 +142,7 @@ func (s *masterStore) append(ctx context.Context, request *requests.AppendReques
 	entry := s.log.Writer().Write(request.Request)
 	s.state.mu.Unlock()
 
-	s.commitCh <- commit{
-		replica: cluster.ReplicaID(s.cluster.Node().ID),
-		index:   entry.Index,
-	}
-
-	ch := make(chan Index)
+	ch := make(chan Index, 1)
 	go s.backupEntry(entry, ch)
 	select {
 	case <-ch:
@@ -165,7 +160,7 @@ func (s *masterStore) ack(ctx context.Context, request *requests.AckRequest) (*r
 	if index > s.state.getAckIndex() {
 		s.log.Writer().Discard(index)
 		s.state.setAckIndex(index)
-		logger.Debugf("Acknowledged entries up to %d", index)
+		logger.Debugf("Acknowledged entries up to %d for device %s", index, s.deviceKey)
 	}
 	s.state.mu.Unlock()
 	return &requests.AckResponse{}, nil
@@ -210,7 +205,7 @@ func (s *masterStore) processCommit(replicaID cluster.ReplicaID, index Index) {
 					delete(s.commitChannels, index)
 				}
 			}
-			logger.Debugf("Committed entries up to %d", minIndex)
+			logger.Debugf("Committed entries up to %d for device %s", minIndex, s.deviceKey)
 		}
 	}
 }
@@ -221,6 +216,7 @@ func (s *masterStore) backupEntry(entry *Entry, ch chan<- Index) {
 		commitIndex := s.state.getCommitIndex()
 		if entry.Index > commitIndex {
 			s.state.setCommitIndex(entry.Index)
+			logger.Debugf("Committed entries up to %d for device %s", entry.Index, s.deviceKey)
 		}
 		index := s.state.getCommitIndex()
 		s.state.mu.Unlock()

@@ -193,11 +193,10 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 func (s *deviceIndicationsStore) Record(indication *Indication) error {
 	log.Debugf("Recording indication %v for device %s", indication, s.deviceKey)
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	if s.state == nil || s.state.Master != s.cluster.Node().ID {
 		return errors.New("not the master")
 	}
+	s.mu.RUnlock()
 	s.recordCh <- *indication
 	return nil
 }

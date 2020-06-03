@@ -34,7 +34,7 @@ func init() {
 	logger.SetLevel(logging.DebugLevel)
 }
 
-const requestTimeout = 10 * time.Second
+const requestTimeout = 30 * time.Second
 
 // New creates a new indication
 func New(request *e2ap.RicControlRequest) *Request {

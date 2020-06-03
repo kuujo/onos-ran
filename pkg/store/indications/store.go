@@ -29,10 +29,6 @@ import (
 
 var log = logging.GetLogger("store", "indications")
 
-func init() {
-	log.SetLevel(logging.DebugLevel)
-}
-
 // New creates a new indication
 func New(indication *e2ap.RicIndication) *Indication {
 	return &Indication{

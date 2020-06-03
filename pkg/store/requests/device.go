@@ -83,12 +83,10 @@ func (s *deviceRequestsStore) open() error {
 func (s *deviceRequestsStore) processElectionChanges(ch <-chan mastership.State) {
 	for state := range ch {
 		logger.Debugf("Election state changed for %s: %v", s.deviceKey, state)
-		s.mu.Lock()
 		err := s.processElectionChange(state)
 		if err != nil {
 			logger.Errorf("Failed to process election state change for %s: %s", s.deviceKey, err)
 		}
-		s.mu.Unlock()
 	}
 }
 
@@ -102,14 +100,18 @@ func (s *deviceRequestsStore) processElectionChange(state mastership.State) erro
 		if err != nil {
 			return fmt.Errorf("failed to initialize master store: %s", err)
 		}
+		s.mu.Lock()
 		s.handler = handler
+		s.mu.Unlock()
 	} else {
 		logger.Debugf("Transitioning to backup role for %s", s.deviceKey)
 		handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 		if err != nil {
 			return fmt.Errorf("failed to initialize backup store: %s", err)
 		}
+		s.mu.Lock()
 		s.handler = handler
+		s.mu.Unlock()
 	}
 	return nil
 }
@@ -152,10 +154,10 @@ func (s *deviceRequestsStore) Watch(deviceID device.ID, ch chan<- Event, opts ..
 	reader := s.log.OpenReader(firstIndex)
 
 	s.state.mu.Lock()
-	commitCh := make(chan Index)
+	commitCh := make(chan Index, 100)
 	s.state.watchCommitIndex(context.Background(), commitCh)
 
-	ackCh := make(chan Index)
+	ackCh := make(chan Index, 100)
 	s.state.watchAckIndex(context.Background(), ackCh)
 	s.state.mu.Unlock()
 
@@ -191,6 +193,7 @@ func (s *deviceRequestsStore) Watch(deviceID device.ID, ch chan<- Event, opts ..
 					}
 					logger.Debugf("Received event %v for device %s", event, s.deviceKey)
 					ch <- event
+					lastAckIndex = index
 				}
 			}
 		}

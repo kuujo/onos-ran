@@ -76,7 +76,9 @@ func (s *deviceStoreState) setAckIndex(index Index) {
 	if index > s.ackIndex {
 		s.ackIndex = index
 		for _, watcher := range s.ackWatchers {
-			watcher <- index
+			go func() {
+				watcher <- index
+			}()
 		}
 	}
 }

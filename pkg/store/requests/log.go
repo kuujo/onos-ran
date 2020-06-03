@@ -154,11 +154,10 @@ func (w *memoryWriter) Write(value interface{}) *Entry {
 		Value: value,
 	}
 	w.log.entries.PushBack(entry)
-	readers := w.log.readers
-	w.log.mu.Unlock()
-	for _, reader := range readers {
+	for _, reader := range w.log.readers {
 		reader.next()
 	}
+	w.log.mu.Unlock()
 	return entry
 }
 
@@ -201,27 +200,29 @@ func (r *memoryReader) next() {
 func (r *memoryReader) ReadBatch() *Batch {
 	r.log.mu.RLock()
 	r.mu.Lock()
+	if r.elem != nil && (r.log.entries.Len() == 0 || r.elem.Value.(*Entry).Index < r.log.entries.Front().Value.(*Entry).Index) {
+		r.elem = nil
+	}
 	if (r.elem == nil && r.log.entries.Len() > 0) || (r.elem != nil && r.elem.Next() != nil) {
-		var elem *list.Element
+		var firstElem *list.Element
 		if r.elem == nil {
-			elem = r.log.entries.Front()
+			firstElem = r.log.entries.Front()
 		} else {
-			elem = r.elem.Next()
+			firstElem = r.elem.Next()
 		}
 
-		var lastElem *list.Element
 		entries := make([]*Entry, 0)
+		elem := firstElem
 		for elem != nil {
 			entries = append(entries, elem.Value.(*Entry))
-			lastElem = elem
+			r.elem = elem
 			elem = elem.Next()
 		}
 
 		var prevIndex Index
-		if r.elem != nil {
-			prevIndex = r.elem.Value.(*Entry).Index
+		if firstElem != nil {
+			prevIndex = firstElem.Value.(*Entry).Index - 1
 		}
-		r.elem = lastElem
 		r.mu.Unlock()
 		r.log.mu.RUnlock()
 		return &Batch{
@@ -241,27 +242,29 @@ func (r *memoryReader) ReadBatch() *Batch {
 func (r *memoryReader) ReadUntil(index Index) *Batch {
 	r.log.mu.RLock()
 	r.mu.Lock()
+	if r.elem != nil && (r.log.entries.Len() == 0 || r.elem.Value.(*Entry).Index < r.log.entries.Front().Value.(*Entry).Index) {
+		r.elem = nil
+	}
 	if r.log.writer.lastIndex >= index && (r.elem == nil && r.log.entries.Len() > 0) || (r.elem != nil && r.elem.Next() != nil) {
-		var elem *list.Element
+		var firstElem *list.Element
 		if r.elem == nil {
-			elem = r.log.entries.Front()
+			firstElem = r.log.entries.Front()
 		} else {
-			elem = r.elem.Next()
+			firstElem = r.elem.Next()
 		}
 
-		var lastElem *list.Element
 		entries := make([]*Entry, 0)
-		for elem != nil {
+		elem := firstElem
+		for elem != nil && elem.Value.(*Entry).Index <= index {
 			entries = append(entries, elem.Value.(*Entry))
-			lastElem = elem
+			r.elem = elem
 			elem = elem.Next()
 		}
 
 		var prevIndex Index
-		if r.elem != nil {
-			prevIndex = r.elem.Value.(*Entry).Index
+		if firstElem != nil {
+			prevIndex = firstElem.Value.(*Entry).Index - 1
 		}
-		r.elem = lastElem
 		r.mu.Unlock()
 		r.log.mu.RUnlock()
 		return &Batch{

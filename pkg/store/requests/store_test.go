@@ -94,7 +94,7 @@ func TestStoreRequestSingleNode(t *testing.T) {
 						PlmnId: "test",
 						Ecid:   "test-2",
 					},
-					Crntis: []string{"1"},
+					Crntis: []string{"2"},
 				},
 			},
 		},
@@ -118,28 +118,52 @@ func TestStoreRequestSingleNode(t *testing.T) {
 						PlmnId: "test",
 						Ecid:   "test-2",
 					},
-					Crntis: []string{"2"},
+					Crntis: []string{"1"},
 				},
 			},
 		},
 	}))
 	assert.NoError(t, err)
 
+	var request1 *Request
 	select {
 	case event := <-watchCh:
 		assert.Equal(t, EventAppend, event.Type)
-		err = store1.Ack(&event.Request)
 		assert.NoError(t, err)
+		request1 = &event.Request
 	case <-time.After(5 * time.Second):
 		t.Log("Timed out waiting for EventAppend")
 		t.FailNow()
 	}
 
+	var request2 *Request
 	select {
 	case event := <-watchCh:
 		assert.Equal(t, EventAppend, event.Type)
-		err = store1.Ack(&event.Request)
 		assert.NoError(t, err)
+		request2 = &event.Request
+	case <-time.After(5 * time.Second):
+		t.Log("Timed out waiting for EventAppend")
+		t.FailNow()
+	}
+
+	err = store1.Ack(request1)
+	assert.NoError(t, err)
+
+	select {
+	case event := <-watchCh:
+		assert.Equal(t, EventAck, event.Type)
+	case <-time.After(5 * time.Second):
+		t.Log("Timed out waiting for EventAppend")
+		t.FailNow()
+	}
+
+	err = store1.Ack(request2)
+	assert.NoError(t, err)
+
+	select {
+	case event := <-watchCh:
+		assert.Equal(t, EventAck, event.Type)
 	case <-time.After(5 * time.Second):
 		t.Log("Timed out waiting for EventAppend")
 		t.FailNow()
