@@ -95,7 +95,7 @@ func (m *SessionManager) addDevice(device device.Device) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	election, err := m.masterships.GetElection(mastership.NewKey(device.ID.PlmnId, device.ID.Ecid))
+	election, err := m.masterships.GetElection(mastership.Key(device.ID.Key()))
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (m *SessionManager) processRequest(session *Session, request requests.Reque
 // processResponses processes responses from the session
 func (m *SessionManager) processResponses(ch <-chan e2ap.RicIndication) {
 	for response := range ch {
-		//log.Debugf("Processing response %v", response)
+		log.Debugf("Processing response %v", response)
 		err := m.processResponse(response)
 		if err != nil {
 			log.Errorf("Error processing response %v: %v", response, err)
