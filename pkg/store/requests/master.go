@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/atomix/go-client/pkg/client/util"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
 	"github.com/onosproject/onos-ric/api/store/requests"
 	"github.com/onosproject/onos-ric/pkg/config"
@@ -98,7 +98,7 @@ func (s *masterStore) addBackup(replicaID cluster.ReplicaID, factory func(store 
 	if replica == nil {
 		return fmt.Errorf("unknown replica %s", replicaID)
 	}
-	conn, err := replica.Connect(grpc.WithInsecure(), grpc.WithStreamInterceptor(util.RetryingStreamClientInterceptor(time.Second)))
+	conn, err := replica.Connect(grpc.WithInsecure(), grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(time.Second)))
 	if err != nil {
 		return err
 	}
@@ -140,6 +140,7 @@ func (s *masterStore) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOp
 func (s *masterStore) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
 	s.state.mu.Lock()
 	entry := s.log.Writer().Write(request.Request)
+	s.state.setAppendIndex(entry.Index)
 	s.state.mu.Unlock()
 
 	ch := make(chan Index, 1)
@@ -276,14 +277,16 @@ type backupSynchronizer struct {
 }
 
 func (b *backupSynchronizer) open() error {
-	commitCh := make(chan Index)
 	ctx, cancel := context.WithCancel(context.Background())
 	b.store.state.mu.Lock()
+	appendCh := make(chan Index)
+	b.store.state.watchAppendIndex(ctx, appendCh)
+	commitCh := make(chan Index)
 	b.store.state.watchCommitIndex(ctx, commitCh)
 	ackCh := make(chan Index)
 	b.store.state.watchAckIndex(ctx, ackCh)
 	b.store.state.mu.Unlock()
-	go b.backupEntries(commitCh, ackCh)
+	go b.backupEntries(appendCh, commitCh, ackCh)
 	go func() {
 		<-b.closeCh
 		cancel()
@@ -291,14 +294,15 @@ func (b *backupSynchronizer) open() error {
 	return nil
 }
 
-func (b *backupSynchronizer) backupEntries(commitCh <-chan Index, ackCh <-chan Index) {
+func (b *backupSynchronizer) backupEntries(appendCh <-chan Index, commitCh <-chan Index, ackCh <-chan Index) {
 	var backedUpIndex Index
 	var committedIndex Index
 	var ackedIndex Index
 	for {
 		if b.sync {
 			select {
-			case batch := <-b.reader.AwaitBatch():
+			case <-appendCh:
+				batch := b.reader.ReadBatch()
 				b.store.state.mu.RLock()
 				commitIndex := b.store.state.getCommitIndex()
 				ackIndex := b.store.state.getAckIndex()
@@ -405,10 +409,10 @@ func (b *backupSynchronizer) backupBatch(batch *Batch, commitIndex Index, ackInd
 	if err != nil {
 		b.reader.Seek(batch.PrevIndex + 1)
 		return err
-	} else if Index(response.Index) != batch.Entries[len(batch.Entries)-1].Index {
+	} else if Index(response.Index) != Index(batch.PrevIndex+Index(len(batch.Entries))) {
 		b.reader.Seek(Index(response.Index) + 1)
 		return errors.New("uncommitted backup")
-	} else if b.sync {
+	} else if len(batch.Entries) > 0 && b.sync {
 		b.store.commitCh <- commit{
 			replica: b.replicaID,
 			index:   Index(response.Index),

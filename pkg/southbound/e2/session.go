@@ -136,7 +136,7 @@ func (s *Session) subscribe(ch chan<- e2ap.RicIndication) error {
 
 // connect connects the session to the device
 func (s *Session) connect() error {
-	log.Infof("Connecting to device %s", s.Device.Address)
+	log.Infof("Connecting to device %s", s.Device.ID)
 	opts := []grpc.DialOption{
 		grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(100 * time.Millisecond)),
 	}
@@ -220,7 +220,7 @@ func (s *Session) recvRicIndications(stream e2ap.E2AP_RicChanClient) {
 		if err == io.EOF {
 			return
 		} else if err != nil {
-			log.Errorf("An error was received from %s", s.Device.Address, err)
+			log.Errorf("An error was received from %s", s.Device.ID, err)
 		} else {
 			s.mu.RLock()
 			ch := s.recvCh
@@ -234,7 +234,7 @@ func (s *Session) recvRicIndications(stream e2ap.E2AP_RicChanClient) {
 
 // disconnect disconnects the session from the device
 func (s *Session) disconnect() error {
-	log.Infof("Disconnecting from device %s", s.Device.Address)
+	log.Infof("Disconnecting from device %s", s.Device.ID)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.conn == nil {

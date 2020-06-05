@@ -36,6 +36,7 @@ func newDeviceRequestsStore(deviceKey device.Key, cluster cluster.Cluster, elect
 		cluster:   cluster,
 		election:  election,
 		state: &deviceStoreState{
+			appendWatchers: make(map[string]chan<- Index),
 			commitWatchers: make(map[string]chan<- Index),
 			ackWatchers:    make(map[string]chan<- Index),
 		},
@@ -94,25 +95,30 @@ func (s *deviceRequestsStore) processElectionChange(state mastership.State) erro
 	s.state.mu.Lock()
 	s.state.setMastership(&state)
 	s.state.mu.Unlock()
+
+	s.mu.Lock()
 	if state.Master == s.cluster.Node().ID {
 		logger.Debugf("Transitioning to master role for %s", s.deviceKey)
 		handler, err := newMasterStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 		if err != nil {
 			return fmt.Errorf("failed to initialize master store: %s", err)
 		}
-		s.mu.Lock()
+		if s.handler != nil {
+			s.handler.Close()
+		}
 		s.handler = handler
-		s.mu.Unlock()
 	} else {
 		logger.Debugf("Transitioning to backup role for %s", s.deviceKey)
 		handler, err := newBackupStore(s.deviceKey, s.cluster, s.state, s.log, s.config)
 		if err != nil {
 			return fmt.Errorf("failed to initialize backup store: %s", err)
 		}
-		s.mu.Lock()
+		if s.handler != nil {
+			s.handler.Close()
+		}
 		s.handler = handler
-		s.mu.Unlock()
 	}
+	s.mu.Unlock()
 	return nil
 }
 

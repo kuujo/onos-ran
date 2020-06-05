@@ -21,6 +21,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/google/uuid"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
+	"github.com/onosproject/onos-lib-go/pkg/southbound"
 	"github.com/onosproject/onos-ric/api/sb"
 	"github.com/onosproject/onos-ric/api/store/indications"
 	"github.com/onosproject/onos-ric/pkg/store/device"
@@ -30,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"io"
 	"sync"
+	"time"
 )
 
 // newDeviceIndicationsStore creates a new indications store for a single device
@@ -157,7 +159,7 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 	if master == nil {
 		return fmt.Errorf("cannot find master node %s", mastership.Master)
 	}
-	conn, err := master.Connect(grpc.WithInsecure())
+	conn, err := master.Connect(grpc.WithInsecure(), grpc.WithStreamInterceptor(southbound.RetryingStreamClientInterceptor(time.Second)))
 	if err != nil {
 		return err
 	}
@@ -197,7 +199,9 @@ func (s *deviceIndicationsStore) Record(indication *Indication) error {
 		return errors.New("not the master")
 	}
 	s.mu.RUnlock()
-	s.recordCh <- *indication
+	go func() {
+		s.recordCh <- *indication
+	}()
 	return nil
 }
 

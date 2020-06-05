@@ -23,10 +23,12 @@ import (
 
 type deviceStoreState struct {
 	mastership     *mastership.State
+	appendIndex    Index
 	commitIndex    Index
+	ackIndex       Index
+	appendWatchers map[string]chan<- Index
 	commitWatchers map[string]chan<- Index
 	ackWatchers    map[string]chan<- Index
-	ackIndex       Index
 	mu             sync.RWMutex
 }
 
@@ -36,6 +38,40 @@ func (s *deviceStoreState) setMastership(mastership *mastership.State) {
 
 func (s *deviceStoreState) getMastership() *mastership.State {
 	return s.mastership
+}
+
+func (s *deviceStoreState) setAppendIndex(index Index) {
+	if index > s.appendIndex {
+		s.appendIndex = index
+		for _, watcher := range s.appendWatchers {
+			go func(ch chan<- Index) {
+				ch <- index
+			}(watcher)
+		}
+	}
+}
+
+func (s *deviceStoreState) getAppendIndex() Index {
+	return s.appendIndex
+}
+
+func (s *deviceStoreState) watchAppendIndex(ctx context.Context, ch chan<- Index) {
+	id := uuid.New().String()
+	appendCh := make(chan Index)
+	s.appendWatchers[id] = appendCh
+	go func() {
+		var appendIndex Index
+		for index := range appendCh {
+			if index > appendIndex {
+				ch <- index
+				appendIndex = index
+			}
+		}
+	}()
+	go func() {
+		<-ctx.Done()
+		delete(s.appendWatchers, id)
+	}()
 }
 
 func (s *deviceStoreState) setCommitIndex(index Index) {

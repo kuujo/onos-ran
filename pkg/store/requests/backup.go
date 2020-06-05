@@ -117,7 +117,8 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 	commitIndex := Index(request.CommitIndex)
 	ackIndex := Index(request.AckIndex)
 	for _, entry := range request.Entries {
-		s.log.Writer().Write(entry.Request)
+		entry := s.log.Writer().Write(entry.Request)
+		s.state.setAppendIndex(entry.Index)
 	}
 
 	// Discard entries up to the ackIndex
@@ -126,12 +127,12 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 	// Update the commitIndex and ackIndex to trigger watch events
 	if commitIndex > s.state.getCommitIndex() {
 		s.state.setCommitIndex(commitIndex)
-		logger.Debugf("Committed entries up to %d", commitIndex)
+		logger.Debugf("Committed entries up to %d for device %s", commitIndex, s.deviceKey)
 	}
 
 	if ackIndex > s.state.getAckIndex() {
 		s.state.setAckIndex(ackIndex)
-		logger.Debugf("Acknowledged entries up to %d", ackIndex)
+		logger.Debugf("Acknowledged entries up to %d for device %s", ackIndex, s.deviceKey)
 	}
 
 	response := &requests.BackupResponse{

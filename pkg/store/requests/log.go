@@ -73,12 +73,6 @@ type Reader interface {
 	// ReadUntil reads the next batch from the log up to the given index
 	ReadUntil(Index) *Batch
 
-	// AwaitBatch reads the next batch from the log, waiting if necessary
-	AwaitBatch() <-chan *Batch
-
-	// AwaitUntil reads the next batch from the log up to the given index, waiting if necessary
-	AwaitUntil(Index) <-chan *Batch
-
 	// Seek resets the log reader to the given index
 	Seek(index Index)
 }
@@ -182,10 +176,11 @@ func (w *memoryWriter) Close() error {
 }
 
 type memoryReader struct {
-	log  *memoryLog
-	elem *list.Element
-	wg   *sync.WaitGroup
-	mu   sync.Mutex
+	log     *memoryLog
+	elem    *list.Element
+	wg      *sync.WaitGroup
+	batchCh chan *Batch
+	mu      sync.Mutex
 }
 
 func (r *memoryReader) next() {
@@ -197,9 +192,26 @@ func (r *memoryReader) next() {
 	}
 }
 
-func (r *memoryReader) ReadBatch() *Batch {
+func (r *memoryReader) lock() {
 	r.log.mu.RLock()
 	r.mu.Lock()
+}
+
+func (r *memoryReader) unlock() {
+	r.mu.Unlock()
+	r.log.mu.RUnlock()
+}
+
+func (r *memoryReader) waiter() *sync.WaitGroup {
+	if r.wg == nil {
+		r.wg = &sync.WaitGroup{}
+		r.wg.Add(1)
+	}
+	return r.wg
+}
+
+func (r *memoryReader) ReadBatch() *Batch {
+	r.lock()
 	if r.elem != nil && (r.log.entries.Len() == 0 || r.elem.Value.(*Entry).Index < r.log.entries.Front().Value.(*Entry).Index) {
 		r.elem = nil
 	}
@@ -230,18 +242,14 @@ func (r *memoryReader) ReadBatch() *Batch {
 			Entries:   entries,
 		}
 	}
-	wg := &sync.WaitGroup{}
-	r.wg = wg
-	r.wg.Add(1)
-	r.mu.Unlock()
-	r.log.mu.RUnlock()
+	wg := r.waiter()
+	r.unlock()
 	wg.Wait()
 	return r.ReadBatch()
 }
 
 func (r *memoryReader) ReadUntil(index Index) *Batch {
-	r.log.mu.RLock()
-	r.mu.Lock()
+	r.lock()
 	if r.elem != nil && (r.log.entries.Len() == 0 || r.elem.Value.(*Entry).Index < r.log.entries.Front().Value.(*Entry).Index) {
 		r.elem = nil
 	}
@@ -272,46 +280,41 @@ func (r *memoryReader) ReadUntil(index Index) *Batch {
 			Entries:   entries,
 		}
 	}
-	wg := &sync.WaitGroup{}
-	r.wg = wg
-	r.wg.Add(1)
-	r.mu.Unlock()
-	r.log.mu.RUnlock()
+	wg := r.waiter()
+	r.unlock()
 	wg.Wait()
 	return r.ReadUntil(index)
 }
 
-func (r *memoryReader) AwaitBatch() <-chan *Batch {
-	ch := make(chan *Batch)
-	go func() {
-		ch <- r.ReadBatch()
-		close(ch)
-	}()
-	return ch
-}
-
-func (r *memoryReader) AwaitUntil(index Index) <-chan *Batch {
-	ch := make(chan *Batch)
-	go func() {
-		ch <- r.ReadUntil(index)
-		close(ch)
-	}()
-	return ch
-}
-
 func (r *memoryReader) Seek(index Index) {
-	r.log.mu.RLock()
-	defer r.log.mu.RUnlock()
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	elem := r.log.entries.Front()
-	for elem != nil {
-		if elem.Value.(*Entry).Index <= index {
-			break
+	r.lock()
+	defer r.unlock()
+	if r.elem == nil {
+		elem := r.log.entries.Front()
+		for elem != nil {
+			if elem.Value.(*Entry).Index <= index {
+				break
+			}
+			elem = elem.Next()
 		}
-		elem = elem.Next()
+		r.elem = elem
+	} else if index < r.elem.Value.(*Entry).Index {
+		elem := r.elem
+		prev := elem.Prev()
+		for prev != nil {
+			elem = prev
+			prev = elem.Prev()
+		}
+		r.elem = elem
+	} else if index > r.elem.Value.(*Entry).Index {
+		elem := r.elem
+		prev := elem.Next()
+		for prev != nil {
+			elem = prev
+			prev = elem.Next()
+		}
+		r.elem = elem
 	}
-	r.elem = elem
 }
 
 func (r *memoryReader) Close() error {
