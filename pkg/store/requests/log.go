@@ -290,32 +290,31 @@ func (r *memoryReader) Seek(index Index) {
 	r.lock()
 	defer r.unlock()
 	if r.elem == nil {
-		elem := r.log.entries.Front()
-		for elem != nil {
-			if elem.Value.(*Entry).Index <= index {
-				break
-			}
-			elem = elem.Next()
+		var elem *list.Element
+		next := r.log.entries.Front()
+		for next != nil && next.Value.(*Entry).Index < index-1 {
+			elem = next
+			next = elem.Next()
 		}
 		r.elem = elem
-	} else if index < r.elem.Value.(*Entry).Index {
+	} else if r.elem.Value.(*Entry).Index > index-1 {
 		elem := r.elem
 		prev := elem.Prev()
-		for prev != nil {
+		for prev != nil && prev.Value.(*Entry).Index >= index - 1 {
 			elem = prev
 			prev = elem.Prev()
 		}
-		if elem.Value.(*Entry).Index > index {
+		if elem.Value.(*Entry).Index > index-1 {
 			r.elem = nil
 		} else {
 			r.elem = elem
 		}
-	} else if index > r.elem.Value.(*Entry).Index {
+	} else if r.elem.Value.(*Entry).Index < index-1 {
 		elem := r.elem
-		prev := elem.Next()
-		for prev != nil {
-			elem = prev
-			prev = elem.Next()
+		next := elem.Next()
+		for next != nil && next.Value.(*Entry).Index < index-1 {
+			elem = next
+			next = elem.Next()
 		}
 		r.elem = elem
 	}

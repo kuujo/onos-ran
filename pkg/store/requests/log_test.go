@@ -125,7 +125,7 @@ func TestReadSeek(t *testing.T) {
 	assert.Equal(t, Index(3), batch.Entries[0].Index)
 	assert.Equal(t, "baz", batch.Entries[0].Value)
 
-	reader.Seek(0)
+	reader.Seek(1)
 
 	batch = reader.ReadBatch()
 	assert.Equal(t, Index(0), batch.PrevIndex)
@@ -136,4 +136,22 @@ func TestReadSeek(t *testing.T) {
 	assert.Equal(t, "bar", batch.Entries[1].Value)
 	assert.Equal(t, Index(3), batch.Entries[2].Index)
 	assert.Equal(t, "baz", batch.Entries[2].Value)
+
+	reader.Seek(2)
+
+	batch = reader.ReadBatch()
+	assert.Equal(t, Index(1), batch.PrevIndex)
+	assert.Len(t, batch.Entries, 2)
+	assert.Equal(t, Index(2), batch.Entries[0].Index)
+	assert.Equal(t, "bar", batch.Entries[0].Value)
+	assert.Equal(t, Index(3), batch.Entries[1].Index)
+	assert.Equal(t, "baz", batch.Entries[1].Value)
+
+	reader.Seek(3)
+
+	batch = reader.ReadBatch()
+	assert.Equal(t, Index(2), batch.PrevIndex)
+	assert.Len(t, batch.Entries, 1)
+	assert.Equal(t, Index(3), batch.Entries[0].Index)
+	assert.Equal(t, "baz", batch.Entries[0].Value)
 }
