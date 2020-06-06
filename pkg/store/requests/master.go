@@ -25,6 +25,7 @@ import (
 	"github.com/onosproject/onos-ric/pkg/config"
 	"github.com/onosproject/onos-ric/pkg/store/device"
 	"google.golang.org/grpc"
+	"math"
 	"sync"
 	"time"
 )
@@ -302,44 +303,48 @@ func (b *backupSynchronizer) backupEntries(appendCh <-chan Index, commitCh <-cha
 		if b.sync {
 			select {
 			case <-appendCh:
-				batch := b.reader.ReadBatch()
-				b.store.state.mu.RLock()
-				commitIndex := b.store.state.getCommitIndex()
-				ackIndex := b.store.state.getAckIndex()
-				b.store.state.mu.RUnlock()
-				err := b.backupBatch(batch, commitIndex, ackIndex)
-				if err == nil {
-					backedUpIndex = batch.Entries[len(batch.Entries)-1].Index
+				batchIndex, commitIndex, ackIndex := b.backupBatch(func() (*Batch, Index, Index) {
+					batch := b.reader.ReadBatch()
+					b.store.state.mu.RLock()
+					commitIndex := b.store.state.getCommitIndex()
+					ackIndex := b.store.state.getAckIndex()
+					b.store.state.mu.RUnlock()
+					return batch, commitIndex, ackIndex
+				})
+				backedUpIndex = batchIndex
+				committedIndex = commitIndex
+				ackedIndex = ackIndex
+			case commitIndex := <-commitCh:
+				if commitIndex > committedIndex {
+					_, commitIndex, ackIndex := b.backupBatch(func() (*Batch, Index, Index) {
+						b.store.state.mu.RLock()
+						commitIndex := b.store.state.getCommitIndex()
+						ackIndex := b.store.state.getAckIndex()
+						b.store.state.mu.RUnlock()
+						batch := &Batch{
+							PrevIndex: backedUpIndex,
+							Entries:   []*Entry{},
+						}
+						return batch, commitIndex, ackIndex
+					})
 					committedIndex = commitIndex
 					ackedIndex = ackIndex
 				}
-			case commitIndex := <-commitCh:
-				if commitIndex > committedIndex {
-					b.store.state.mu.RLock()
-					ackIndex := b.store.state.getAckIndex()
-					b.store.state.mu.RUnlock()
-					err := b.backupBatch(&Batch{
-						PrevIndex: backedUpIndex,
-						Entries:   []*Entry{},
-					}, commitIndex, ackIndex)
-					if err == nil {
-						committedIndex = commitIndex
-						ackedIndex = ackIndex
-					}
-				}
 			case ackIndex := <-ackCh:
 				if ackIndex > ackedIndex {
-					b.store.state.mu.RLock()
-					commitIndex := b.store.state.getCommitIndex()
-					b.store.state.mu.RUnlock()
-					err := b.backupBatch(&Batch{
-						PrevIndex: backedUpIndex,
-						Entries:   []*Entry{},
-					}, commitIndex, ackIndex)
-					if err == nil {
-						committedIndex = commitIndex
-						ackedIndex = ackIndex
-					}
+					_, commitIndex, ackIndex := b.backupBatch(func() (*Batch, Index, Index) {
+						b.store.state.mu.RLock()
+						commitIndex := b.store.state.getCommitIndex()
+						ackIndex := b.store.state.getAckIndex()
+						b.store.state.mu.RUnlock()
+						batch := &Batch{
+							PrevIndex: backedUpIndex,
+							Entries:   []*Entry{},
+						}
+						return batch, commitIndex, ackIndex
+					})
+					committedIndex = commitIndex
+					ackedIndex = ackIndex
 				}
 			case <-b.closeCh:
 				return
@@ -348,30 +353,33 @@ func (b *backupSynchronizer) backupEntries(appendCh <-chan Index, commitCh <-cha
 			select {
 			case commitIndex := <-commitCh:
 				if commitIndex > committedIndex {
-					b.store.state.mu.RLock()
-					ackIndex := b.store.state.getAckIndex()
-					b.store.state.mu.RUnlock()
-					batch := b.reader.ReadUntil(commitIndex)
-					err := b.backupBatch(batch, commitIndex, ackIndex)
-					if err == nil {
-						backedUpIndex = batch.Entries[len(batch.Entries)-1].Index
-						committedIndex = commitIndex
-						ackedIndex = ackIndex
-					}
+					batchIndex, commitIndex, ackIndex := b.backupBatch(func() (*Batch, Index, Index) {
+						b.store.state.mu.RLock()
+						commitIndex := b.store.state.getCommitIndex()
+						ackIndex := b.store.state.getAckIndex()
+						b.store.state.mu.RUnlock()
+						batch := b.reader.ReadUntil(commitIndex)
+						return batch, commitIndex, ackIndex
+					})
+					backedUpIndex = batchIndex
+					committedIndex = commitIndex
+					ackedIndex = ackIndex
 				}
 			case ackIndex := <-ackCh:
 				if ackIndex > ackedIndex {
-					b.store.state.mu.RLock()
-					commitIndex := b.store.state.getCommitIndex()
-					b.store.state.mu.RUnlock()
-					err := b.backupBatch(&Batch{
-						PrevIndex: backedUpIndex,
-						Entries:   []*Entry{},
-					}, commitIndex, ackIndex)
-					if err == nil {
-						committedIndex = commitIndex
-						ackedIndex = ackIndex
-					}
+					_, commitIndex, ackIndex := b.backupBatch(func() (*Batch, Index, Index) {
+						b.store.state.mu.RLock()
+						commitIndex := b.store.state.getCommitIndex()
+						ackIndex := b.store.state.getAckIndex()
+						b.store.state.mu.RUnlock()
+						batch := &Batch{
+							PrevIndex: backedUpIndex,
+							Entries:   []*Entry{},
+						}
+						return batch, commitIndex, ackIndex
+					})
+					committedIndex = commitIndex
+					ackedIndex = ackIndex
 				}
 			case <-b.closeCh:
 				return
@@ -380,7 +388,29 @@ func (b *backupSynchronizer) backupEntries(appendCh <-chan Index, commitCh <-cha
 	}
 }
 
-func (b *backupSynchronizer) backupBatch(batch *Batch, commitIndex Index, ackIndex Index) error {
+func (b *backupSynchronizer) backupBatch(f func() (*Batch, Index, Index)) (Index, Index, Index) {
+	iteration := 1
+	for {
+		batch, commitIndex, ackIndex := f()
+		err := b.sendBatch(batch, commitIndex, ackIndex)
+		if err == nil {
+			if len(batch.Entries) == 0 {
+				return batch.PrevIndex, commitIndex, ackIndex
+			}
+			return batch.Entries[len(batch.Entries)-1].Index, commitIndex, ackIndex
+		}
+
+		timer := time.NewTimer(time.Duration(10 * math.Pow(float64(iteration), 2)))
+		select {
+		case <-timer.C:
+		case <-b.closeCh:
+			timer.Stop()
+		}
+		iteration++
+	}
+}
+
+func (b *backupSynchronizer) sendBatch(batch *Batch, commitIndex Index, ackIndex Index) error {
 	b.store.state.mu.RLock()
 	entries := make([]*requests.BackupEntry, len(batch.Entries))
 	for i := 0; i < len(batch.Entries); i++ {
@@ -405,11 +435,14 @@ func (b *backupSynchronizer) backupBatch(batch *Batch, commitIndex Index, ackInd
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	response, err := b.client.Backup(ctx, request)
 	cancel()
-	logger.Debugf("Received BackupResponse %s", response)
 	if err != nil {
+		logger.Warnf("BackupRequest %s failed: %s", request, err)
 		b.reader.Seek(batch.PrevIndex + 1)
 		return err
-	} else if Index(response.Index) != Index(batch.PrevIndex+Index(len(batch.Entries))) {
+	}
+
+	logger.Debugf("Received BackupResponse %s", response)
+	if Index(response.Index) != Index(batch.PrevIndex+Index(len(batch.Entries))) {
 		b.reader.Seek(Index(response.Index) + 1)
 		return errors.New("uncommitted backup")
 	} else if len(batch.Entries) > 0 && b.sync {
