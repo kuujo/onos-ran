@@ -305,7 +305,11 @@ func (r *memoryReader) Seek(index Index) {
 			elem = prev
 			prev = elem.Prev()
 		}
-		r.elem = elem
+		if elem.Value.(*Entry).Index > index {
+			r.elem = nil
+		} else {
+			r.elem = elem
+		}
 	} else if index > r.elem.Value.(*Entry).Index {
 		elem := r.elem
 		prev := elem.Next()

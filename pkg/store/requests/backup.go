@@ -107,11 +107,13 @@ func (s *backupStore) backup(ctx context.Context, request *requests.BackupReques
 	prevIndex := Index(request.PrevIndex)
 	lastIndex := s.log.Writer().Index()
 	if prevIndex != 0 && lastIndex != prevIndex {
-		return &requests.BackupResponse{
+		response := &requests.BackupResponse{
 			DeviceID: string(s.deviceKey),
 			Index:    uint64(lastIndex),
 			Term:     uint64(s.state.getMastership().Term),
-		}, nil
+		}
+		logger.Debugf("Sending BackupResponse %s", response)
+		return response, nil
 	}
 
 	commitIndex := Index(request.CommitIndex)
