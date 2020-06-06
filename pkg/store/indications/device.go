@@ -94,7 +94,7 @@ func (s *deviceIndicationsStore) open() error {
 
 func (s *deviceIndicationsStore) processRecords() {
 	for indication := range s.recordCh {
-		s.mu.Lock()
+		s.mu.RLock()
 
 		// Update the local cache
 		ref := indication
@@ -105,8 +105,9 @@ func (s *deviceIndicationsStore) processRecords() {
 			Type:       EventReceived,
 			Indication: indication,
 		}
+		log.Debugf("Received event %v for device %s", event, s.deviceKey)
 		for _, subscriber := range s.subscribers {
-			log.Debugf("Received event %v for device %s", event, s.deviceKey)
+			log.Debugf("Published event %v for device %s", event, s.deviceKey)
 			subscriber <- event
 		}
 
@@ -125,7 +126,7 @@ func (s *deviceIndicationsStore) processRecords() {
 				}
 			}
 		}
-		s.mu.Unlock()
+		s.mu.RUnlock()
 	}
 }
 
@@ -178,13 +179,13 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 	go func() {
 		for {
 			response, err := stream.Recv()
-			log.Debugf("Received SubscribeResponse %v for device %s", response, s.deviceKey)
 			if err == io.EOF {
 				break
 			} else if err != nil {
 				log.Errorf("Received subscribe error from master node %s: %s", mastership.Master, err)
 				break
 			} else {
+				log.Debugf("Received SubscribeResponse %v for device %s", response, s.deviceKey)
 				s.recordCh <- *New(response.Indication)
 			}
 		}
@@ -195,10 +196,11 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 func (s *deviceIndicationsStore) Record(indication *Indication) error {
 	log.Debugf("Recording indication %v for device %s", indication, s.deviceKey)
 	s.mu.RLock()
-	if s.state == nil || s.state.Master != s.cluster.Node().ID {
+	state := s.state
+	s.mu.RUnlock()
+	if state == nil || state.Master != s.cluster.Node().ID {
 		return errors.New("not the master")
 	}
-	s.mu.RUnlock()
 	go func() {
 		s.recordCh <- *indication
 	}()
