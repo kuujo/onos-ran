@@ -41,7 +41,7 @@ func newDeviceIndicationsStore(deviceKey device.Key, cluster cluster.Cluster, el
 		cluster:     cluster,
 		election:    election,
 		cache:       make(map[sb.MessageType]*Indication),
-		subscribers: make([]chan<- Event, 0),
+		subscribers: make([]func(Event), 0),
 		streams:     make(map[uuid.UUID]indications.IndicationsService_SubscribeServer),
 		recordCh:    make(chan Indication, 1000),
 	}
@@ -58,7 +58,7 @@ type deviceIndicationsStore struct {
 	cluster     cluster.Cluster
 	election    mastership.Election
 	cache       map[sb.MessageType]*Indication
-	subscribers []chan<- Event
+	subscribers []func(Event)
 	state       *mastership.State
 	streams     map[uuid.UUID]indications.IndicationsService_SubscribeServer
 	recordCh    chan Indication
@@ -107,7 +107,7 @@ func (s *deviceIndicationsStore) processRecords() {
 		}
 		log.Debugf("Received event %v for device %s", event, s.deviceKey)
 		for _, subscriber := range s.subscribers {
-			subscriber <- event
+			subscriber(event)
 		}
 
 		// If this node is the master, send the indication to replicas
@@ -200,9 +200,7 @@ func (s *deviceIndicationsStore) Record(indication *Indication) error {
 	if state == nil || state.Master != s.cluster.Node().ID {
 		return errors.New("not the master")
 	}
-	go func() {
-		s.recordCh <- *indication
-	}()
+	s.recordCh <- *indication
 	return nil
 }
 
@@ -226,7 +224,20 @@ func (s *deviceIndicationsStore) Subscribe(ch chan<- Event, opts ...SubscribeOpt
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.subscribers = append(s.subscribers, ch)
+	var f func(Event)
+	if options.filter != nil {
+		filter := options.filter
+		f = func(event Event) {
+			if filter(event) {
+				ch <- event
+			}
+		}
+	} else {
+		f = func(event Event) {
+			ch <- event
+		}
+	}
+	s.subscribers = append(s.subscribers, f)
 
 	if options.replay {
 		go func() {

@@ -21,7 +21,27 @@ type SubscribeOption interface {
 
 // subscribeOptions is a struct of message store subscribe options
 type subscribeOptions struct {
+	filter EventFilter
 	replay bool
+}
+
+// EventFilter is a filter function that returns whether a subscriber supports an event
+type EventFilter func(Event) bool
+
+// WithFilter returns a subscribe option that applies a filter to messages
+func WithFilter(f EventFilter) SubscribeOption {
+	return &subscribeFilterOption{
+		filter: f,
+	}
+}
+
+// subscribeFilterOption is an option for filtering indications
+type subscribeFilterOption struct {
+	filter EventFilter
+}
+
+func (o *subscribeFilterOption) applySubscribe(options *subscribeOptions) {
+	options.filter = o.filter
 }
 
 // WithReplay returns a subscribe option that replays existing messages

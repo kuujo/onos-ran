@@ -33,9 +33,7 @@ import (
 
 var log = logging.GetLogger("northbound", "c1")
 
-func init() {
-	log.SetLevel(logging.DebugLevel)
-}
+const chanSize = 1000
 
 // NewService returns a new device Service
 func NewService() (service.Service, error) {
@@ -61,10 +59,13 @@ type Server struct {
 func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceService_ListStationsServer) error {
 	log.Debugf("Received StationListRequest %+v", req)
 	if req.Ecgi == nil {
-		ch := make(chan e2ap.RicIndication)
+		ch := make(chan e2ap.RicIndication, chanSize)
+		filter := func(event indications.Event) bool {
+			return event.Indication.GetHdr().GetMessageType() == sb.MessageType_CELL_CONFIG_REPORT
+		}
 		if req.Subscribe {
-			watchCh := make(chan indications.Event)
-			if err := manager.GetManager().SubscribeIndications(watchCh); err != nil {
+			watchCh := make(chan indications.Event, chanSize)
+			if err := manager.GetManager().SubscribeIndications(watchCh, indications.WithFilter(filter)); err != nil {
 				return err
 			}
 			go func() {
@@ -107,10 +108,13 @@ func (s Server) ListStations(req *nb.StationListRequest, stream nb.C1InterfaceSe
 func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1InterfaceService_ListStationLinksServer) error {
 	log.Debugf("Received StationLinkListRequest %+v", req)
 	if req.Ecgi == nil {
-		ch := make(chan e2ap.RicIndication)
+		ch := make(chan e2ap.RicIndication, chanSize)
+		filter := func(event indications.Event) bool {
+			return event.Indication.GetHdr().GetMessageType() == sb.MessageType_CELL_CONFIG_REPORT
+		}
 		if req.Subscribe {
-			watchCh := make(chan indications.Event)
-			if err := manager.GetManager().SubscribeIndications(watchCh); err != nil {
+			watchCh := make(chan indications.Event, chanSize)
+			if err := manager.GetManager().SubscribeIndications(watchCh, indications.WithFilter(filter)); err != nil {
 				return err
 			}
 			go func() {
@@ -161,10 +165,13 @@ func (s Server) ListStationLinks(req *nb.StationLinkListRequest, stream nb.C1Int
 func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_ListUEsServer) error {
 	log.Debugf("Received UEListRequest %+v", req)
 	if req.Ecgi == nil {
-		ch := make(chan e2ap.RicIndication)
+		ch := make(chan e2ap.RicIndication, chanSize)
+		filter := func(event indications.Event) bool {
+			return event.Indication.GetHdr().GetMessageType() == sb.MessageType_UE_ADMISSION_REQUEST
+		}
 		if req.Subscribe {
-			watchCh := make(chan indications.Event)
-			if err := manager.GetManager().SubscribeIndications(watchCh); err != nil {
+			watchCh := make(chan indications.Event, chanSize)
+			if err := manager.GetManager().SubscribeIndications(watchCh, indications.WithFilter(filter)); err != nil {
 				return err
 			}
 			go func() {
@@ -212,14 +219,17 @@ func (s Server) ListUEs(req *nb.UEListRequest, stream nb.C1InterfaceService_List
 func (s Server) ListUELinks(req *nb.UELinkListRequest, stream nb.C1InterfaceService_ListUELinksServer) error {
 	log.Debugf("Received UELinkListRequest %+v", req)
 	if req.Ecgi == nil {
-		ch := make(chan e2ap.RicIndication)
+		ch := make(chan e2ap.RicIndication, chanSize)
+		filter := func(event indications.Event) bool {
+			return event.Indication.GetHdr().GetMessageType() == sb.MessageType_RADIO_MEAS_REPORT_PER_UE
+		}
 		if req.Subscribe {
-			watchCh := make(chan indications.Event)
+			watchCh := make(chan indications.Event, chanSize)
 			var err error
 			if req.NoReplay {
-				err = manager.GetManager().SubscribeIndications(watchCh)
+				err = manager.GetManager().SubscribeIndications(watchCh, indications.WithFilter(filter))
 			} else {
-				err = manager.GetManager().SubscribeIndications(watchCh, indications.WithReplay())
+				err = manager.GetManager().SubscribeIndications(watchCh, indications.WithFilter(filter), indications.WithReplay())
 			}
 			if err != nil {
 				return err
