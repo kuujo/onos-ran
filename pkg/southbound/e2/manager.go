@@ -100,19 +100,14 @@ func (m *SessionManager) addDevice(device device.Device) error {
 		return err
 	}
 
-	session, err := newSession(device, election)
+	responsesCh := make(chan e2ap.RicIndication, chanSize)
+	session, err := newSession(device, election, responsesCh)
 	if err != nil {
 		return err
 	}
 
 	requestsCh := make(chan requests.Event, chanSize)
 	err = m.requests.Watch(device.ID, requestsCh, requests.WithReplay())
-	if err != nil {
-		return err
-	}
-
-	responsesCh := make(chan e2ap.RicIndication, chanSize)
-	err = session.subscribe(responsesCh)
 	if err != nil {
 		return err
 	}

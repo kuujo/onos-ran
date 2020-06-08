@@ -30,10 +30,11 @@ import (
 )
 
 // newSession creates a new E2 session
-func newSession(device device.Device, election mastership.Election) (*Session, error) {
+func newSession(device device.Device, election mastership.Election, ch chan<- e2ap.RicIndication) (*Session, error) {
 	session := &Session{
 		Device:   &device,
 		election: election,
+		recvCh:   ch,
 		closeCh:  make(chan struct{}),
 	}
 	err := session.open()
@@ -126,14 +127,6 @@ func (s *Session) sendRequest(request *e2ap.RicControlRequest) error {
 	return stream.Send(request)
 }
 
-// subscribe subscribes to southbound messages arriving via the session
-func (s *Session) subscribe(ch chan<- e2ap.RicIndication) error {
-	s.mu.Lock()
-	s.recvCh = ch
-	s.mu.Unlock()
-	return nil
-}
-
 // connect connects the session to the device
 func (s *Session) connect() error {
 	log.Infof("Connecting to device %s", s.Device.ID)
@@ -222,12 +215,7 @@ func (s *Session) recvRicIndications(stream e2ap.E2AP_RicChanClient) {
 		} else if err != nil {
 			log.Errorf("An error was received from %s", s.Device.ID, err)
 		} else {
-			s.mu.RLock()
-			ch := s.recvCh
-			s.mu.RUnlock()
-			if ch != nil {
-				ch <- *response
-			}
+			s.recvCh <- *response
 		}
 	}
 }
