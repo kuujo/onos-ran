@@ -94,7 +94,7 @@ func (s *deviceIndicationsStore) open() error {
 
 func (s *deviceIndicationsStore) processRecords() {
 	for indication := range s.recordCh {
-		s.mu.RLock()
+		s.mu.Lock()
 
 		// Update the local cache
 		ref := indication
@@ -107,7 +107,6 @@ func (s *deviceIndicationsStore) processRecords() {
 		}
 		log.Debugf("Received event %v for device %s", event, s.deviceKey)
 		for _, subscriber := range s.subscribers {
-			log.Debugf("Published event %v for device %s", event, s.deviceKey)
 			subscriber <- event
 		}
 
@@ -126,7 +125,7 @@ func (s *deviceIndicationsStore) processRecords() {
 				}
 			}
 		}
-		s.mu.RUnlock()
+		s.mu.Unlock()
 	}
 }
 
