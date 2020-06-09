@@ -28,10 +28,6 @@ var log = logging.GetLogger("southbound", "e2")
 
 const chanSize = 1000
 
-func init() {
-	log.SetLevel(logging.DebugLevel)
-}
-
 // NewSessionManager creates a new session manager
 func NewSessionManager(devices device.Store, masterships mastership.Store, requests requests.Store, indications indications.Store) (*SessionManager, error) {
 	mgr := &SessionManager{

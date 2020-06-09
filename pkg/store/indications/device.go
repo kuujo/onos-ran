@@ -62,7 +62,8 @@ type deviceIndicationsStore struct {
 	state       *mastership.State
 	streams     map[uuid.UUID]indications.IndicationsService_SubscribeServer
 	recordCh    chan Indication
-	mu          sync.RWMutex
+	stateMu     sync.RWMutex
+	cacheMu     sync.RWMutex
 }
 
 func (s *deviceIndicationsStore) open() error {
@@ -94,29 +95,28 @@ func (s *deviceIndicationsStore) open() error {
 
 func (s *deviceIndicationsStore) processRecords() {
 	for indication := range s.recordCh {
-		s.mu.Lock()
-
-		// Update the local cache
-		ref := indication
-		s.cache[indication.Hdr.MessageType] = &ref
-
 		// Write the indication event to susbcriber channels
+		s.stateMu.RLock()
+		subscribers := s.subscribers
+		state := s.state
+		s.stateMu.RUnlock()
 		event := Event{
 			Type:       EventReceived,
 			Indication: indication,
 		}
 		log.Debugf("Received event %v for device %s", event, s.deviceKey)
-		for _, subscriber := range s.subscribers {
+		for _, subscriber := range subscribers {
 			subscriber(event)
 		}
 
 		// If this node is the master, send the indication to replicas
-		if s.state != nil && s.state.Master == s.cluster.Node().ID {
+		if state != nil && state.Master == s.cluster.Node().ID {
 			response := &indications.SubscribeResponse{
 				Device:     string(s.deviceKey),
-				Term:       uint64(s.state.Term),
+				Term:       uint64(state.Term),
 				Indication: indication.RicIndication,
 			}
+			s.stateMu.RLock()
 			for _, stream := range s.streams {
 				log.Debugf("Sending SubscribeResponse %v for device %s", indication, s.deviceKey)
 				err := stream.Send(response)
@@ -124,17 +124,23 @@ func (s *deviceIndicationsStore) processRecords() {
 					log.Errorf("Failed to send indication: %s", err)
 				}
 			}
+			s.stateMu.RUnlock()
 		}
-		s.mu.Unlock()
+
+		// Update the local cache
+		s.cacheMu.Lock()
+		ref := &indication
+		s.cache[indication.Hdr.MessageType] = ref
+		s.cacheMu.Unlock()
 	}
 }
 
 func (s *deviceIndicationsStore) watchMastership(ch <-chan mastership.State, cancel context.CancelFunc) {
 	for state := range ch {
 		log.Infof("Received mastership change %v for device %s", state, s.deviceKey)
-		s.mu.Lock()
-		ref := state
-		s.state = &ref
+		s.stateMu.Lock()
+		ref := &state
+		s.state = ref
 
 		if state.Master != s.cluster.Node().ID && cancel == nil {
 			log.Debugf("Subscribing to events from %s for device %s", state.Master, s.deviceKey)
@@ -150,7 +156,7 @@ func (s *deviceIndicationsStore) watchMastership(ch <-chan mastership.State, can
 			cancel()
 			cancel = nil
 		}
-		s.mu.Unlock()
+		s.stateMu.Unlock()
 	}
 }
 
@@ -194,9 +200,9 @@ func (s *deviceIndicationsStore) subscribeMaster(ctx context.Context, mastership
 
 func (s *deviceIndicationsStore) Record(indication *Indication) error {
 	log.Debugf("Recording indication %v for device %s", indication, s.deviceKey)
-	s.mu.RLock()
+	s.stateMu.RLock()
 	state := s.state
-	s.mu.RUnlock()
+	s.stateMu.RUnlock()
 	if state == nil || state.Master != s.cluster.Node().ID {
 		return errors.New("not the master")
 	}
@@ -207,8 +213,8 @@ func (s *deviceIndicationsStore) Record(indication *Indication) error {
 func (s *deviceIndicationsStore) List(ch chan<- Indication) error {
 	go func() {
 		defer close(ch)
-		s.mu.RLock()
-		defer s.mu.RUnlock()
+		s.cacheMu.RLock()
+		defer s.cacheMu.RUnlock()
 		for _, indication := range s.cache {
 			ch <- *indication
 		}
@@ -222,8 +228,8 @@ func (s *deviceIndicationsStore) Subscribe(ch chan<- Event, opts ...SubscribeOpt
 		opt.applySubscribe(options)
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
 	var f func(Event)
 	if options.filter != nil {
 		filter := options.filter
@@ -241,8 +247,8 @@ func (s *deviceIndicationsStore) Subscribe(ch chan<- Event, opts ...SubscribeOpt
 
 	if options.replay {
 		go func() {
-			s.mu.RLock()
-			defer s.mu.RUnlock()
+			s.cacheMu.RLock()
+			defer s.cacheMu.RUnlock()
 			for _, indication := range s.cache {
 				event := Event{
 					Type:       EventNone,
@@ -259,9 +265,9 @@ func (s *deviceIndicationsStore) Subscribe(ch chan<- Event, opts ...SubscribeOpt
 func (s *deviceIndicationsStore) subscribe(request *indications.SubscribeRequest, stream indications.IndicationsService_SubscribeServer) error {
 	log.Debugf("Received SubscribeRequest %v for device %s", request, s.deviceKey)
 
-	s.mu.RLock()
+	s.stateMu.RLock()
 	state := s.state
-	s.mu.RUnlock()
+	s.stateMu.RUnlock()
 
 	if state == nil {
 		return status.Error(codes.NotFound, "not the master")
@@ -271,15 +277,15 @@ func (s *deviceIndicationsStore) subscribe(request *indications.SubscribeRequest
 
 	id := uuid.New()
 
-	s.mu.Lock()
+	s.stateMu.Lock()
 	s.streams[id] = stream
-	s.mu.Unlock()
+	s.stateMu.Unlock()
 
 	<-stream.Context().Done()
 
-	s.mu.Lock()
+	s.stateMu.Lock()
 	delete(s.streams, id)
-	s.mu.Unlock()
+	s.stateMu.Unlock()
 
 	return nil
 }
