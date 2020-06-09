@@ -184,18 +184,7 @@ func (m *Manager) ListIndications(ch chan<- e2ap.RicIndication) error {
 
 // SubscribeIndications subscribes the given channel to control updates
 func (m *Manager) SubscribeIndications(ch chan<- indications.Event, opts ...indications.SubscribeOption) error {
-	indicationCh := make(chan indications.Event)
-	err := m.indicationsStore.Subscribe(indicationCh, opts...)
-	if err != nil {
-		return err
-	}
-	go func() {
-		for indication := range indicationCh {
-			log.Debugf("Handling response %+v", indication.Indication.RicIndication)
-			ch <- indication
-		}
-	}()
-	return nil
+	return m.indicationsStore.Subscribe(ch, opts...)
 }
 
 // Run starts a synchronizer based on the devices and the northbound services.
