@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"github.com/onosproject/onos-lib-go/pkg/cluster"
 	"github.com/onosproject/onos-lib-go/pkg/southbound"
 	"github.com/onosproject/onos-ric/api/sb/e2ap"
@@ -58,6 +59,7 @@ type masterStore struct {
 	commitCh       chan commit
 	commitChannels map[Index]chan<- Index
 	commitIndexes  map[cluster.ReplicaID]Index
+	lastEntry      *Entry
 }
 
 func (s *masterStore) open() error {
@@ -139,8 +141,18 @@ func (s *masterStore) Watch(deviceID device.ID, ch chan<- Event, opts ...WatchOp
 }
 
 func (s *masterStore) append(ctx context.Context, request *requests.AppendRequest) (*requests.AppendResponse, error) {
+	s.state.mu.RLock()
+	lastEntry := s.lastEntry
+	s.state.mu.RUnlock()
+	if lastEntry != nil && proto.Equal(lastEntry.Value.(*e2ap.RicControlRequest), request.Request) {
+		return &requests.AppendResponse{
+			Index: uint64(lastEntry.Index),
+		}, nil
+	}
+
 	s.state.mu.Lock()
 	entry := s.log.Writer().Write(request.Request)
+	s.lastEntry = entry
 	s.state.setAppendIndex(entry.Index)
 	s.state.mu.Unlock()
 
@@ -280,9 +292,9 @@ type backupSynchronizer struct {
 func (b *backupSynchronizer) open() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.store.state.mu.Lock()
-	appendCh := make(chan Index)
+	appendCh := make(chan Index, 100)
 	b.store.state.watchAppendIndex(ctx, appendCh)
-	commitCh := make(chan Index)
+	commitCh := make(chan Index, 100)
 	b.store.state.watchCommitIndex(ctx, commitCh)
 	ackCh := make(chan Index)
 	b.store.state.watchAckIndex(ctx, ackCh)

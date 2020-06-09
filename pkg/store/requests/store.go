@@ -30,10 +30,6 @@ import (
 
 var logger = logging.GetLogger("store", "requests")
 
-func init() {
-	logger.SetLevel(logging.DebugLevel)
-}
-
 const requestTimeout = 30 * time.Second
 
 // New creates a new indication
