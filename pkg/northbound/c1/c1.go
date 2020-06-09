@@ -321,9 +321,11 @@ func (s Server) TriggerHandOverStream(stream nb.C1InterfaceService_TriggerHandOv
 			continue
 		}
 
-		if _, err = sendHandoverTrigger(req); err != nil {
-			log.Warn("Error in sending HO trigger %v", err)
-		}
+		go func() {
+			if _, err = sendHandoverTrigger(req); err != nil {
+				log.Warn("Error in sending HO trigger %v", err)
+			}
+		}()
 	}
 }
 
